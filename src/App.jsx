@@ -23,6 +23,19 @@ export default function App() {
   // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
+  // Funktion zum sauberen Laden aller Profile für das Admin-Panel
+  const fetchAllProfiles = async () => {
+    const { data: allProfiles, error } = await supabase
+      .from("profiles")
+      .select("*");
+    
+    if (allProfiles) {
+      setUsers(allProfiles);
+    } else if (error) {
+      console.error("Fehler beim Laden der Profile:", error.message);
+    }
+  };
+
   // Supabase Session und User-Liste beim Start prüfen
   useEffect(() => {
     const checkSession = async () => {
@@ -39,16 +52,8 @@ export default function App() {
 
         if (profile && profile.status === "approved") {
           setUser({ ...session.user, ...profile });
+          await fetchAllProfiles();
         }
-      }
-
-      // Alle User-Profile für das Admin-Panel laden
-      const { data: allProfiles } = await supabase
-        .from("profiles")
-        .select("*");
-      
-      if (allProfiles) {
-        setUsers(allProfiles);
       }
 
       setLoading(false);
@@ -60,6 +65,9 @@ export default function App() {
       (event, session) => {
         if (event === "SIGNED_OUT") {
           setUser(null);
+          setUsers([]);
+        } else if (event === "SIGNED_IN" && session?.user) {
+          checkSession();
         }
       }
     );
@@ -90,6 +98,7 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setUsers([]);
   };
 
   const handleUpdateProfile = (updatedData) => {
@@ -155,7 +164,14 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginView onLogin={(userData) => setUser(userData)} />;
+    return (
+      <LoginView 
+        onLogin={(userData) => { 
+          setUser(userData); 
+          fetchAllProfiles(); // Direkt nach Login die Mitglieder laden
+        }} 
+      />
+    );
   }
 
   // Prüfen ob der Nutzer Admin ist (entweder Rolle oder deine feste Master-E-Mail)
