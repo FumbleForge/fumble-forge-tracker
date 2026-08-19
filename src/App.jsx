@@ -76,13 +76,16 @@ export default function App() {
 
   // Handler für das Admin-Panel (Freigeben, Ablehnen, Löschen)
   const handleApproveUser = async (userId) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .update({ status: "approved" })
-      .eq("id", userId);
+      .eq("id", userId)
+      .select();
 
-    if (!error) {
+    if (!error && data) {
       setUsers(users.map(u => u.id === userId ? { ...u, status: "approved" } : u));
+    } else {
+      console.error("Fehler beim Freigeben:", error?.message);
     }
   };
 
