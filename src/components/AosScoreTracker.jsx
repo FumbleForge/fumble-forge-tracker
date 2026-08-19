@@ -208,19 +208,40 @@ const TERRAIN_BATTLEPLANS = [
 ];
 
 const FACTION_CATALOG = {
+  // Order
+  "Cities of Sigmar": ["Standard Formation 1", "Standard Formation 2"],
   "Daughters of Khaine": [
     "Slaughter Troupe",
     "Shadow Patrol",
     "Scathcoven",
     "Cauldron Guard",
   ],
-  Sylvaneth: [
+  "Fyreslayers": ["Standard Formation 1", "Standard Formation 2"],
+  "Idoneth Deepkin": ["Standard Formation 1", "Standard Formation 2"],
+  "Kharadron Overlords": ["Standard Formation 1", "Standard Formation 2"],
+  "Lumineth Realm-lords": ["Standard Formation 1", "Standard Formation 2"],
+  "Seraphon": ["Standard Formation 1", "Standard Formation 2"],
+  "Stormcast Eternals": [
+    "Lightning Echelon",
+    "Thunderhead Host",
+    "Vanguard Wing",
+    "Hammerhand Vanguard",
+  ],
+  "Sylvaneth": [
     "Outcast Stem",
     "Lords of the Clan",
     "Free Spirits",
     "Forest Folk",
   ],
-  Skaven: [
+
+  // Chaos
+  "Beasts of Chaos": ["Standard Formation 1", "Standard Formation 2"],
+  "Blades of Khorne": ["Standard Formation 1", "Standard Formation 2"],
+  "Disciples of Tzeentch": ["Standard Formation 1", "Standard Formation 2"],
+  "Hedonites of Slaanesh": ["Standard Formation 1", "Standard Formation 2"],
+  "Helmsmiths of Hashut": ["Standard Formation 1", "Standard Formation 2"],
+  "Maggotkin of Nurgle": ["Standard Formation 1", "Standard Formation 2"],
+  "Skaven": [
     "Warpcog Enginecluster",
     "Fleshmeld Menagerie",
     "Claw-horde",
@@ -232,18 +253,30 @@ const FACTION_CATALOG = {
     "Ruinous Cabal",
     "Legion of Chaos",
   ],
-  "Stormcast Eternals": [
-    "Lightning Echelon",
-    "Thunderhead Host",
-    "Vanguard Wing",
-    "Hammerhand Vanguard",
-  ],
+
+  // Death
+  "Flesh-eater Courts": ["Standard Formation 1", "Standard Formation 2"],
+  "Nighthaunt": ["Standard Formation 1", "Standard Formation 2"],
+  "Ossiarch Bonereapers": ["Standard Formation 1", "Standard Formation 2"],
+  "Soulblight Gravelords": ["Standard Formation 1", "Standard Formation 2"],
+
+  // Destruction
+  "Bonesplitterz": ["Standard Formation 1", "Standard Formation 2"],
+  "Gloomspite Gitz": ["Standard Formation 1", "Standard Formation 2"],
+  "Ironjawz": ["Standard Formation 1", "Standard Formation 2"],
+  "Kruleboyz": ["Standard Formation 1", "Standard Formation 2"],
+  "Ogor Mawtribes": ["Standard Formation 1", "Standard Formation 2"],
+  "Sons of Behemat": ["Standard Formation 1", "Standard Formation 2"],
   "Orruk Warclans": [
     "Ironfist",
     "Kruleboyz Fasta",
     "Big Waaagh! Tribe",
     "Bonesplitterz Stampede",
   ],
+
+  // Other
+  "Endless Spells": ["Standard Formation 1", "Standard Formation 2"],
+  
   "Andere Fraktion": ["Standard Formation 1", "Standard Formation 2"],
 };
 
