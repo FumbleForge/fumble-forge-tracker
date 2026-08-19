@@ -113,9 +113,15 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-amber-500 flex items-center justify-center font-sans">
-        <div className="text-center space-y-2">
-          <div className="text-xl font-bold uppercase tracking-widest animate-pulse">
+      <div className="min-h-screen bg-neutral-950 text-amber-500 flex flex-col items-center justify-center font-sans p-4">
+        <div className="text-center space-y-4 max-w-xs">
+          {/* Splash Screen mit eurem Club-Logo */}
+          <img 
+            src="/logo.png" 
+            alt="Fumble Forged Logo" 
+            className="w-32 h-32 mx-auto object-contain rounded-2xl shadow-2xl animate-pulse border border-amber-600/30" 
+          />
+          <div className="text-xl font-bold uppercase tracking-widest text-amber-500">
             Fumble Forged
           </div>
           <p className="text-xs text-neutral-500">
