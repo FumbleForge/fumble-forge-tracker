@@ -436,10 +436,11 @@ const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
 );
 
 export default function AosScoreTracker({ currentUser }) {
-  // Neuer Start-Step: "mode_select" kommt vor "roster"
   const [setupStep, setSetupStep] = useState("mode_select"); // 'mode_select' -> 'roster' -> 'terrain' -> 'playing' -> 'summary'
   const [matchMode, setMatchMode] = useState("single"); // 'single' oder 'tournament'
   const [matchTitle, setMatchTitle] = useState("Freies Spiel");
+  const [totalTournamentRounds, setTotalTournamentRounds] = useState(5); // 3, 5 oder 8
+  const [currentTournamentMatchIndex, setCurrentTournamentMatchIndex] = useState(1);
 
   const [selectedBattleplanId, setSelectedBattleplanId] = useState(
     TERRAIN_BATTLEPLANS[0].id
@@ -708,7 +709,7 @@ export default function AosScoreTracker({ currentUser }) {
         rounds_played: currentRound,
         winner_name: winner,
         details: {
-          match_title: matchTitle,
+          match_title: matchMode === "tournament" ? `${matchTitle} (Spiel ${currentTournamentMatchIndex}/${totalTournamentRounds})` : matchTitle,
           match_mode: matchMode,
           battleplan: activeBp?.name,
           player1_formation: players.player1.formation,
@@ -732,9 +733,29 @@ export default function AosScoreTracker({ currentUser }) {
     }
   };
 
+  const handleNextTournamentMatch = () => {
+    if (currentTournamentMatchIndex < totalTournamentRounds) {
+      setCurrentTournamentMatchIndex(prev => prev + 1);
+      // Nächstes Spiel vorbereiten: VP auf 0 setzen, Runden-History leeren, aber Roster behalten!
+      setCurrentRound(1);
+      setActiveTurnPlayer("player1");
+      setLastTurnPlayerInPrevRound("player2");
+      setTurnHistory([]);
+      setSaveSuccess(false);
+      setPlayers(prev => ({
+        player1: { ...prev.player1, vp: 0, cp: 4, completedStepKeys: [], currentSelectedStepKey: "", isUnderdog: false, scoredRulesByRound: {} },
+        player2: { ...prev.player2, vp: 0, cp: 4, completedStepKeys: [], currentSelectedStepKey: "", isUnderdog: false, scoredRulesByRound: {} }
+      }));
+      setSetupStep("terrain"); // Direkt zum nächsten Battleplan für das nächste Turnierspiel
+    } else {
+      resetMatch();
+    }
+  };
+
   const resetMatch = () => {
     setSetupStep("mode_select");
     setCurrentRound(1);
+    setCurrentTournamentMatchIndex(1);
     setActiveTurnPlayer("player1");
     setLastTurnPlayerInPrevRound("player2");
     setTurnHistory([]);
@@ -760,7 +781,7 @@ export default function AosScoreTracker({ currentUser }) {
     }));
   };
 
-  // NEUER SCHRITT 0: SPIEL- ODER TURNIER-AUSWAHL
+  // SCHRITT 0: MODUS & SETUP AUSWAHL
   if (setupStep === "mode_select") {
     return (
       <div className="max-w-xl mx-auto space-y-6 font-sans py-12">
@@ -768,10 +789,10 @@ export default function AosScoreTracker({ currentUser }) {
           <div className="text-center space-y-2">
             <Swords className="mx-auto text-amber-500" size={36} />
             <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest">
-              Neues Spiel Erstellen
+              Spiel / Turnier Starten
             </h2>
             <p className="text-xs text-neutral-400">
-              Wähle aus, ob du ein einzelnes Match oder ein Turnier-Template starten möchtest.
+              Wähle zwischen einem Einzelspiel oder einem Turnier-Template mit mehreren Runden.
             </p>
           </div>
 
@@ -802,7 +823,7 @@ export default function AosScoreTracker({ currentUser }) {
                   <Swords size={16} /> Einzelnes Spiel
                 </div>
                 <div className="text-[11px] opacity-80">
-                  Standard 1v1 Scharmützel
+                  Klassisches 1v1 Scharmützel
                 </div>
               </button>
 
@@ -818,10 +839,33 @@ export default function AosScoreTracker({ currentUser }) {
                   <Trophy size={16} /> Turnier Template
                 </div>
                 <div className="text-[11px] opacity-80">
-                  Event / Runden-Verwaltung
+                  Mehrere Spiele am Stück
                 </div>
               </button>
             </div>
+
+            {matchMode === "tournament" && (
+              <div className="space-y-2 pt-2 border-t border-neutral-800 animate-fadeIn">
+                <label className="block text-xs uppercase font-bold text-amber-400">
+                  Anzahl Spiele im Turnier:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[3, 5, 8].map((numRounds) => (
+                    <button
+                      key={numRounds}
+                      onClick={() => setTotalTournamentRounds(numRounds)}
+                      className={`py-2.5 rounded-lg border text-xs font-bold transition ${
+                        totalTournamentRounds === numRounds
+                          ? "bg-amber-600 text-neutral-950 border-amber-500"
+                          : "bg-neutral-950 text-neutral-300 border-neutral-800 hover:bg-neutral-800"
+                      }`}
+                    >
+                      {numRounds} Spiele
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <button
@@ -841,7 +885,10 @@ export default function AosScoreTracker({ currentUser }) {
         <header className="border-b border-amber-600/30 pb-4 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest flex items-center gap-2">
-              <Swords className="text-amber-500" /> Roster & Taktiken: <span className="text-neutral-200 text-lg font-normal">{matchTitle}</span>
+              <Swords className="text-amber-500" /> Roster & Taktiken:{" "}
+              <span className="text-neutral-200 text-lg font-normal">
+                {matchMode === "tournament" ? `${matchTitle} (Spiel ${currentTournamentMatchIndex}/${totalTournamentRounds})` : matchTitle}
+              </span>
             </h2>
             <p className="text-xs text-neutral-400">
               Wähle Fraktion, Formation und 2 Battle Tactics pro Spieler
@@ -851,7 +898,7 @@ export default function AosScoreTracker({ currentUser }) {
             onClick={() => setSetupStep("mode_select")}
             className="text-xs text-neutral-400 hover:text-amber-400 underline"
           >
-            Titel ändern
+            Ändern
           </button>
         </header>
 
@@ -1010,7 +1057,7 @@ export default function AosScoreTracker({ currentUser }) {
               Terrain Location / Battleplan
             </h2>
             <p className="text-xs text-neutral-400">
-              Wähle das Szenario aus den 12 offiziellen GHB Terrain Locations
+              {matchMode === "tournament" ? `Turnierspiel ${currentTournamentMatchIndex} von ${totalTournamentRounds}` : "Freies Spiel"} • Wähle das Szenario
             </p>
           </div>
 
@@ -1076,6 +1123,8 @@ export default function AosScoreTracker({ currentUser }) {
     const winnerName = p1.vp > p2.vp ? p1.name : p2.name;
     const winnerFaction = p1.vp > p2.vp ? p1.faction : p2.faction;
 
+    const isLastTournamentMatch = matchMode === "tournament" && currentTournamentMatchIndex >= totalTournamentRounds;
+
     return (
       <div className="max-w-4xl mx-auto space-y-6 font-sans py-6">
         <div className="bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-amber-500/50 rounded-2xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
@@ -1085,7 +1134,7 @@ export default function AosScoreTracker({ currentUser }) {
 
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              {matchTitle} • Ergebnis
+              {matchTitle} {matchMode === "tournament" ? `• Spiel ${currentTournamentMatchIndex} von ${totalTournamentRounds}` : ""} • Ergebnis
             </span>
             <h1 className="text-3xl font-black text-amber-400 uppercase tracking-wider">
               {isTie ? "Unentschieden!" : `${winnerName} Siegt!`}
@@ -1204,12 +1253,21 @@ export default function AosScoreTracker({ currentUser }) {
               : "Match Speichern"}
           </button>
 
-          <button
-            onClick={resetMatch}
-            className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition border border-neutral-700"
-          >
-            <RotateCcw size={18} /> Neues Match Starten
-          </button>
+          {matchMode === "tournament" && !isLastTournamentMatch ? (
+            <button
+              onClick={handleNextTournamentMatch}
+              className="flex-1 bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg"
+            >
+              Nächstes Turnierspiel ({currentTournamentMatchIndex + 1}/{totalTournamentRounds}) <ArrowRight size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={resetMatch}
+              className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition border border-neutral-700"
+            >
+              <RotateCcw size={18} /> {matchMode === "tournament" ? "Turnier Beenden" : "Neues Match Starten"}
+            </button>
+          )}
         </div>
 
         {errorMsg && (
@@ -1234,10 +1292,11 @@ export default function AosScoreTracker({ currentUser }) {
             <Swords className="text-amber-500" /> AoS Score Tracker
           </h2>
           <p className="text-xs text-neutral-400">
-            <span className="text-amber-400 font-bold">{matchTitle}</span> • {players.player1.faction} vs. {players.player2.faction} •{" "}
-            <span className="text-neutral-300">
-              {currentBpObj?.name}
-            </span>
+            <span className="text-amber-400 font-bold">
+              {matchMode === "tournament" ? `${matchTitle} (Spiel ${currentTournamentMatchIndex}/${totalTournamentRounds})` : matchTitle}
+            </span>{" "}
+            • {players.player1.faction} vs. {players.player2.faction} •{" "}
+            <span className="text-neutral-300">{currentBpObj?.name}</span>
           </p>
         </div>
 
