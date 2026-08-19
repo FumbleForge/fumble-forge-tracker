@@ -8,22 +8,26 @@ export default function AdminPanel({
   onRejectUser,
   onDeleteUser,
 }) {
-  // Absolute Sicherheit: Nur du (anhand der E-Mail oder UID) bist der Admin
+  // Flexibler gemacht: Prüft E-Mail ODER Admin-Rolle aus der Datenbank
   const isMasterAdmin = 
     currentUser?.email === 'namebereitsvergeben@gmail.com' || 
+    currentUser?.role === 'admin' ||
     currentUser?.id === 'eceb801d-9bb4-492d-5ec7a6b98bb1';
 
   if (!isMasterAdmin) {
     return (
       <div className="max-w-4xl mx-auto p-8 text-center text-red-400 bg-neutral-900 rounded-xl border border-red-900/50">
         <h3 className="text-lg font-bold mb-2">Zugriff verweigert</h3>
-        <p className="text-xs text-neutral-400">Dieser Bereich ist exklusiv für LordFumbledoom reserviert.</p>
+        <p className="text-xs text-neutral-400">Dieser Bereich ist exklusiv für Admins reserviert.</p>
       </div>
     );
   }
 
-  const pendingUsers = users.filter((u) => u.status === "pending");
-  const approvedUsers = users.filter((u) => u.status === "approved");
+  // Fallback, falls users undefined ist
+  const safeUsers = Array.isArray(users) ? users : [];
+
+  const pendingUsers = safeUsers.filter((u) => u.status === "pending");
+  const approvedUsers = safeUsers.filter((u) => u.status === "approved" || !u.status); // Fallback falls Status fehlt
 
   // Hilfsfunktion zur Namensanzeige (greift auf Name, Username oder E-Mail-Präfix zurück)
   const getUserDisplayName = (u) => {
@@ -37,8 +41,7 @@ export default function AdminPanel({
           <ShieldCheck className="text-amber-500" /> Admin-Verwaltung
         </h2>
         <p className="text-xs text-neutral-400">
-          Exklusiver Bereich für LordFumbledoom zur Mitgliederfreigabe und
-          Nutzerverwaltung
+          Exklusiver Bereich zur Mitgliederfreigabe und Nutzerverwaltung
         </p>
       </header>
 
@@ -94,39 +97,45 @@ export default function AdminPanel({
         </h3>
 
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-          <div className="divide-y divide-neutral-800">
-            {approvedUsers.map((u) => (
-              <div
-                key={u.id}
-                className="p-4 flex items-center justify-between text-xs"
-              >
-                <div>
-                  <div className="font-bold text-neutral-200 flex items-center gap-2">
-                    {getUserDisplayName(u)}
-                    {u.role === "admin" && (
-                      <span className="bg-amber-600/20 border border-amber-600/40 text-amber-500 text-[10px] px-2 py-0.5 rounded">
-                        Admin
-                      </span>
-                    )}
+          {approvedUsers.length === 0 ? (
+            <div className="p-6 text-xs text-neutral-500 italic">
+              Keine aktiven Mitglieder gefunden (oder Liste wird noch geladen).
+            </div>
+          ) : (
+            <div className="divide-y divide-neutral-800">
+              {approvedUsers.map((u) => (
+                <div
+                  key={u.id}
+                  className="p-4 flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <div className="font-bold text-neutral-200 flex items-center gap-2">
+                      {getUserDisplayName(u)}
+                      {u.role === "admin" && (
+                        <span className="bg-amber-600/20 border border-amber-600/40 text-amber-500 text-[10px] px-2 py-0.5 rounded">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-neutral-500">
+                      {u.email} {u.club ? `• ${u.club}` : ""}
+                    </div>
                   </div>
-                  <div className="text-neutral-500">
-                    {u.email} {u.club ? `• ${u.club}` : ""}
-                  </div>
-                </div>
 
-                {/* Admins dürfen sich nicht selbst löschen */}
-                {u.role !== "admin" && (
-                  <button
-                    onClick={() => onDeleteUser(u.id)}
-                    className="text-neutral-500 hover:text-red-400 p-2 transition"
-                    title="Mitglied löschen"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+                  {/* Admins dürfen sich nicht selbst löschen */}
+                  {u.role !== "admin" && currentUser?.id !== u.id && (
+                    <button
+                      onClick={() => onDeleteUser(u.id)}
+                      className="text-neutral-500 hover:text-red-400 p-2 transition"
+                      title="Mitglied löschen"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
