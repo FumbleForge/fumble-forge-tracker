@@ -740,13 +740,11 @@ export default function AosScoreTracker({ currentUser }) {
         details: {
           match_title: matchMode === "tournament" ? `${matchTitle} [Turnier - Spiel ${currentTournamentMatchIndex}/${totalTournamentRounds}]` : matchTitle,
           match_mode: matchMode,
-          battleplan: activeBp?.name,
           player1_faction: players.player1.faction,
           player2_faction: players.player2.faction,
           player1_formation: players.player1.formation,
           player2_formation: players.player2.formation,
-          player1_cards: players.player1.chosenCardIds,
-          player2_cards: players.player2.chosenCardIds,
+          battleplan: activeBp?.name,
           history: turnHistory,
         },
       };
@@ -808,6 +806,7 @@ export default function AosScoreTracker({ currentUser }) {
       const totalP2Wins = allMatches.filter(m => m.winner === players.player2.name).length;
       const tournamentWinner = totalP1Wins > totalP2Wins ? players.player1.name : totalP2Wins > totalP1Wins ? players.player2.name : "Turnier-Unentschieden";
 
+      // HIER WIRD DER VOLLSTÄNDIGE TURNIER-BLOCK ERZEUGT
       const tournamentData = {
         user_id: currentUser.id,
         player1_name: players.player1.name,
@@ -815,13 +814,13 @@ export default function AosScoreTracker({ currentUser }) {
         player1_vp: allMatches.reduce((acc, m) => acc + m.p1Vp, 0),
         player2_vp: allMatches.reduce((acc, m) => acc + m.p2Vp, 0),
         rounds_played: totalTournamentRounds,
-        winner_name: `${matchTitle} (Turniersieger: ${tournamentWinner})`,
+        winner_name: tournamentWinner,
         details: {
-          match_title: `${matchTitle} [Komplettes Turnier: ${totalTournamentRounds} Runden]`,
+          match_title: `Turnier: ${matchTitle}`,
           match_mode: "tournament_complete",
           player1_faction: players.player1.faction,
           player2_faction: players.player2.faction,
-          tournament_rounds: allMatches,
+          tournament_rounds: allMatches, // Enthält alle Einzelspiele (Spiel 1, Spiel 2...) für die hierarchische Ansicht im Profil
         },
       };
 
