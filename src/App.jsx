@@ -6,6 +6,7 @@ import {
   User,
   ShieldCheck,
   LogOut,
+  Download,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
@@ -18,6 +19,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("score");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  
+  // PWA Installations-State für Android/Chrome
+  const [installPrompt, setInstallPrompt] = useState(null);
 
   // Supabase Session und User-Liste beim Start prüfen
   useEffect(() => {
@@ -60,10 +64,28 @@ export default function App() {
       }
     );
 
+    // Listener für das automatische PWA-Installations-Event (Android/Chrome)
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
     return () => {
       authListener.subscription.unsubscribe();
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") {
+      setInstallPrompt(null);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -211,20 +233,40 @@ export default function App() {
           </nav>
         </div>
 
-        {/* User Status & Logout */}
-        <div className="pt-6 border-t border-neutral-800 flex items-center justify-between">
-          <div className="text-xs">
-            <div className="font-bold text-neutral-200">
-              {user.username || user.name}
-            </div>
-            <div className="text-neutral-500">{user.club}</div>
+        {/* PWA INSTALLATIONS-BEREICH & USER FOOTER */}
+        <div className="space-y-4 pt-6 border-t border-neutral-800">
+          {/* Direkt-Installationsbutton, falls Android/Chrome das Event feuert */}
+          {installPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg text-xs font-bold bg-amber-600 text-neutral-950 hover:bg-amber-500 transition shadow-lg animate-pulse"
+            >
+              <Download size={16} /> App auf Startbildschirm
+            </button>
+          )}
+
+          {/* Kurze Anleitung für alle Geräte */}
+          <div className="text-[11px] text-neutral-500 space-y-1 bg-neutral-950/40 p-2.5 rounded-lg border border-neutral-800">
+            <p className="font-bold text-neutral-400">📱 Als App installieren:</p>
+            <p>• <strong>Android:</strong> 3 Punkte ➔ &quot;App installieren&quot;</p>
+            <p>• <strong>iPhone:</strong> Teilen-Button ➔ &quot;Zum Home-Bildschirm&quot;</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-neutral-500 hover:text-red-400 p-2 transition"
-          >
-            <LogOut size={18} />
-          </button>
+
+          {/* User Status & Logout */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="text-xs">
+              <div className="font-bold text-neutral-200">
+                {user.username || user.name}
+              </div>
+              <div className="text-neutral-500">{user.club}</div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="text-neutral-500 hover:text-red-400 p-2 transition"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </aside>
 
