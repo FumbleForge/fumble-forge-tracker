@@ -17,13 +17,15 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("score");
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
 
-  // Supabase Session beim Start prüfen
+  // Supabase Session und User-Liste beim Start prüfen
   useEffect(() => {
     const checkSession = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      
       if (session?.user) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -35,6 +37,16 @@ export default function App() {
           setUser({ ...session.user, ...profile });
         }
       }
+
+      // Alle User-Profile für das Admin-Panel laden
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("*");
+      
+      if (allProfiles) {
+        setUsers(allProfiles);
+      }
+
       setLoading(false);
     };
 
@@ -62,6 +74,40 @@ export default function App() {
     setUser({ ...user, ...updatedData });
   };
 
+  // Handler für das Admin-Panel (Freigeben, Ablehnen, Löschen)
+  const handleApproveUser = async (userId) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: "approved" })
+      .eq("id", userId);
+
+    if (!error) {
+      setUsers(users.map(u => u.id === userId ? { ...u, status: "approved" } : u));
+    }
+  };
+
+  const handleRejectUser = async (userId) => {
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+
+    if (!error) {
+      setUsers(users.filter(u => u.id !== userId));
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+
+    if (!error) {
+      setUsers(users.filter(u => u.id !== userId));
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-950 text-amber-500 flex items-center justify-center font-sans">
@@ -80,6 +126,9 @@ export default function App() {
   if (!user) {
     return <LoginView onLogin={(userData) => setUser(userData)} />;
   }
+
+  // Prüfen ob der Nutzer Admin ist (entweder Rolle oder deine feste Master-E-Mail)
+  const isAdmin = user.role === "admin" || user.email === "namebereitsvergeben@gmail.com";
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col md:flex-row font-sans">
@@ -138,7 +187,7 @@ export default function App() {
               <User size={18} /> Profil
             </button>
 
-            {user.role === "admin" && (
+            {isAdmin && (
               <button
                 onClick={() => setActiveTab("admin")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -199,9 +248,15 @@ export default function App() {
           <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />
         )}
 
-        {activeTab === "admin" && (user.role === "admin" || user.email === "namebereitsvergeben@gmail.com") && (
-  <AdminPanel currentUser={user} />
-)}
+        {activeTab === "admin" && isAdmin && (
+          <AdminPanel 
+            currentUser={user} 
+            users={users} 
+            onApproveUser={handleApproveUser}
+            onRejectUser={handleRejectUser}
+            onDeleteUser={handleDeleteUser}
+          />
+        )}
       </main>
     </div>
   );
