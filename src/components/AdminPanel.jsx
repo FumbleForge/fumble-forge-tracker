@@ -2,11 +2,26 @@ import React from "react";
 import { ShieldCheck, Check, X, Trash2, UserCheck, Clock } from "lucide-react";
 
 export default function AdminPanel({
-  users,
+  users = [],
+  currentUser,
   onApproveUser,
   onRejectUser,
   onDeleteUser,
 }) {
+  // Absolute Sicherheit: Nur du (anhand der E-Mail oder UID) bist der Admin
+  const isMasterAdmin = 
+    currentUser?.email === 'namebereitsvergeben@gmail.com' || 
+    currentUser?.id === 'eceb801d-9bb4-492d-5ec7a6b98bb1';
+
+  if (!isMasterAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 text-center text-red-400 bg-neutral-900 rounded-xl border border-red-900/50">
+        <h3 className="text-lg font-bold mb-2">Zugriff verweigert</h3>
+        <p className="text-xs text-neutral-400">Dieser Bereich ist exklusiv für LordFumbledoom reserviert.</p>
+      </div>
+    );
+  }
+
   const pendingUsers = users.filter((u) => u.status === "pending");
   const approvedUsers = users.filter((u) => u.status === "approved");
 
