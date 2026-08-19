@@ -821,9 +821,13 @@ export default function AosScoreTracker({ currentUser }) {
 
       await supabase.from("matches").insert([tournamentData]);
       setSaveSuccess(true);
+      
+      // Nach erfolgreichem Speichern des Gesamtturniers zurück zum Start-Screen
+      setTimeout(() => {
+        resetMatch();
+      }, 1500);
     } catch (err) {
       console.error("Fehler beim Speichern des Turniers:", err);
-    } finally {
       setSaving(false);
     }
   };
@@ -1743,7 +1747,7 @@ export default function AosScoreTracker({ currentUser }) {
           </div>
         ) : (
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {turnHistory.log?.map?.() || turnHistory.map((log, idx) => (
+            {turnHistory.map((log, idx) => (
               <div
                 key={idx}
                 className="bg-neutral-950 border border-neutral-800/80 p-2.5 rounded-lg text-xs flex justify-between items-center"
