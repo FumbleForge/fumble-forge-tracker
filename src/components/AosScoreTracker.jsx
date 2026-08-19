@@ -207,222 +207,232 @@ const TERRAIN_BATTLEPLANS = [
   },
 ];
 
-const FACTION_CATALOG = {
-  // Order
-  "Cities of Sigmar": [
-    "Collegiate Exemplars",
-    "Stalwart Guardians",
-    "Swift Reinforcements",
-    "Zealous Hordes",
-    "Allies of the Free Cities",
-    "The Iron March",
-  ],
-  "Daughters of Khaine": [
-    "Cold-Hearted Murderers",
-    "Coven of Blood",
-    "Fervent Ritualists",
-    "Frenzied Devotees",
-    "Champions of the Arena",
-    "The Croneseer's Pariahs",
-    "Zainthar Kai",
-  ],
-  "Fyreslayers": [
-    "Forge Brethren",
-    "Lords of the Lodge",
-    "Scales of Vulcatrix",
-    "Warrior Kinband",
-    "Lofnir Drothkeepers",
-  ],
-  "Idoneth Deepkin": [
-    "Akhelian Beastmasters",
-    "Isharann Council",
-    "Namarti Corps",
-    "Soul-raid Ambushers",
-    "The First Phalanx of Ionrach",
-    "Wardens of the Chorrileum",
-  ],
-  "Kharadron Overlords": [
-    "Endrineers Guild Expeditionary Force", 
-    "Pioneers and Scavengers",
-    "Rapid Redeployment Squadron",
-    "Veteran Ground Troops",
-    "Grundstok Expeditionary Force",
-    "Pioneers Outpost",
-    "The Magnate's Crew",
-  ],
-  "Lumineth Realm-lords": [
-    "Aelementor Guardians", 
-    "Pilgrims of Haixiah",
-    "Scinari Council",
-    "Warhost of Duality",
-    "Aelementari Conclave",
-    "Vanari Paragons",
-  ],
-  "Seraphon": [
-    "Eternal Starhost", 
-    "Shadowstrike Starhost",
-    "Sunclaw Starhost",
-    "Thunderquake Starhost",
-  ],
-  "Stormcast Eternals": [
-    "Sacrosant Convocation",
-    "Lightning Echelon",
-    "Sentinels of the Black Citadels",
-    "Thunderhead Host",
-    "Vanguard Wing",
-    "Draconith Skywing",
-    "Heroes of the First-Forge",
-    "Ruination Brotherhood",
-  ],
-  "Sylvaneth": [
-    "Outcast",
-    "Lords of the Clan",
-    "Glade Defenders",
-    "Followers of Kurnoth",
-    "AoR Lords of the Clan",
-    "Soulpod Guardians",
-    "The Evergreen Hunt",
-  ],
-
-  // Chaos
-  "Blades of Khorne": [
-    "Bloodbound Warhorde", 
-    "Brass Stampede",
-    "Khornate Legion",
-    "Murderhost",
-    "Gorechosen Champions",
-    "The Baleful Lords",
-  ],
-  "Disciples of Tzeentch": [
-    "Denizens of the Silver Tower", 
-    "Fated Blades",
-    "Malevolent Schemers",
-    "Mutants and Mad Things",
-    "Change-Cult Uprising",
-    "The Oracles of Fate",
-  ],
-  "Hedonites of Slaanesh": [
-    "Artisans of Torment", 
-    "Depraved Carnival",
-    "Godseeker Cavalcade",
-    "Lurid Dreamers",
-    "Court of the Godlings",
-    "The Decadent Host",
-  ],
-  "Helmsmiths of Hashut": [
-    "Castigation Battery", 
-    "Deamonsmith Cabal",
-    "Hashutite Host",
-    "The Bullfather's Horns",
-    "Taar's Grand Forgehost",
-    "Ziggurat Stampede",
-  ],
-  "Maggotkin of Nurgle": [
-    "Affliction Cyst", 
-    "Nurgle's Menagerie",
-    "Plague Cyst",
-    "Tallyband of Nurgle",
-    "Cycle of Corruption",
-    "The Gardeners of Nurgle",
-  ],
-  "Skaven": [
-    "Kill-Pack",
-    "Fleshmeld Menagerie",
-    "Claw-horde",
-    "Virulent Procession",
-    "Warpcog Convocation",
-    "Thanquol's Mutated Menagerie",
-    "The Great-Grand Gnawhorde",
-  ],
-  "Slaves to Darkness": [
-    "Darkoath Horde",
-    "Despoilers",
-    "Godswrath Warband",
-    "Legion of Chaos",
-    "Legion of the First Prince",
-    "The Swords of Chaos",
-    "Tribes of the Snow Peaks",
-  ],
-
-  // Death
-  "Flesh-eater Courts": [
-    "Knightly Echelon", 
-    "Lords of the Manor",
-    "Royal Menagerie",
-    "The Royal Hunt",
-    "The Equinox Feast",
-    "The Knights of New Summercourt",
-  ],
-  "Nighthaunt": [
-    "Death Stalkers", 
-    "Quicksilver Gheists",
-    "Royal Procession",
-    "Shrieker Host",
-    "The Clattering Procession",
-    "The Eternal Nightmare",
-  ],
-  "Ossiarch Bonereapers": [
-    "Border Guards", 
-    "Remorseless Conquerors",
-    "Ruthless Legion",
-    "The Inevitable Empire",
-    "The Lance of Ossia",
-    "The Null Myriad",
-  ],
-  "Soulblight Gravelords": [
-    "Legions of Ulfenkarn", 
-    "Bacchanal of Blood",
-    "Deathmarch",
-    "Deathstench Drove",
-    "Legion of Shyish",
-  ],
-
-  // Destruction
-  "Gloomspite Gitz": [
-    "Gitmob Pack", 
-    "Gloomspite Horde",
-    "Squigalanche",
-    "Troggherd",
-    "Da King's Gitz",
-    "Droggz's Gitmob",
-    "Trugg's Troggherd",
-  ],
-  "Ironjawz": [
-    "Grunta Stampede", 
-    "Ironfist",
-    "Ironjawz Brawl",
-    "Weirdfist",
-    "Big Waaagh!",
-    "Krazogg's Grunta Stampede",
-    "Murkvast Menagerie",
-    "Zoggrok's Ironmongerz",
-  ],
-  "Kruleboyz": [
-    "Kruleboyz Klaw", 
-    "Light Finga",
-    "Middul Finga",
-    "Trophy Finga",
-    "Big Waaagh!",
-    "Krazogg's Grunta Stampede",
-    "Murkvast Menagerie",
-    "Zoggrok's Ironmongerz",
-  ],
-  "Ogor Mawtribes": [
-    "Beast Handlers", 
-    "Blackpowder Fanatics",
-    "Heralds of the Everwinter",
-    "Prophets of the Gulping God",
-    "The Roving Maw",
-  ],
-  "Sons of Behemat": [
-    "Boss Tribe", 
-    "Breaker Tribe",
-    "Stomper Tribe",
-    "Taker Tribe",
-    "King Brodd's Stomp",
-  ],
-  
+// FRAKTIONEN GRUPPIERT NACH GRAND ALLIANCE
+const FACTION_GROUPS = {
+  Order: {
+    "Cities of Sigmar": [
+      "Collegiate Exemplars",
+      "Stalwart Guardians",
+      "Swift Reinforcements",
+      "Zealous Hordes",
+      "Allies of the Free Cities",
+      "The Iron March",
+    ],
+    "Daughters of Khaine": [
+      "Cold-Hearted Murderers",
+      "Coven of Blood",
+      "Fervent Ritualists",
+      "Frenzied Devotees",
+      "Champions of the Arena",
+      "The Croneseer's Pariahs",
+      "Zainthar Kai",
+    ],
+    "Fyreslayers": [
+      "Forge Brethren",
+      "Lords of the Lodge",
+      "Scales of Vulcatrix",
+      "Warrior Kinband",
+      "Lofnir Drothkeepers",
+    ],
+    "Idoneth Deepkin": [
+      "Akhelian Beastmasters",
+      "Isharann Council",
+      "Namarti Corps",
+      "Soul-raid Ambushers",
+      "The First Phalanx of Ionrach",
+      "Wardens of the Chorrileum",
+    ],
+    "Kharadron Overlords": [
+      "Endrineers Guild Expeditionary Force", 
+      "Pioneers and Scavengers",
+      "Rapid Redeployment Squadron",
+      "Veteran Ground Troops",
+      "Grundstok Expeditionary Force",
+      "Pioneers Outpost",
+      "The Magnate's Crew",
+    ],
+    "Lumineth Realm-lords": [
+      "Aelementor Guardians", 
+      "Pilgrims of Haixiah",
+      "Scinari Council",
+      "Warhost of Duality",
+      "Aelementari Conclave",
+      "Vanari Paragons",
+    ],
+    "Seraphon": [
+      "Eternal Starhost", 
+      "Shadowstrike Starhost",
+      "Sunclaw Starhost",
+      "Thunderquake Starhost",
+    ],
+    "Stormcast Eternals": [
+      "Sacrosant Convocation",
+      "Lightning Echelon",
+      "Sentinels of the Black Citadels",
+      "Thunderhead Host",
+      "Vanguard Wing",
+      "Draconith Skywing",
+      "Heroes of the First-Forge",
+      "Ruination Brotherhood",
+    ],
+    "Sylvaneth": [
+      "Outcast",
+      "Lords of the Clan",
+      "Glade Defenders",
+      "Followers of Kurnoth",
+      "AoR Lords of the Clan",
+      "Soulpod Guardians",
+      "The Evergreen Hunt",
+    ],
+  },
+  Chaos: {
+    "Blades of Khorne": [
+      "Bloodbound Warhorde", 
+      "Brass Stampede",
+      "Khornate Legion",
+      "Murderhost",
+      "Gorechosen Champions",
+      "The Baleful Lords",
+    ],
+    "Disciples of Tzeentch": [
+      "Denizens of the Silver Tower", 
+      "Fated Blades",
+      "Malevolent Schemers",
+      "Mutants and Mad Things",
+      "Change-Cult Uprising",
+      "The Oracles of Fate",
+    ],
+    "Hedonites of Slaanesh": [
+      "Artisans of Torment", 
+      "Depraved Carnival",
+      "Godseeker Cavalcade",
+      "Lurid Dreamers",
+      "Court of the Godlings",
+      "The Decadent Host",
+    ],
+    "Helmsmiths of Hashut": [
+      "Castigation Battery", 
+      "Deamonsmith Cabal",
+      "Hashutite Host",
+      "The Bullfather's Horns",
+      "Taar's Grand Forgehost",
+      "Ziggurat Stampede",
+    ],
+    "Maggotkin of Nurgle": [
+      "Affliction Cyst", 
+      "Nurgle's Menagerie",
+      "Plague Cyst",
+      "Tallyband of Nurgle",
+      "Cycle of Corruption",
+      "The Gardeners of Nurgle",
+    ],
+    "Skaven": [
+      "Kill-Pack",
+      "Fleshmeld Menagerie",
+      "Claw-horde",
+      "Virulent Procession",
+      "Warpcog Convocation",
+      "Thanquol's Mutated Menagerie",
+      "The Great-Grand Gnawhorde",
+    ],
+    "Slaves to Darkness": [
+      "Darkoath Horde",
+      "Despoilers",
+      "Godswrath Warband",
+      "Legion of Chaos",
+      "Legion of the First Prince",
+      "The Swords of Chaos",
+      "Tribes of the Snow Peaks",
+    ],
+  },
+  Death: {
+    "Flesh-eater Courts": [
+      "Knightly Echelon", 
+      "Lords of the Manor",
+      "Royal Menagerie",
+      "The Royal Hunt",
+      "The Equinox Feast",
+      "The Knights of New Summercourt",
+    ],
+    "Nighthaunt": [
+      "Death Stalkers", 
+      "Quicksilver Gheists",
+      "Royal Procession",
+      "Shrieker Host",
+      "The Clattering Procession",
+      "The Eternal Nightmare",
+    ],
+    "Ossiarch Bonereapers": [
+      "Border Guards", 
+      "Remorseless Conquerors",
+      "Ruthless Legion",
+      "The Inevitable Empire",
+      "The Lance of Ossia",
+      "The Null Myriad",
+    ],
+    "Soulblight Gravelords": [
+      "Legions of Ulfenkarn", 
+      "Bacchanal of Blood",
+      "Deathmarch",
+      "Deathstench Drove",
+      "Legion of Shyish",
+    ],
+  },
+  Destruction: {
+    "Gloomspite Gitz": [
+      "Gitmob Pack", 
+      "Gloomspite Horde",
+      "Squigalanche",
+      "Troggherd",
+      "Da King's Gitz",
+      "Droggz's Gitmob",
+      "Trugg's Troggherd",
+    ],
+    "Ironjawz": [
+      "Grunta Stampede", 
+      "Ironfist",
+      "Ironjawz Brawl",
+      "Weirdfist",
+      "Big Waaagh!",
+      "Krazogg's Grunta Stampede",
+      "Murkvast Menagerie",
+      "Zoggrok's Ironmongerz",
+    ],
+    "Kruleboyz": [
+      "Kruleboyz Klaw", 
+      "Light Finga",
+      "Middul Finga",
+      "Trophy Finga",
+      "Big Waaagh!",
+      "Krazogg's Grunta Stampede",
+      "Murkvast Menagerie",
+      "Zoggrok's Ironmongerz",
+    ],
+    "Ogor Mawtribes": [
+      "Beast Handlers", 
+      "Blackpowder Fanatics",
+      "Heralds of the Everwinter",
+      "Prophets of the Gulping God",
+      "The Roving Maw",
+    ],
+    "Sons of Behemat": [
+      "Boss Tribe", 
+      "Breaker Tribe",
+      "Stomper Tribe",
+      "Taker Tribe",
+      "King Brodd's Stomp",
+    ],
+  },
+  Other: {
+    "Andere Fraktion": ["Standard Formation 1", "Standard Formation 2"],
+  }
 };
+
+// Flacher Katalog zur einfachen Abfrage von Formationen im Hintergrund
+const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
+  (acc, group) => ({ ...acc, ...group }),
+  {}
+);
 
 export default function AosScoreTracker({ currentUser }) {
   const [setupStep, setSetupStep] = useState("roster"); // 'roster' -> 'terrain' -> 'playing' -> 'summary'
@@ -794,10 +804,14 @@ export default function AosScoreTracker({ currentUser }) {
                     onChange={(e) => handleFactionChange(pKey, e.target.value)}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm"
                   >
-                    {Object.keys(FACTION_CATALOG).map((f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
+                    {Object.entries(FACTION_GROUPS).map(([groupName, factions]) => (
+                      <optgroup key={groupName} label={`--- ${groupName} ---`}>
+                        {Object.keys(factions).map((factionName) => (
+                          <option key={factionName} value={factionName}>
+                            {factionName}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
