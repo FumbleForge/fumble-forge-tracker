@@ -261,7 +261,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       </form>
 
-      {/* Commander Statistik Dashboard (Neu hinzugefügt) */}
+      {/* Commander Statistik Dashboard */}
       <StatsDashboard matches={matches} username={username} />
 
       <div className="space-y-4 pt-4 border-t border-neutral-800">
@@ -279,14 +279,31 @@ export default function UserProfile({ user, onUpdateProfile }) {
             {matches.map((m) => (
               <div
                 key={m.id}
-                className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex justify-between items-center"
+                className={`bg-neutral-950 border p-4 rounded-xl flex justify-between items-center ${
+                  m.details?.match_mode === "tournament_complete"
+                    ? "border-amber-600/50"
+                    : "border-neutral-800"
+                }`}
               >
                 <div className="flex flex-col gap-1">
-                  <div className="text-xs text-neutral-300">
-                    <span className="font-bold">{m.player1_name}</span> vs{" "}
-                    <span className="font-bold">{m.player2_name}</span> |
-                    Sieger: {m.winner_name}
-                  </div>
+                  {/* Unterscheidung zwischen Turnier und Einzelspiel */}
+                  {m.details?.match_mode === "tournament_complete" ? (
+                    <div className="space-y-1">
+                      <div className="text-sm font-bold text-amber-500 flex items-center gap-2">
+                        <Trophy size={14} /> {m.details.match_title} (Turnier)
+                      </div>
+                      <div className="text-[11px] text-neutral-400">
+                        Sieger: {m.winner_name} | Runden: {m.rounds_played} | Gesamt-VP: {m.player1_vp} vs {m.player2_vp}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-neutral-300">
+                      <span className="font-bold">{m.player1_name}</span> vs{" "}
+                      <span className="font-bold">{m.player2_name}</span> |
+                      Sieger: {m.winner_name}
+                    </div>
+                  )}
+
                   {/* Datum-Anzeige */}
                   <div className="text-[10px] text-neutral-500 font-mono">
                     Abgeschlossen am:{" "}
