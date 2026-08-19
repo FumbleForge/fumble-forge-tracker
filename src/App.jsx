@@ -199,7 +199,9 @@ export default function App() {
           <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />
         )}
 
-        {activeTab === "admin" && user.role === "admin" && <AdminPanel />}
+        {activeTab === "admin" && (user.role === "admin" || user.email === "namebereitsvergeben@gmail.com") && (
+  <AdminPanel currentUser={user} />
+)}
       </main>
     </div>
   );
