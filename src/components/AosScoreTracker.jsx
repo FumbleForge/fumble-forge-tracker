@@ -14,6 +14,8 @@ import {
   Trophy,
   RotateCcw,
   Award,
+  Calendar,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -428,14 +430,17 @@ const FACTION_GROUPS = {
   }
 };
 
-// Flacher Katalog zur einfachen Abfrage von Formationen im Hintergrund
 const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
   (acc, group) => ({ ...acc, ...group }),
   {}
 );
 
 export default function AosScoreTracker({ currentUser }) {
-  const [setupStep, setSetupStep] = useState("roster"); // 'roster' -> 'terrain' -> 'playing' -> 'summary'
+  // Neuer Start-Step: "mode_select" kommt vor "roster"
+  const [setupStep, setSetupStep] = useState("mode_select"); // 'mode_select' -> 'roster' -> 'terrain' -> 'playing' -> 'summary'
+  const [matchMode, setMatchMode] = useState("single"); // 'single' oder 'tournament'
+  const [matchTitle, setMatchTitle] = useState("Freies Spiel");
+
   const [selectedBattleplanId, setSelectedBattleplanId] = useState(
     TERRAIN_BATTLEPLANS[0].id
   );
@@ -703,6 +708,8 @@ export default function AosScoreTracker({ currentUser }) {
         rounds_played: currentRound,
         winner_name: winner,
         details: {
+          match_title: matchTitle,
+          match_mode: matchMode,
           battleplan: activeBp?.name,
           player1_formation: players.player1.formation,
           player2_formation: players.player2.formation,
@@ -726,7 +733,7 @@ export default function AosScoreTracker({ currentUser }) {
   };
 
   const resetMatch = () => {
-    setSetupStep("roster");
+    setSetupStep("mode_select");
     setCurrentRound(1);
     setActiveTurnPlayer("player1");
     setLastTurnPlayerInPrevRound("player2");
@@ -753,17 +760,99 @@ export default function AosScoreTracker({ currentUser }) {
     }));
   };
 
+  // NEUER SCHRITT 0: SPIEL- ODER TURNIER-AUSWAHL
+  if (setupStep === "mode_select") {
+    return (
+      <div className="max-w-xl mx-auto space-y-6 font-sans py-12">
+        <div className="bg-neutral-900 border border-amber-600/40 rounded-2xl p-6 space-y-6 shadow-2xl">
+          <div className="text-center space-y-2">
+            <Swords className="mx-auto text-amber-500" size={36} />
+            <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest">
+              Neues Spiel Erstellen
+            </h2>
+            <p className="text-xs text-neutral-400">
+              Wähle aus, ob du ein einzelnes Match oder ein Turnier-Template starten möchtest.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs uppercase font-bold text-neutral-300 mb-1">
+                Name des Spiels / Turniers
+              </label>
+              <input
+                type="text"
+                value={matchTitle}
+                onChange={(e) => setMatchTitle(e.target.value)}
+                placeholder="z.B. Freies Clubspiel oder Raccoon Rumble 2026"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm font-bold"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => setMatchMode("single")}
+                className={`p-4 rounded-xl border text-left transition space-y-1 ${
+                  matchMode === "single"
+                    ? "bg-amber-600/20 border-amber-500 text-amber-400"
+                    : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"
+                }`}
+              >
+                <div className="font-bold text-sm flex items-center gap-1.5">
+                  <Swords size={16} /> Einzelnes Spiel
+                </div>
+                <div className="text-[11px] opacity-80">
+                  Standard 1v1 Scharmützel
+                </div>
+              </button>
+
+              <button
+                onClick={() => setMatchMode("tournament")}
+                className={`p-4 rounded-xl border text-left transition space-y-1 ${
+                  matchMode === "tournament"
+                    ? "bg-amber-600/20 border-amber-500 text-amber-400"
+                    : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"
+                }`}
+              >
+                <div className="font-bold text-sm flex items-center gap-1.5">
+                  <Trophy size={16} /> Turnier Template
+                </div>
+                <div className="text-[11px] opacity-80">
+                  Event / Runden-Verwaltung
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setSetupStep("roster")}
+            className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-extrabold py-3.5 rounded-xl uppercase text-sm tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-amber-950/30"
+          >
+            Weiter zum Roster Setup <ArrowRight size={18} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (setupStep === "roster") {
     return (
       <div className="max-w-4xl mx-auto space-y-6 font-sans">
-        <header className="border-b border-amber-600/30 pb-4">
-          <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest flex items-center gap-2">
-            <Swords className="text-amber-500" /> Match Setup (Roster &
-            Taktiken)
-          </h2>
-          <p className="text-xs text-neutral-400">
-            Wähle Fraktion, Formation und 2 Battle Tactics pro Spieler
-          </p>
+        <header className="border-b border-amber-600/30 pb-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest flex items-center gap-2">
+              <Swords className="text-amber-500" /> Roster & Taktiken: <span className="text-neutral-200 text-lg font-normal">{matchTitle}</span>
+            </h2>
+            <p className="text-xs text-neutral-400">
+              Wähle Fraktion, Formation und 2 Battle Tactics pro Spieler
+            </p>
+          </div>
+          <button
+            onClick={() => setSetupStep("mode_select")}
+            className="text-xs text-neutral-400 hover:text-amber-400 underline"
+          >
+            Titel ändern
+          </button>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -996,7 +1085,7 @@ export default function AosScoreTracker({ currentUser }) {
 
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              Match Ergebnis
+              {matchTitle} • Ergebnis
             </span>
             <h1 className="text-3xl font-black text-amber-400 uppercase tracking-wider">
               {isTie ? "Unentschieden!" : `${winnerName} Siegt!`}
@@ -1142,11 +1231,11 @@ export default function AosScoreTracker({ currentUser }) {
       <header className="flex flex-col md:flex-row justify-between items-center border-b border-amber-600/30 pb-4 gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest flex items-center gap-2">
-            <Swords className="text-amber-500" /> AoS GHB Score Tracker
+            <Swords className="text-amber-500" /> AoS Score Tracker
           </h2>
           <p className="text-xs text-neutral-400">
-            {players.player1.faction} vs. {players.player2.faction} •{" "}
-            <span className="text-amber-400 font-bold">
+            <span className="text-amber-400 font-bold">{matchTitle}</span> • {players.player1.faction} vs. {players.player2.faction} •{" "}
+            <span className="text-neutral-300">
               {currentBpObj?.name}
             </span>
           </p>
