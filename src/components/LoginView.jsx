@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Lock, UserPlus, LogIn, Mail, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Lock, UserPlus, LogIn, Mail, AlertCircle, Download } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 export default function LoginView({ onLogin }) {
@@ -10,6 +10,31 @@ export default function LoginView({ onLogin }) {
   const [club, setClub] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // PWA Installations-State für Android/Chrome
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") {
+      setInstallPrompt(null);
+    }
+  };
 
   // LOGIN via Supabase
   const handleLogin = async (e) => {
@@ -373,6 +398,24 @@ export default function LoginView({ onLogin }) {
             </button>
           </form>
         )}
+
+        {/* PWA INSTALLATIONS-BEREICH (VOR DEM LOGIN) */}
+        <div className="pt-4 border-t border-neutral-800/50 space-y-3">
+          {installPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg text-xs font-bold bg-amber-600 text-neutral-950 hover:bg-amber-500 transition shadow-lg animate-pulse"
+            >
+              <Download size={16} /> App auf Startbildschirm
+            </button>
+          )}
+
+          <div className="text-[11px] text-neutral-500 space-y-1 bg-neutral-950/40 p-2.5 rounded-lg border border-neutral-800">
+            <p className="font-bold text-neutral-400">📱 Als App installieren:</p>
+            <p>• <strong>Android:</strong> 3 Punkte ➔ &quot;App installieren&quot;</p>
+            <p>• <strong>iPhone:</strong> Teilen-Button ➔ &quot;Zum Home-Bildschirm&quot;</p>
+          </div>
+        </div>
 
         {/* Footer */}
         <div className="text-center text-[11px] text-neutral-600 flex items-center justify-center gap-1 pt-2 border-t border-neutral-800/50">
