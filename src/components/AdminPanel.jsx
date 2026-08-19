@@ -25,6 +25,11 @@ export default function AdminPanel({
   const pendingUsers = users.filter((u) => u.status === "pending");
   const approvedUsers = users.filter((u) => u.status === "approved");
 
+  // Hilfsfunktion zur Namensanzeige (greift auf Name, Username oder E-Mail-Präfix zurück)
+  const getUserDisplayName = (u) => {
+    return u.name || u.username || u.full_name || u.email?.split('@')[0] || "Unbekannter Nutzer";
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 font-sans">
       <header className="border-b border-amber-600/30 pb-4">
@@ -56,9 +61,9 @@ export default function AdminPanel({
                 className="bg-neutral-900 border border-amber-600/30 p-4 rounded-xl flex items-center justify-between"
               >
                 <div>
-                  <div className="font-bold text-neutral-100">{u.name}</div>
+                  <div className="font-bold text-neutral-100">{getUserDisplayName(u)}</div>
                   <div className="text-xs text-neutral-400">
-                    {u.email} • {u.club}
+                    {u.email} {u.club ? `• ${u.club}` : ""}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -97,7 +102,7 @@ export default function AdminPanel({
               >
                 <div>
                   <div className="font-bold text-neutral-200 flex items-center gap-2">
-                    {u.name}
+                    {getUserDisplayName(u)}
                     {u.role === "admin" && (
                       <span className="bg-amber-600/20 border border-amber-600/40 text-amber-500 text-[10px] px-2 py-0.5 rounded">
                         Admin
@@ -105,7 +110,7 @@ export default function AdminPanel({
                     )}
                   </div>
                   <div className="text-neutral-500">
-                    {u.email} • {u.club}
+                    {u.email} {u.club ? `• ${u.club}` : ""}
                   </div>
                 </div>
 
