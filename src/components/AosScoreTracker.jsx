@@ -434,7 +434,6 @@ const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
 );
 
 export default function AosScoreTracker({ currentUser }) {
-  // Initialisierung aus localStorage, falls vorhanden (damit nichts verloren geht beim Schließen/Neuladen)
   const loadSavedState = (key, fallback) => {
     const saved = localStorage.getItem(`fumble_forge_aos_${key}`);
     return saved !== null ? JSON.parse(saved) : fallback;
@@ -490,7 +489,6 @@ export default function AosScoreTracker({ currentUser }) {
     },
   }));
 
-  // Automatisches Speichern im LocalStorage bei jeder Statusänderung
   useEffect(() => {
     localStorage.setItem("fumble_forge_aos_setupStep", JSON.stringify(setupStep));
     localStorage.setItem("fumble_forge_aos_matchMode", JSON.stringify(matchMode));
@@ -764,8 +762,7 @@ export default function AosScoreTracker({ currentUser }) {
     }
   };
 
-  const handleNextTournamentMatch = () => {
-    // Ergebnis des aktuellen Spiels für die Turnier-Zusammenfassung merken
+  const handleProceedAfterSummary = () => {
     const activeBp = TERRAIN_BATTLEPLANS.find((b) => b.id === selectedBattleplanId);
     const roundResult = {
       matchIndex: currentTournamentMatchIndex,
@@ -780,7 +777,7 @@ export default function AosScoreTracker({ currentUser }) {
     const updatedSummary = [...tournamentResultsSummary, roundResult];
     setTournamentResultsSummary(updatedSummary);
 
-    if (currentTournamentMatchIndex < totalTournamentRounds) {
+    if (matchMode === "tournament" && currentTournamentMatchIndex < totalTournamentRounds) {
       setCurrentTournamentMatchIndex((prev) => prev + 1);
       setCurrentRound(1);
       setActiveTurnPlayer("player1");
@@ -792,9 +789,10 @@ export default function AosScoreTracker({ currentUser }) {
         player2: { ...prev.player2, vp: 0, cp: 4, completedStepKeys: [], currentSelectedStepKey: "", isUnderdog: false, scoredRulesByRound: {} },
       }));
       setSetupStep("terrain");
-    } else {
-      // Wenn das letzte Turnierspiel vorbei ist, wird das gesamte Turnier als Gesamteintrag in Supabase gesichert!
+    } else if (matchMode === "tournament" && currentTournamentMatchIndex >= totalTournamentRounds) {
       saveCompleteTournamentToSupabase(updatedSummary);
+    } else {
+      resetMatch();
     }
   };
 
@@ -827,7 +825,6 @@ export default function AosScoreTracker({ currentUser }) {
       console.error("Fehler beim Speichern des Turniers:", err);
     } finally {
       setSaving(false);
-      setSetupStep("summary");
     }
   };
 
@@ -1203,7 +1200,7 @@ export default function AosScoreTracker({ currentUser }) {
     );
   }
 
-  // SCHRITT 4: ERGEBNIS & MATCH SUMMARY SCREEN
+  // SCHRITT 4: ERGEBNIS & MATCH SUMMARY SCREEN (NACH JEDEM SPIEL)
   if (setupStep === "summary") {
     const activeBp = TERRAIN_BATTLEPLANS.find(
       (b) => b.id === selectedBattleplanId
@@ -1227,7 +1224,7 @@ export default function AosScoreTracker({ currentUser }) {
 
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              {matchTitle} {matchMode === "tournament" ? `• Turnier-Abschluss (${totalTournamentRounds} Spiele)` : ""} • Ergebnis
+              {matchTitle} {matchMode === "tournament" ? `• Spiel ${currentTournamentMatchIndex} von ${totalTournamentRounds}` : ""} • Ergebnis
             </span>
             <h1 className="text-3xl font-black text-amber-400 uppercase tracking-wider">
               {isTie ? "Unentschieden!" : `${winnerName} Siegt!`}
@@ -1261,13 +1258,25 @@ export default function AosScoreTracker({ currentUser }) {
               </div>
             </div>
           </div>
+
+          <div className="text-xs text-neutral-400 flex justify-center gap-4">
+            <span>
+              Battleplan:{" "}
+              <strong className="text-amber-400">{activeBp?.name}</strong>
+            </span>
+            <span>•</span>
+            <span>
+              Gespielte Runden:{" "}
+              <strong className="text-amber-400">{currentRound} / 5</strong>
+            </span>
+          </div>
         </div>
 
-        {/* TURNIER ÜBERSICHT TABELLE, WENN TURNIER MODUS */}
+        {/* BEREITS GESPIELTE TURNIER-SPIELE ANZEIGEN */}
         {matchMode === "tournament" && tournamentResultsSummary.length > 0 && (
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
             <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-              <Trophy size={18} /> Turnier-Ergebnisse im Überblick ({tournamentResultsSummary.length}/{totalTournamentRounds} Spiele)
+              <Trophy size={18} /> Bisherige Turnierspiele ({tournamentResultsSummary.length}/{totalTournamentRounds})
             </h3>
             <div className="space-y-2">
               {tournamentResultsSummary.map((res, idx) => (
@@ -1277,7 +1286,7 @@ export default function AosScoreTracker({ currentUser }) {
                     <span className="text-neutral-300">{res.battleplan}</span>
                   </div>
                   <div className="text-neutral-400">
-                    {res.p1Name} ({res.p1Vp} VP) vs {res.p2Name} ({res.p2Vp} VP) ➔ <strong className="text-amber-500">Sieger: {res.winner}</strong>
+                    {res.p1Name} ({res.p1Vp}) vs {res.p2Name} ({res.p2Vp}) ➔ <strong className="text-amber-500">{res.winner}</strong>
                   </div>
                 </div>
               ))}
@@ -1295,15 +1304,15 @@ export default function AosScoreTracker({ currentUser }) {
             {saving
               ? "Speichert..."
               : saveSuccess
-              ? "Erfolgreich Gespeichert!"
-              : "Turnier / Match in Supabase Speichern"}
+              ? "Spiel Erfolgreich Gespeichert!"
+              : "Dieses Spiel Speichern"}
           </button>
 
           <button
-            onClick={resetMatch}
-            className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition border border-neutral-700"
+            onClick={handleProceedAfterSummary}
+            className="flex-1 bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg"
           >
-            <RotateCcw size={18} /> Neues Turnier / Match Starten
+            {matchMode === "tournament" ? (isLastTournamentMatch ? "Turnier Abschließen & Sichern" : `Nächstes Spiel (${currentTournamentMatchIndex + 1}/${totalTournamentRounds})`) : "Neues Match Starten"} <ArrowRight size={18} />
           </button>
         </div>
 
@@ -1348,18 +1357,14 @@ export default function AosScoreTracker({ currentUser }) {
             <button
               onClick={() => {
                 if (currentRound >= 5) {
-                  if (matchMode === "tournament" && currentTournamentMatchIndex < totalTournamentRounds) {
-                    handleNextTournamentMatch();
-                  } else {
-                    setSetupStep("summary");
-                  }
+                  setSetupStep("summary");
                 } else {
                   setShowRoundModal(true);
                 }
               }}
               className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1"
             >
-              {currentRound >= 5 ? (matchMode === "tournament" && currentTournamentMatchIndex < totalTournamentRounds ? "Nächstes Spiel" : "Match Beenden") : "Nächste Runde"}{" "}
+              {currentRound >= 5 ? "Spiel Beenden" : "Nächste Runde"}{" "}
               <ArrowRight size={14} />
             </button>
           </div>
@@ -1738,7 +1743,7 @@ export default function AosScoreTracker({ currentUser }) {
           </div>
         ) : (
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {turnHistory.map((log, idx) => (
+            {turnHistory.log?.map?.() || turnHistory.map((log, idx) => (
               <div
                 key={idx}
                 className="bg-neutral-950 border border-neutral-800/80 p-2.5 rounded-lg text-xs flex justify-between items-center"
