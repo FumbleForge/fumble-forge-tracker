@@ -731,8 +731,8 @@ export default function AosScoreTracker({ currentUser }) {
     try {
       const matchData = {
         user_id: currentUser.id,
-        player1_name: `${players.player1.name} (${players.player1.faction})`,
-        player2_name: `${players.player2.name} (${players.player2.faction})`,
+        player1_name: players.player1.name,
+        player2_name: players.player2.name,
         player1_vp: players.player1.vp,
         player2_vp: players.player2.vp,
         rounds_played: currentRound,
@@ -741,6 +741,8 @@ export default function AosScoreTracker({ currentUser }) {
           match_title: matchMode === "tournament" ? `${matchTitle} [Turnier - Spiel ${currentTournamentMatchIndex}/${totalTournamentRounds}]` : matchTitle,
           match_mode: matchMode,
           battleplan: activeBp?.name,
+          player1_faction: players.player1.faction,
+          player2_faction: players.player2.faction,
           player1_formation: players.player1.formation,
           player2_formation: players.player2.formation,
           player1_cards: players.player1.chosenCardIds,
@@ -768,8 +770,10 @@ export default function AosScoreTracker({ currentUser }) {
       matchIndex: currentTournamentMatchIndex,
       battleplan: activeBp?.name,
       p1Name: players.player1.name,
+      p1Faction: players.player1.faction,
       p1Vp: players.player1.vp,
       p2Name: players.player2.name,
+      p2Faction: players.player2.faction,
       p2Vp: players.player2.vp,
       winner: players.player1.vp > players.player2.vp ? players.player1.name : players.player2.vp > players.player1.vp ? players.player2.name : "Unentschieden"
     };
@@ -806,23 +810,25 @@ export default function AosScoreTracker({ currentUser }) {
 
       const tournamentData = {
         user_id: currentUser.id,
-        player1_name: `${players.player1.name} (${players.player1.faction})`,
-        player2_name: `${players.player2.name} (${players.player2.faction})`,
+        player1_name: players.player1.name,
+        player2_name: players.player2.name,
         player1_vp: allMatches.reduce((acc, m) => acc + m.p1Vp, 0),
         player2_vp: allMatches.reduce((acc, m) => acc + m.p2Vp, 0),
         rounds_played: totalTournamentRounds,
-        winner_name: `${matchTitle} - Sieger: ${tournamentWinner}`,
+        winner_name: `${matchTitle} (Turniersieger: ${tournamentWinner})`,
         details: {
-          match_title: `${matchTitle} (Komplettes Turnier: ${totalTournamentRounds} Spiele)`,
+          match_title: `${matchTitle} [Komplettes Turnier: ${totalTournamentRounds} Runden]`,
           match_mode: "tournament_complete",
+          player1_faction: players.player1.faction,
+          player2_faction: players.player2.faction,
           tournament_rounds: allMatches,
         },
       };
 
-      await supabase.from("matches").insert([tournamentData]);
+      const { error } = await supabase.from("matches").insert([tournamentData]);
+      if (error) throw error;
+
       setSaveSuccess(true);
-      
-      // Nach erfolgreichem Speichern des Gesamtturniers zurück zum Start-Screen
       setTimeout(() => {
         resetMatch();
       }, 1500);
