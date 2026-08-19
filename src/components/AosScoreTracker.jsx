@@ -738,7 +738,7 @@ export default function AosScoreTracker({ currentUser }) {
         rounds_played: currentRound,
         winner_name: winner,
         details: {
-          match_title: matchMode === "tournament" ? `${matchTitle} [Turnier - Spiel ${currentTournamentMatchIndex}/${totalTournamentRounds}]` : matchTitle,
+          match_title: matchTitle,
           match_mode: matchMode,
           player1_faction: players.player1.faction,
           player2_faction: players.player2.faction,
@@ -806,21 +806,24 @@ export default function AosScoreTracker({ currentUser }) {
       const totalP2Wins = allMatches.filter(m => m.winner === players.player2.name).length;
       const tournamentWinner = totalP1Wins > totalP2Wins ? players.player1.name : totalP2Wins > totalP1Wins ? players.player2.name : "Turnier-Unentschieden";
 
-      // HIER WIRD DER VOLLSTÄNDIGE TURNIER-BLOCK ERZEUGT
+      // HIER SETZEN WIR DEN TURNIERNAMEN DIREKT ALS SPIELER 1/2 ODER IN DEN TITEL,
+      // DAMIT DEIN PROFIL-UI DEN NAMEN EXAKT ANZEIGT UND DARUNTER DIE RUNDEN STRUKTURIERT.
       const tournamentData = {
         user_id: currentUser.id,
-        player1_name: players.player1.name,
-        player2_name: players.player2.name,
+        player1_name: `Turnier: ${matchTitle}`,
+        player2_name: `Sieger: ${tournamentWinner}`,
         player1_vp: allMatches.reduce((acc, m) => acc + m.p1Vp, 0),
         player2_vp: allMatches.reduce((acc, m) => acc + m.p2Vp, 0),
         rounds_played: totalTournamentRounds,
         winner_name: tournamentWinner,
         details: {
-          match_title: `Turnier: ${matchTitle}`,
+          match_title: matchTitle,
           match_mode: "tournament_complete",
+          player1_actual_name: players.player1.name,
+          player2_actual_name: players.player2.name,
           player1_faction: players.player1.faction,
           player2_faction: players.player2.faction,
-          tournament_rounds: allMatches, // Enthält alle Einzelspiele (Spiel 1, Spiel 2...) für die hierarchische Ansicht im Profil
+          tournament_rounds: allMatches, // Enthält Spiel 1, Spiel 2 etc. als strukturierte Blöcke
         },
       };
 
