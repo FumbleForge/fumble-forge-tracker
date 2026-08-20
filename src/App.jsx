@@ -260,187 +260,185 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col md:flex-row font-sans relative">
       
-      {/* WRAPPER FÜR STICKY UPDATE-BANNER & HAUPTINHALT */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        
-        {/* STICKY UPDATE-BANNER (Bleibt beim Scrollen immer oben fixiert) */}
-        {updateAvailable && (
-          <div className="sticky top-0 z-50 bg-amber-600 text-neutral-950 px-4 py-3 shadow-2xl flex items-center justify-between border-b border-amber-400 font-sans w-full">
-            <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold">
-              <RefreshCw size={18} className="animate-spin shrink-0" />
-              <span>Ein neues Fumble-Forge-Update ist verfügbar!</span>
-            </div>
-            <button
-              onClick={handleApplyUpdate}
-              className="bg-neutral-950 hover:bg-neutral-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition shadow-md shrink-0"
-            >
-              Jetzt aktualisieren
-            </button>
+      {/* FIXIERTER UPDATE-BANNER (Klebt absolut oben am Bildschirm) */}
+      {updateAvailable && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-600 text-neutral-950 px-4 py-3 shadow-2xl flex items-center justify-between border-b border-amber-400 font-sans">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold">
+            <RefreshCw size={18} className="animate-spin shrink-0" />
+            <span>Ein neues Fumble-Forge-Update ist verfügbar!</span>
           </div>
-        )}
+          <button
+            onClick={handleApplyUpdate}
+            className="bg-neutral-950 hover:bg-neutral-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition shadow-md shrink-0"
+          >
+            Jetzt aktualisieren
+          </button>
+        </div>
+      )}
 
-        <div className="flex-1 flex flex-col md:flex-row">
-          {/* SIDEBAR NAVIGATION */}
-          <aside className="w-full md:w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col justify-between">
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-2xl font-black text-amber-500 uppercase tracking-widest">
-                  Fumble Forged
-                </h1>
-                <p className="text-xs text-neutral-500 mt-1">Club Portal & Tools</p>
-              </div>
-
-              <nav className="space-y-2">
-                <button
-                  onClick={() => setActiveTab("dashboard")}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                    activeTab === "dashboard"
-                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                      : "text-neutral-400 hover:bg-neutral-800"
-                  }`}
-                >
-                  <LayoutGrid size={18} /> Dashboard
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("score")}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                    activeTab === "score"
-                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                      : "text-neutral-400 hover:bg-neutral-800"
-                  }`}
-                >
-                  <Swords size={18} /> Score Tracker
-                </button>
-
-                {/* Hall of Fame Tab in der Navigation */}
-                <button
-                  onClick={() => setActiveTab("hof")}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                    activeTab === "hof"
-                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                      : "text-neutral-400 hover:bg-neutral-800"
-                  }`}
-                >
-                  <Trophy size={18} /> Hall of Fame
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("map")}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                    activeTab === "map"
-                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                      : "text-neutral-400 hover:bg-neutral-800"
-                  }`}
-                >
-                  <Map size={18} /> Gelände-Planer
-                </button>
-
-                {/* Mitglieder-Tab */}
-                <button
-                  onClick={() => setActiveTab("members")}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                    activeTab === "members"
-                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                      : "text-neutral-400 hover:bg-neutral-800"
-                  }`}
-                >
-                  <Users size={18} /> Mitglieder
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("profile")}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                    activeTab === "profile"
-                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                      : "text-neutral-400 hover:bg-neutral-800"
-                  }`}
-                >
-                  <User size={18} /> Profil
-                </button>
-
-                {isAdmin && (
-                  <button
-                    onClick={() => setActiveTab("admin")}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                      activeTab === "admin"
-                        ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
-                        : "text-neutral-400 hover:bg-neutral-800"
-                    }`}
-                  >
-                    <ShieldCheck size={18} className="text-amber-500" /> Admin-Panel
-                  </button>
-                )}
-              </nav>
+      {/* HAUPTWRAPPER (Rückt automatisch nach unten, wenn der Banner aktiv ist) */}
+      <div className={`flex-1 flex flex-col md:flex-row min-h-screen w-full ${updateAvailable ? 'pt-12 md:pt-12' : ''}`}>
+        
+        {/* SIDEBAR NAVIGATION */}
+        <aside className="w-full md:w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col justify-between">
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl font-black text-amber-500 uppercase tracking-widest">
+                Fumble Forged
+              </h1>
+              <p className="text-xs text-neutral-500 mt-1">Club Portal & Tools</p>
             </div>
 
-            {/* PWA INSTALLATIONS-BEREICH & USER FOOTER */}
-            <div className="space-y-4 pt-6 border-t border-neutral-800">
-              {installPrompt && (
+            <nav className="space-y-2">
+              <button
+                onClick={() => setActiveTab("dashboard")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "dashboard"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <LayoutGrid size={18} /> Dashboard
+              </button>
+
+              <button
+                onClick={() => setActiveTab("score")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "score"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <Swords size={18} /> Score Tracker
+              </button>
+
+              {/* Hall of Fame Tab in der Navigation */}
+              <button
+                onClick={() => setActiveTab("hof")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "hof"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <Trophy size={18} /> Hall of Fame
+              </button>
+
+              <button
+                onClick={() => setActiveTab("map")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "map"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <Map size={18} /> Gelände-Planer
+              </button>
+
+              {/* Mitglieder-Tab */}
+              <button
+                onClick={() => setActiveTab("members")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "members"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <Users size={18} /> Mitglieder
+              </button>
+
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "profile"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <User size={18} /> Profil
+              </button>
+
+              {isAdmin && (
                 <button
-                  onClick={handleInstallClick}
-                  className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg text-xs font-bold bg-amber-600 text-neutral-950 hover:bg-amber-500 transition shadow-lg animate-pulse"
+                  onClick={() => setActiveTab("admin")}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                    activeTab === "admin"
+                      ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                      : "text-neutral-400 hover:bg-neutral-800"
+                  }`}
                 >
-                  <Download size={16} /> App auf Startbildschirm
+                  <ShieldCheck size={18} className="text-amber-500" /> Admin-Panel
                 </button>
               )}
+            </nav>
+          </div>
 
-              <div className="text-[11px] text-neutral-500 space-y-1 bg-neutral-950/40 p-2.5 rounded-lg border border-neutral-800">
-                <p className="font-bold text-neutral-400">📱 Als App installieren:</p>
-                <p>• <strong>Android:</strong> 3 Punkte ➔ &quot;App installieren&quot;</p>
-                <p>• <strong>iPhone:</strong> Teilen-Button ➔ &quot;Zum Home-Bildschirm&quot;</p>
-              </div>
+          {/* PWA INSTALLATIONS-BEREICH & USER FOOTER */}
+          <div className="space-y-4 pt-6 border-t border-neutral-800">
+            {installPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg text-xs font-bold bg-amber-600 text-neutral-950 hover:bg-amber-500 transition shadow-lg animate-pulse"
+              >
+                <Download size={16} /> App auf Startbildschirm
+              </button>
+            )}
 
-              <div className="flex items-center justify-between pt-2">
-                <div className="text-xs">
-                  <div className="font-bold text-neutral-200">
-                    {user.username || user.name}
-                  </div>
-                  <div className="text-neutral-500">{user.club}</div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="text-neutral-500 hover:text-red-400 p-2 transition"
-                >
-                  <LogOut size={18} />
-                </button>
-              </div>
+            <div className="text-[11px] text-neutral-500 space-y-1 bg-neutral-950/40 p-2.5 rounded-lg border border-neutral-800">
+              <p className="font-bold text-neutral-400">📱 Als App installieren:</p>
+              <p>• <strong>Android:</strong> 3 Punkte ➔ &quot;App installieren&quot;</p>
+              <p>• <strong>iPhone:</strong> Teilen-Button ➔ &quot;Zum Home-Bildschirm&quot;</p>
             </div>
-          </aside>
 
-          {/* INHALTSBEREICH */}
-          <main className="flex-1 p-4 md:p-8">
-            {activeTab === "dashboard" && (
-              <DashboardView user={user} setActiveTab={setActiveTab} />
-            )}
-
-            {activeTab === "score" && <AosScoreTracker currentUser={user} />}
-
-            {activeTab === "hof" && <HallOfFame />}
-
-            {activeTab === "map" && (
-              <div className="bg-neutral-900 border border-neutral-800 p-12 rounded-2xl text-center text-neutral-500 max-w-4xl">
-                [ Vorbereitung für Gelände-Planer ]
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-xs">
+                <div className="font-bold text-neutral-200">
+                  {user.username || user.name}
+                </div>
+                <div className="text-neutral-500">{user.club}</div>
               </div>
-            )}
+              <button
+                onClick={handleLogout}
+                className="text-neutral-500 hover:text-red-400 p-2 transition"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
+        </aside>
 
-            {activeTab === "members" && <MemberList />}
+        {/* INHALTSBEREICH */}
+        <main className="flex-1 p-4 md:p-8">
+          {activeTab === "dashboard" && (
+            <DashboardView user={user} setActiveTab={setActiveTab} />
+          )}
 
-            {activeTab === "profile" && (
-              <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />
-            )}
+          {activeTab === "score" && <AosScoreTracker currentUser={user} />}
 
-            {activeTab === "admin" && isAdmin && (
-              <AdminPanel 
-                currentUser={user} 
-                users={users} 
-                onApproveUser={handleApproveUser}
-                onRejectUser={handleRejectUser}
-                onDeleteUser={handleDeleteUser}
-              />
-            )}
-          </main>
-        </div>
+          {activeTab === "hof" && <HallOfFame />}
+
+          {activeTab === "map" && (
+            <div className="bg-neutral-900 border border-neutral-800 p-12 rounded-2xl text-center text-neutral-500 max-w-4xl">
+              [ Vorbereitung für Gelände-Planer ]
+            </div>
+          )}
+
+          {activeTab === "members" && <MemberList />}
+
+          {activeTab === "profile" && (
+            <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />
+          )}
+
+          {activeTab === "admin" && isAdmin && (
+            <AdminPanel 
+              currentUser={user} 
+              users={users} 
+              onApproveUser={handleApproveUser}
+              onRejectUser={handleRejectUser}
+              onDeleteUser={handleDeleteUser}
+            />
+          )}
+        </main>
 
       </div>
     </div>
