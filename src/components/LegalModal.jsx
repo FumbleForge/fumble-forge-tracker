@@ -48,15 +48,15 @@ export default function LegalModal({ onClose }) {
               <p>
                 <strong>Fumble Forged</strong><br />
                 Tabletop-Club & Community-Projekt<br />
-                [Deine Straße & Hausnummer]<br />
-                [PLZ & Ort, z.B. Bad Honnef]
+                [In dem Hagen 3]<br />
+                [53604 Bad Honnef]
               </p>
               <h4 className="font-bold text-neutral-200 pt-2">Vertreten durch:</h4>
-              <p>[Dein Name / Verantwortlicher]</p>
+              <p>[Christopher Heil]</p>
               <h4 className="font-bold text-neutral-200 pt-2">Kontakt:</h4>
               <p>
                 E-Mail: [Deine E-Mail-Adresse]<br />
-                Web: <a href="https://fumbleforge.de" target="_blank" rel="noreferrer" className="text-amber-400 underline">fumbleforge.de</a>
+                Web: <a href="https://fumble-forged.de" target="_blank" rel="noreferrer" className="text-amber-400 underline">fumbleforge.de</a>
               </p>
             </div>
           ) : (
