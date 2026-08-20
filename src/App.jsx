@@ -21,12 +21,16 @@ import MemberList from "./components/MemberList";
 import HallOfFame from "./components/HallOfFame";
 import DashboardView from "./components/DashboardView";
 import ClubMeta from "./components/ClubMeta";
+import LegalModal from "./components/LegalModal"; // Neu: Importiertes Impressum & Datenschutz Modal
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  
+  // State für das Legal-Modal (Impressum & Datenschutz)
+  const [showLegalModal, setShowLegalModal] = useState(false);
   
   // State für den dezenten Update-Banner
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -422,6 +426,16 @@ export default function App() {
               </div>
             </div>
 
+            {/* Impressum & Datenschutz Link */}
+            <div className="text-center pt-1">
+              <button
+                onClick={() => setShowLegalModal(true)}
+                className="text-[10px] text-neutral-500 hover:text-amber-400 transition underline underline-offset-2 cursor-pointer"
+              >
+                Impressum & Datenschutz
+              </button>
+            </div>
+
             <div className="flex items-center justify-between pt-2 border-t border-neutral-800/80">
               <div className="text-xs">
                 <div className="font-bold text-neutral-200">
@@ -469,6 +483,11 @@ export default function App() {
         </main>
 
       </div>
+
+      {/* LEGAL MODAL (IMPRESSUM & DATENSCHUTZ) */}
+      {showLegalModal && (
+        <LegalModal onClose={() => setShowLegalModal(false)} />
+      )}
     </div>
   );
 }
