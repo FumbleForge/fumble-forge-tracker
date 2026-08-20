@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node -e \"const fs=require('fs'); fs.writeFileSync('public/version.json', JSON.stringify({version: Date.now().toString()}));\"",
     "build": "vite build",
     "preview": "vite preview"
   },
