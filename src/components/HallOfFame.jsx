@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Award, Flame, Swords, Medal } from "lucide-react";
+import { Trophy, Award, Flame, Swords, Medal, Target } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 export default function HallOfFame() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterMode, setFilterMode] = useState("wins"); // "wins", "streak", "vp"
 
   useEffect(() => {
     fetchLeaderboardData();
@@ -13,21 +14,18 @@ export default function HallOfFame() {
   const fetchLeaderboardData = async () => {
     setLoading(true);
     try {
-      // 1. Alle Profile laden
       const { data: profiles, error: profileError } = await supabase
         .from("profiles")
         .select("*");
 
       if (profileError) throw profileError;
 
-      // 2. Alle Matches laden
       const { data: matches, error: matchError } = await supabase
         .from("matches")
         .select("*");
 
       if (matchError) throw matchError;
 
-      // 3. Stats für jeden User berechnen
       const statsMap = {};
 
       profiles.forEach((p) => {
@@ -47,19 +45,15 @@ export default function HallOfFame() {
         };
       });
 
-      // Matches auswerten
       if (matches) {
-        // Nach Datum sortieren für Streaks
         const sortedMatches = [...matches].sort(
           (a, b) => new Date(a.created_at) - new Date(b.created_at)
         );
 
         sortedMatches.forEach((m) => {
-          // Unterstützt sowohl Einzelspiele als auch Turniere
           const isTournament = m.details?.match_mode === "tournament_complete";
           
           if (isTournament && m.details?.tournament_rounds) {
-            // Turnierrunden einzeln einrechnen
             m.details.tournament_rounds.forEach((round) => {
               const userId = m.user_id;
               if (!statsMap[userId]) return;
@@ -95,7 +89,6 @@ export default function HallOfFame() {
               }
             });
           } else {
-            // Normales Einzelspiel
             const userId = m.user_id;
             if (!statsMap[userId]) return;
 
@@ -134,18 +127,10 @@ export default function HallOfFame() {
         });
       }
 
-      // In Array umwandeln und Win-Rate / Ø VP berechnen
       const calculatedList = Object.values(statsMap).map((item) => {
         const winRate = item.gamesPlayed > 0 ? Math.round((item.wins / item.gamesPlayed) * 100) : 0;
         const avgVp = item.gamesPlayed > 0 ? Math.round(item.totalVp / item.gamesPlayed) : 0;
         return { ...item, winRate, avgVp };
-      });
-
-      // Sortieren nach: 1. Siege, 2. Win-Rate, 3. Spiele Gesamt
-      calculatedList.sort((a, b) => {
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-        return b.gamesPlayed - a.gamesPlayed;
       });
 
       setLeaderboard(calculatedList);
@@ -155,6 +140,24 @@ export default function HallOfFame() {
       setLoading(false);
     }
   };
+
+  // Dynamische Sortierung basierend auf dem gewählten Filter-Tab
+  const sortedLeaderboard = [...leaderboard].sort((a, b) => {
+    if (filterMode === "streak") {
+      const aStreak = a.streakType === "win" ? a.currentStreak : 0;
+      const bStreak = b.streakType === "win" ? b.currentStreak : 0;
+      if (bStreak !== aStreak) return bStreak - aStreak;
+      return b.wins - a.wins;
+    } else if (filterMode === "vp") {
+      if (b.avgVp !== a.avgVp) return b.avgVp - a.avgVp;
+      return b.wins - a.wins;
+    } else {
+      // Standard: Wins ➔ WinRate ➔ GamesPlayed
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+      return b.gamesPlayed - a.gamesPlayed;
+    }
+  });
 
   if (loading) {
     return (
@@ -175,114 +178,202 @@ export default function HallOfFame() {
         </p>
       </header>
 
-      {/* Ranglisten-Tabelle */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-neutral-950 border-b border-neutral-800 text-[11px] uppercase tracking-wider text-neutral-400">
-                <th className="p-4 text-center w-16">Rang</th>
-                <th className="p-4">Commander</th>
-                <th className="p-4 text-center">Spiele</th>
-                <th className="p-4 text-center">W / L / D</th>
-                <th className="p-4 text-center">Win Rate</th>
-                <th className="p-4 text-center">Ø VP</th>
-                <th className="p-4 text-center">Streak</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-800/60 text-sm">
-              {leaderboard.map((player, idx) => {
-                const rank = idx + 1;
-                const isTopThree = rank <= 3;
+      {/* FILTER TABS */}
+      <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-neutral-800 text-xs gap-1">
+        <button
+          onClick={() => setFilterMode("wins")}
+          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+            filterMode === "wins"
+              ? "bg-amber-600 text-neutral-950 shadow"
+              : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+          }`}
+        >
+          <Trophy size={14} /> Gesamt-Ranking (Siege)
+        </button>
+        <button
+          onClick={() => setFilterMode("streak")}
+          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+            filterMode === "streak"
+              ? "bg-amber-600 text-neutral-950 shadow"
+              : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+          }`}
+        >
+          <Flame size={14} /> Siegesserien (Streaks)
+        </button>
+        <button
+          onClick={() => setFilterMode("vp")}
+          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+            filterMode === "vp"
+              ? "bg-amber-600 text-neutral-950 shadow"
+              : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+          }`}
+        >
+          <Target size={14} /> VP-Könige (Ø Punkte)
+        </button>
+      </div>
 
-                return (
-                  <tr 
-                    key={player.id}
-                    className={`hover:bg-neutral-800/40 transition ${
-                      rank === 1 ? "bg-amber-500/5 font-bold" : ""
-                    }`}
-                  >
-                    {/* Rang mit Medaillen-Icons für Top 3 */}
-                    <td className="p-4 text-center">
-                      {rank === 1 ? (
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 font-black">
-                          🥇 1
-                        </span>
-                      ) : rank === 2 ? (
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700 font-bold">
-                          🥈 2
-                        </span>
-                      ) : rank === 3 ? (
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-900/35 text-amber-600 border border-amber-800/50 font-bold">
-                          🥉 3
-                        </span>
+      {/* --- DESKTOP TABELLE (ab md sichtbar) --- */}
+      <div className="hidden md:block bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-xl">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-neutral-950 border-b border-neutral-800 text-[11px] uppercase tracking-wider text-neutral-400">
+              <th className="p-4 text-center w-16">Rang</th>
+              <th className="p-4">Commander</th>
+              <th className="p-4 text-center">Spiele</th>
+              <th className="p-4 text-center">W / L / D</th>
+              <th className="p-4 text-center">Win Rate</th>
+              <th className="p-4 text-center">Ø VP</th>
+              <th className="p-4 text-center">Streak</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-800/60 text-sm">
+            {sortedLeaderboard.map((player, idx) => {
+              const rank = idx + 1;
+              return (
+                <tr 
+                  key={player.id}
+                  className={`hover:bg-neutral-800/40 transition ${
+                    rank === 1 ? "bg-amber-500/5 font-bold" : ""
+                  }`}
+                >
+                  <td className="p-4 text-center">
+                    {rank === 1 ? (
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 font-black">
+                        🥇 1
+                      </span>
+                    ) : rank === 2 ? (
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700 font-bold">
+                        🥈 2
+                      </span>
+                    ) : rank === 3 ? (
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-900/35 text-amber-600 border border-amber-800/50 font-bold">
+                        🥉 3
+                      </span>
+                    ) : (
+                      <span className="text-neutral-500 font-mono">{rank}</span>
+                    )}
+                  </td>
+
+                  <td className="p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      {player.avatar ? (
+                        <img src={player.avatar} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-neutral-500 font-mono">{rank}</span>
+                        <Award size={18} className="text-neutral-600" />
                       )}
-                    </td>
+                    </div>
+                    <div>
+                      <div className="text-neutral-100 font-bold">{player.name}</div>
+                      <div className="text-[11px] text-neutral-500">{player.club}</div>
+                    </div>
+                  </td>
 
-                    {/* Spieler-Info */}
-                    <td className="p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {player.avatar ? (
-                          <img src={player.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <Award size={18} className="text-neutral-600" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-neutral-100 font-bold flex items-center gap-2">
-                          {player.name}
-                        </div>
-                        <div className="text-[11px] text-neutral-500">{player.club}</div>
-                      </div>
-                    </td>
+                  <td className="p-4 text-center text-neutral-300 font-mono">{player.gamesPlayed}</td>
 
-                    {/* Spiele Gesamt */}
-                    <td className="p-4 text-center text-neutral-300 font-mono">
-                      {player.gamesPlayed}
-                    </td>
+                  <td className="p-4 text-center font-mono">
+                    <span className="text-emerald-400">{player.wins}</span>
+                    <span className="text-neutral-600"> / </span>
+                    <span className="text-red-400">{player.losses}</span>
+                    <span className="text-neutral-600"> / </span>
+                    <span className="text-neutral-400">{player.draws}</span>
+                  </td>
 
-                    {/* W / L / D */}
-                    <td className="p-4 text-center font-mono">
-                      <span className="text-emerald-400">{player.wins}</span>
-                      <span className="text-neutral-600"> / </span>
-                      <span className="text-red-400">{player.losses}</span>
-                      <span className="text-neutral-600"> / </span>
-                      <span className="text-neutral-400">{player.draws}</span>
-                    </td>
+                  <td className="p-4 text-center font-black text-amber-500">{player.winRate}%</td>
+                  <td className="p-4 text-center text-neutral-300 font-mono">{player.avgVp} VP</td>
 
-                    {/* Win Rate */}
-                    <td className="p-4 text-center font-black text-amber-500">
-                      {player.winRate}%
-                    </td>
+                  <td className="p-4 text-center">
+                    {player.currentStreak > 0 ? (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${
+                        player.streakType === "win" 
+                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800/60" 
+                          : "bg-red-950 text-red-400 border border-red-800/60"
+                      }`}>
+                        {player.streakType === "win" ? <Flame size={12} className="text-amber-500" /> : null}
+                        {player.currentStreak} {player.streakType === "win" ? "W" : "L"}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-600 text-xs">-</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-                    {/* Ø VP */}
-                    <td className="p-4 text-center text-neutral-300 font-mono">
-                      {player.avgVp} VP
-                    </td>
-
-                    {/* Streak */}
-                    <td className="p-4 text-center">
-                      {player.currentStreak > 0 ? (
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${
-                          player.streakType === "win" 
-                            ? "bg-emerald-950 text-emerald-400 border border-emerald-800/60" 
-                            : "bg-red-950 text-red-400 border border-red-800/60"
-                        }`}>
-                          {player.streakType === "win" ? <Flame size={12} className="text-amber-500" /> : null}
-                          {player.currentStreak} {player.streakType === "win" ? "W" : "L"}
-                        </span>
+      {/* --- MOBILE KARTEN-ANSICHT (unter md sichtbar, kein Scrollen nötig) --- */}
+      <div className="block md:hidden space-y-3">
+        {sortedLeaderboard.map((player, idx) => {
+          const rank = idx + 1;
+          return (
+            <div 
+              key={player.id}
+              className={`bg-neutral-900 border p-4 rounded-xl flex flex-col gap-3 shadow-lg ${
+                rank === 1 ? "border-amber-500/60 bg-amber-500/5" : "border-neutral-800"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Rang Badge */}
+                  <div className="w-8 h-8 rounded-full bg-neutral-950 border border-neutral-800 flex items-center justify-center font-bold text-xs text-amber-500 shrink-0">
+                    {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
+                  </div>
+                  {/* Avatar & Name */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      {player.avatar ? (
+                        <img src={player.avatar} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-neutral-600 text-xs">-</span>
+                        <Award size={16} className="text-neutral-600" />
                       )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <div>
+                      <div className="text-neutral-100 font-bold text-sm">{player.name}</div>
+                      <div className="text-[10px] text-neutral-500">{player.club}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Win Rate Highlight */}
+                <div className="text-right">
+                  <div className="text-base font-black text-amber-500">{player.winRate}%</div>
+                  <div className="text-[9px] text-neutral-500 uppercase">Win Rate</div>
+                </div>
+              </div>
+
+              {/* Untere Reihe: Stats im Kompaktformat */}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-800/60 text-center text-xs">
+                <div className="bg-neutral-950 p-2 rounded-lg border border-neutral-800/40">
+                  <div className="text-[9px] text-neutral-500 uppercase">W / L / D</div>
+                  <div className="font-mono font-bold mt-0.5">
+                    <span className="text-emerald-400">{player.wins}</span>/
+                    <span className="text-red-400">{player.losses}</span>/
+                    <span className="text-neutral-400">{player.draws}</span>
+                  </div>
+                </div>
+
+                <div className="bg-neutral-950 p-2 rounded-lg border border-neutral-800/40">
+                  <div className="text-[9px] text-neutral-500 uppercase">Ø VP</div>
+                  <div className="font-mono font-bold text-neutral-300 mt-0.5">{player.avgVp} VP</div>
+                </div>
+
+                <div className="bg-neutral-950 p-2 rounded-lg border border-neutral-800/40">
+                  <div className="text-[9px] text-neutral-500 uppercase">Streak</div>
+                  <div className="font-mono font-bold mt-0.5">
+                    {player.currentStreak > 0 ? (
+                      <span className={player.streakType === "win" ? "text-emerald-400" : "text-red-400"}>
+                        {player.currentStreak}{player.streakType === "win" ? "W 🔥" : "L"}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-600">-</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
