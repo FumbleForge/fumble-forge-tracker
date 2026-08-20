@@ -36,13 +36,14 @@ export default function ClubMeta() {
     }
   };
 
-  // --- ERWEITERTE ANALYSE LOGIK ---
-
-  // 1. Fraktions-Verteilung (Aus Profilen)
+  // --- SYSTEM-ABHÄNGIGE FRAKTIONS-ERFASSUNG ---
   const factionCounts = {};
   profiles.forEach((p) => {
-    if (p.armies) {
-      const userArmies = p.armies.split(",").map((a) => a.trim());
+    // Wähle je nach System die korrekte Spalte aus Supabase
+    const rawArmies = selectedSystem === "Age of Sigmar" ? p.aos_armies : p.wh40k_armies;
+    
+    if (rawArmies) {
+      const userArmies = rawArmies.split(",").map((a) => a.trim());
       userArmies.forEach((army) => {
         if (army) {
           factionCounts[army] = (factionCounts[army] || 0) + 1;
@@ -50,19 +51,19 @@ export default function ClubMeta() {
       });
     }
   });
+
   const sortedFactions = Object.entries(factionCounts).sort((a, b) => b[1] - a[1]);
 
-  // 2. Spiele & Win-Rate Auswertung aus Matches
+  // --- MATCH-STATISTIKEN & WIN-RATES ---
   let totalGamesCount = 0;
   let totalDrawsCount = 0;
   const battleplanCounts = {};
-  const factionStats = {}; // { "Skaven": { wins: 0, games: 0 } }
-  const matchupMatrix = {}; // { "Skaven": { "Sylvaneth": { wins: 0, total: 0 } } }
+  const factionStats = {}; 
+  const matchupMatrix = {}; 
 
   const recordMatchup = (f1, f2, winnerName, p1Name, p2Name) => {
     if (!f1 || !f2) return;
     
-    // Init stats
     if (!factionStats[f1]) factionStats[f1] = { wins: 0, games: 0 };
     if (!factionStats[f2]) factionStats[f2] = { wins: 0, games: 0 };
     
@@ -75,7 +76,6 @@ export default function ClubMeta() {
     if (p1Won) factionStats[f1].wins++;
     if (p2Won) factionStats[f2].wins++;
 
-    // Matchup Matrix (f1 vs f2)
     if (!matchupMatrix[f1]) matchupMatrix[f1] = {};
     if (!matchupMatrix[f1][f2]) matchupMatrix[f1][f2] = { wins: 0, total: 0 };
     matchupMatrix[f1][f2].total++;
@@ -122,7 +122,6 @@ export default function ClubMeta() {
 
   const sortedBattleplans = Object.entries(battleplanCounts).sort((a, b) => b[1] - a[1]);
 
-  // Win-Rates sortieren
   const sortedFactionWinRates = Object.entries(factionStats)
     .map(([faction, stats]) => ({
       faction,
@@ -225,12 +224,12 @@ export default function ClubMeta() {
             {/* Fraktions-Beliebtheit */}
             <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4 shadow-lg">
               <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
-                <Activity size={16} /> Club-Fraktionen (Armee-Verteilung)
+                <Activity size={16} /> Club-Fraktionen ({selectedSystem})
               </h3>
 
               {sortedFactions.length === 0 ? (
                 <div className="text-xs text-neutral-500 italic py-6 text-center">
-                  Noch keine Armeen in den Profilen hinterlegt.
+                  Noch keine Armeen für {selectedSystem} in den Profilen hinterlegt.
                 </div>
               ) : (
                 <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
@@ -302,7 +301,7 @@ export default function ClubMeta() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-neutral-800 text-neutral-400">
-                      <th className="p-2.5 font-bold">Wer / Gegen $\rightarrow$</th>
+                      <th className="p-2.5 font-bold">Wer / Gegen &rarr;</th>
                       {activeFactionsList.map((fac, i) => (
                         <th key={i} className="p-2.5 font-bold truncate max-w-[100px]" title={fac}>{fac}</th>
                       ))}
