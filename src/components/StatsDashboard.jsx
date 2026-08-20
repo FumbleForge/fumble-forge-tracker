@@ -27,23 +27,20 @@ export default function StatsDashboard({ matches, username }) {
   const battleTactics = {};
 
   sortedMatches.forEach((m) => {
-    // Intelligente Prüfung: Ist der User der Sieger?
-    // Prüft, ob der Username im winner_name steht ODER ob "Spieler 1" gewinnt und der User Spieler 1 war etc.
     const winner = m.winner_name || "";
+    const p1Name = m.player1_name || "";
     const isTie = winner === "Unentschieden" || m.player1_vp === m.player2_vp;
 
-    const isPlayer1 =
-      m.player1_name?.includes(username) ||
-      m.player1_name?.includes("Spieler 1");
-    const userWonAsP1 =
-      isPlayer1 && (winner.includes("Spieler 1") || winner.includes(username));
-    const userWonAsP2 =
-      !isPlayer1 && (winner.includes("Spieler 2") || winner.includes(username));
+    // INTELLIGENTE WIN-LOGIK: 
+    // Ein Sieg für dich (Spieler 1 / Referenz) liegt vor, wenn:
+    // 1. Der Gewinner exakt dem Namen von Spieler 1 entspricht (egal was du eingetragen hast!)
+    // 2. Oder dein Login-Name im winner_name vorkommt.
+    const isUserWinner = 
+      (p1Name && winner.includes(p1Name)) || 
+      (username && winner.toLowerCase().includes(username.toLowerCase())) ||
+      winner.includes("Spieler 1");
 
-    // Fallback falls der winner_name direkt der username ist
-    const directWin = winner.toLowerCase() === username?.toLowerCase();
-
-    const isWin = directWin || userWonAsP1 || userWonAsP2;
+    const isWin = !isTie && isUserWinner;
 
     if (isTie) {
       draws++;
