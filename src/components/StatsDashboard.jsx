@@ -192,36 +192,17 @@ export default function StatsDashboard({ matches, username }) {
           
           {/* Filter-Optionen */}
           <div className="flex bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-[11px]">
-            <button
-              onClick={() => setTimeFilter("30days")}
-              className={`px-3 py-1 rounded-md font-bold transition ${
-                timeFilter === "30days"
-                  ? "bg-amber-600 text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              -30 Tage
-            </button>
-            <button
-              onClick={() => setTimeFilter("1year")}
-              className={`px-3 py-1 rounded-md font-bold transition ${
-                timeFilter === "1year"
-                  ? "bg-amber-600 text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              -1 Jahr
-            </button>
-            <button
-              onClick={() => setTimeFilter("all")}
-              className={`px-3 py-1 rounded-md font-bold transition ${
-                timeFilter === "all"
-                  ? "bg-amber-600 text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              Gesamt
-            </button>
+            {["30days", "1year", "all"].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setTimeFilter(filter)}
+                className={`px-3 py-1 rounded-md font-bold transition ${
+                  timeFilter === filter ? "bg-amber-600 text-neutral-950" : "text-neutral-400 hover:text-neutral-200"
+                }`}
+              >
+                {filter === "30days" ? "-30 Tage" : filter === "1year" ? "-1 Jahr" : "Gesamt"}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -229,7 +210,7 @@ export default function StatsDashboard({ matches, username }) {
         <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 relative h-48 flex items-center">
           {filteredTimelineMatches.length < 2 ? (
             <div className="text-xs text-neutral-500 italic w-full text-center">
-              Mindestens 2 Spiele im gewählten Zeitraum für den Verlauf erforderlich.
+              Mindestens 2 Spiele im gewählten Zeitraum erforderlich.
             </div>
           ) : (
             <div className="w-full h-full flex">
@@ -242,9 +223,9 @@ export default function StatsDashboard({ matches, username }) {
                 <span>0%</span>
               </div>
 
-              {/* SVG Diagramm */}
+              {/* SVG Diagramm mit key-Attribut für erzwungenes Neu-Rerendering */}
               <div className="relative flex-1 h-full">
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <svg key={timeFilter} className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                   {/* Horizontale Gitternetzlinien (25%, 50%, 75%) */}
                   {[25, 50, 75].map((val) => (
                     <line
@@ -259,32 +240,23 @@ export default function StatsDashboard({ matches, username }) {
                     />
                   ))}
 
-                  {/* SVG Kurvenpfad mit direkter Filter-Synchronität */}
+                  {/* SVG Kurvenpfad */}
                   <path
-                    d={`M 0 ${100 - (() => {
-                      if (filteredTimelineMatches.length === 0) return 0;
-                      let w = 0; 
-                      const { isTie, isWin } = evaluateMatchWin(filteredTimelineMatches[0]);
-                      if (isWin) w = 100; 
-                      else if (isTie) w = 50;
-                      return w;
-                    })()} ${
-                      filteredTimelineMatches
-                        .map((_, i) => {
-                          if (i === 0) return "";
-                          let wCount = 0;
-                          for (let k = 0; k <= i; k++) {
-                            const { isTie, isWin } = evaluateMatchWin(filteredTimelineMatches[k]);
-                            if (isWin) wCount += 100; 
-                            else if (isTie) wCount += 50;
-                          }
-                          const rate = wCount / (i + 1);
-                          const x = (i / (filteredTimelineMatches.length - 1)) * 100;
-                          const y = 100 - rate;
-                          return `L ${x} ${y}`;
-                        })
-                        .join(" ")
-                    }`}
+                    d={(() => {
+                      const points = filteredTimelineMatches.map((m, i) => {
+                        let wCount = 0;
+                        for (let k = 0; k <= i; k++) {
+                          const { isTie, isWin } = evaluateMatchWin(filteredTimelineMatches[k]);
+                          if (isWin) wCount += 100; 
+                          else if (isTie) wCount += 50;
+                        }
+                        const rate = wCount / (i + 1);
+                        const x = (i / (filteredTimelineMatches.length - 1)) * 100;
+                        const y = 100 - rate;
+                        return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
+                      }).join(" ");
+                      return points;
+                    })()}
                     fill="none"
                     stroke="#38bdf8"
                     strokeWidth="2.5"
