@@ -7,12 +7,14 @@ import {
   ShieldCheck,
   LogOut,
   Download,
+  Users,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
 import AosScoreTracker from "./components/AosScoreTracker";
 import UserProfile from "./components/UserProfile";
 import AdminPanel from "./components/AdminPanel";
+import MemberList from "./components/MemberList";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -223,6 +225,18 @@ export default function App() {
               <Map size={18} /> Gelände-Planer
             </button>
 
+            {/* NEU: Mitglieder-Tab in der Navigation */}
+            <button
+              onClick={() => setActiveTab("members")}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                activeTab === "members"
+                  ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                  : "text-neutral-400 hover:bg-neutral-800"
+              }`}
+            >
+              <Users size={18} /> Mitglieder
+            </button>
+
             <button
               onClick={() => setActiveTab("profile")}
               className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -310,6 +324,9 @@ export default function App() {
             [ Vorbereitung für Gelände-Planer ]
           </div>
         )}
+
+        {/* NEU: Einbindung der Mitgliederliste */}
+        {activeTab === "members" && <MemberList />}
 
         {activeTab === "profile" && (
           <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />

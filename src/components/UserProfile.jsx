@@ -18,6 +18,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
   );
   const [club, setClub] = useState(user?.club || "");
   const [armies, setArmies] = useState(user?.armies || "");
+  const [gameSystems, setGameSystems] = useState(user?.game_systems || ""); // Neu: Spielsysteme State
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -120,6 +121,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         username,
         club,
         armies,
+        game_systems: gameSystems, // Neu: Spielsysteme in Supabase speichern
         avatar_url: avatarUrl,
         updated_at: new Date(),
       };
@@ -224,6 +226,20 @@ export default function UserProfile({ user, onUpdateProfile }) {
               type="text"
               value={club}
               onChange={(e) => setClub(e.target.value)}
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm"
+            />
+          </div>
+
+          {/* Neu: Eingabefeld für Spielsysteme */}
+          <div>
+            <label className="block text-xs uppercase font-bold text-neutral-400 mb-1">
+              Spielsysteme
+            </label>
+            <input
+              type="text"
+              value={gameSystems}
+              onChange={(e) => setGameSystems(e.target.value)}
+              placeholder="z. B. Warhammer Age of Sigmar, Kill Team..."
               className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm"
             />
           </div>
