@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Swords, Flame, Calendar, Users, ArrowRight, Award } from "lucide-react";
+import { Trophy, Swords, Flame, Calendar, Users, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 export default function DashboardView({ user, setActiveTab }) {
   const [myStats, setMyStats] = useState({ games: 0, wins: 0, winRate: 0, streak: 0, streakType: null });
   const [recentClubMatches, setRecentClubMatches] = useState([]);
+  const [eventAttendees, setEventAttendees] = useState({ "raccoon-rumble": [], "ff-cup": [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function DashboardView({ user, setActiveTab }) {
 
       if (matchError) throw matchError;
 
-      // 2. Alle Profile für die Spielernamen im Feed laden
+      // 2. Alle Profile für die Spielernamen laden
       const { data: profiles, error: profileError } = await supabase
         .from("profiles")
         .select("*");
@@ -35,7 +36,7 @@ export default function DashboardView({ user, setActiveTab }) {
       });
 
       if (matches) {
-        // Club Live-Feed vorbereiten (die letzten 5 Matches des gesamten Clubs)
+        // Club Live-Feed vorbereiten
         const feedItems = matches.slice(0, 5).map((m) => {
           const playerName = profileMap[m.user_id] || "Club-Mitglied";
           const isTournament = m.details?.match_mode === "tournament_complete";
@@ -51,13 +52,12 @@ export default function DashboardView({ user, setActiveTab }) {
         });
         setRecentClubMatches(feedItems);
 
-        // Eigene Stats berechnen (inklusive aufgeschlüsselter Turnierrunden wie in der Hall of Fame)
+        // Eigene Stats berechnen
         let games = 0;
         let wins = 0;
         let currentStreak = 0;
         let streakType = null;
 
-        // Nach Datum sortieren für korrekte Streaks
         const sortedMatches = [...matches].sort(
           (a, b) => new Date(a.created_at) - new Date(b.created_at)
         );
@@ -82,24 +82,15 @@ export default function DashboardView({ user, setActiveTab }) {
                 streakType = null;
               } else if (isUserWinner) {
                 wins++;
-                if (streakType === "win") {
-                  currentStreak++;
-                } else {
-                  streakType = "win";
-                  currentStreak = 1;
-                }
+                if (streakType === "win") currentStreak++;
+                else { streakType = "win"; currentStreak = 1; }
               } else {
-                if (streakType === "loss") {
-                  currentStreak++;
-                } else {
-                  streakType = "loss";
-                  currentStreak = 1;
-                }
+                if (streakType === "loss") currentStreak++;
+                else { streakType = "loss"; currentStreak = 1; }
               }
             });
           } else {
             games++;
-            const isP1 = m.player1_name?.includes(username) || m.player1_name?.includes("Spieler 1");
             const winner = m.winner_name || "";
             const isTie = winner === "Unentschieden";
             const isUserWinner = winner.includes(username) || winner.includes("Spieler 1");
@@ -109,19 +100,11 @@ export default function DashboardView({ user, setActiveTab }) {
               streakType = null;
             } else if (isUserWinner) {
               wins++;
-              if (streakType === "win") {
-                currentStreak++;
-              } else {
-                streakType = "win";
-                currentStreak = 1;
-              }
+              if (streakType === "win") currentStreak++;
+              else { streakType = "win"; currentStreak = 1; }
             } else {
-              if (streakType === "loss") {
-                currentStreak++;
-              } else {
-                streakType = "loss";
-                currentStreak = 1;
-              }
+              if (streakType === "loss") currentStreak++;
+              else { streakType = "loss"; currentStreak = 1; }
             }
           }
         });
@@ -129,11 +112,73 @@ export default function DashboardView({ user, setActiveTab }) {
         const winRate = games > 0 ? Math.round((wins / games) * 100) : 0;
         setMyStats({ games, wins, winRate, streak: currentStreak, streakType });
       }
+
+      // 3. Event-Teilnehmer aus Supabase laden
+      const { data: attendees, error: attError } = await supabase
+        .from("event_attendees")
+        .select("*");
+
+      if (!attError && attendees) {
+        const grouped = { "raccoon-rumble": [], "ff-cup": [] };
+        attendees.forEach((att) => {
+          if (grouped[att.event_id]) {
+            grouped[att.event_id].push({
+              userId: att.user_id,
+              name: profileMap[att.user_id] || "Commander",
+            });
+          }
+        });
+        setEventAttendees(grouped);
+      }
+
     } catch (err) {
       console.error("Fehler beim Laden des Dashboards:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Funktion zum Teilnehmen oder Absagen
+  const handleRsvp = async (eventId) => {
+    const attendeesList = eventAttendees[eventId] || [];
+    const isAlreadyAttending = attendeesList.some((a) => a.userId === user.id);
+
+    try {
+      if (isAlreadyAttending) {
+        // Absagen (Löschen aus Supabase)
+        const { error } = await supabase
+          .from("event_attendees")
+          .delete()
+          .eq("event_id", eventId)
+          .eq("user_id", user.id);
+
+        if (!error) {
+          setEventAttendees({
+            ...eventAttendees,
+            [eventId]: attendeesList.filter((a) => a.userId !== user.id),
+          });
+        }
+      } else {
+        // Teilnehmen (Einfügen in Supabase)
+        const { error } = await supabase
+          .from("event_attendees")
+          .insert([{ event_id: eventId, user_id: user.id }]);
+
+        if (!error) {
+          const userName = user.username || user.name || "Commander";
+          setEventAttendees({
+            ...eventAttendees,
+            [eventId]: [...attendeesList, { userId: user.id, name: userName }],
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Fehler beim RSVP:", err);
+    }
+  };
+
+  const isAttendingEvent = (eventId) => {
+    return (eventAttendees[eventId] || []).some((a) => a.userId === user.id);
   };
 
   return (
@@ -236,17 +281,99 @@ export default function DashboardView({ user, setActiveTab }) {
               <Calendar size={16} /> Events & Termine
             </h3>
             <div className="space-y-3 text-xs">
-              <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-1">
-                <div className="font-bold text-neutral-200">Raccoon Rumble 2026</div>
-                <p className="text-neutral-400 text-[11px]">Ausflug nach Hof mit dem Fumble Forge Team.</p>
-                <span className="inline-block text-[10px] text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mt-1">
-                  Teilnahme bestätigt 🎟️
-                </span>
+              
+              {/* Event 1: Raccoon Rumble */}
+              <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold text-neutral-200">Raccoon Rumble 2026</div>
+                    <p className="text-neutral-400 text-[11px] mt-0.5">Ausflug nach Hof mit dem Fumble Forge Team.</p>
+                  </div>
+                </div>
+
+                {/* Teilnehmerliste */}
+                <div className="pt-1 border-t border-neutral-900">
+                  <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({eventAttendees["raccoon-rumble"].length}):</div>
+                  <div className="flex flex-wrap gap-1">
+                    {eventAttendees["raccoon-rumble"].length === 0 ? (
+                      <span className="text-[10px] text-neutral-600 italic">Noch keine Zusagen</span>
+                    ) : (
+                      eventAttendees["raccoon-rumble"].map((att, idx) => (
+                        <span key={idx} className="text-[10px] bg-neutral-900 text-amber-400 px-2 py-0.5 rounded border border-neutral-800 font-mono">
+                          {att.name}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* RSVP Button */}
+                <button
+                  onClick={() => handleRsvp("raccoon-rumble")}
+                  className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
+                    isAttendingEvent("raccoon-rumble")
+                      ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
+                      : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
+                  }`}
+                >
+                  {isAttendingEvent("raccoon-rumble") ? (
+                    <>
+                      <XCircle size={14} /> Teilnahme absagen
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={14} /> Teilnahme bestätigen
+                    </>
+                  )}
+                </button>
               </div>
-              <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-1">
-                <div className="font-bold text-neutral-200">Fumble Forge Cup</div>
-                <p className="text-neutral-400 text-[11px]">Internes Club-Turnier in Planung.</p>
+
+              {/* Event 2: Fumble Forge Cup */}
+              <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold text-neutral-200">Fumble Forge Cup</div>
+                    <p className="text-neutral-400 text-[11px] mt-0.5">Internes Club-Turnier in Planung.</p>
+                  </div>
+                </div>
+
+                {/* Teilnehmerliste */}
+                <div className="pt-1 border-t border-neutral-900">
+                  <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({eventAttendees["ff-cup"].length}):</div>
+                  <div className="flex flex-wrap gap-1">
+                    {eventAttendees["ff-cup"].length === 0 ? (
+                      <span className="text-[10px] text-neutral-600 italic">Noch keine Zusagen</span>
+                    ) : (
+                      eventAttendees["ff-cup"].map((att, idx) => (
+                        <span key={idx} className="text-[10px] bg-neutral-900 text-amber-400 px-2 py-0.5 rounded border border-neutral-800 font-mono">
+                          {att.name}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* RSVP Button */}
+                <button
+                  onClick={() => handleRsvp("ff-cup")}
+                  className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
+                    isAttendingEvent("ff-cup")
+                      ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
+                      : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
+                  }`}
+                >
+                  {isAttendingEvent("ff-cup") ? (
+                    <>
+                      <XCircle size={14} /> Teilnahme absagen
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={14} /> Teilnahme bestätigen
+                    </>
+                  )}
+                </button>
               </div>
+
             </div>
           </div>
 
