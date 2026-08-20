@@ -18,6 +18,7 @@ import {
   Users,
   Clock,
   X,
+  Swords,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
@@ -203,74 +204,77 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const fetchUserData = async () => {
     if (!user?.id) return;
 
-    const { data: matchData } = await supabase
-      .from("matches")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      const { data: matchData } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-    if (matchData) {
-      setMatches(matchData);
+      if (matchData) {
+        setMatches(matchData);
 
-      const processed = [];
-      matchData.forEach((m) => {
-        const isTournament = m.details?.match_mode === "tournament_complete";
-        if (isTournament && m.details?.tournament_rounds) {
-          m.details.tournament_rounds.forEach((round) => {
-            processed.push({
-              ...m,
-              player1_vp: round.p1Vp,
-              player2_vp: round.p2Vp,
-              winner_name: round.winner,
-              player1_name: round.p1Name || username,
-              player2_name: round.p2Name || "Gegner",
+        const processed = [];
+        matchData.forEach((m) => {
+          const isTournament = m.details?.match_mode === "tournament_complete";
+          if (isTournament && m.details?.tournament_rounds) {
+            m.details.tournament_rounds.forEach((round) => {
+              processed.push({
+                ...m,
+                player1_vp: round.p1Vp,
+                player2_vp: round.p2Vp,
+                winner_name: round.winner,
+                player1_name: round.p1Name || username,
+                player2_name: round.p2Name || "Gegner",
+              });
             });
-          });
-        } else {
-          processed.push(m);
-        }
-      });
-      setFlattenedMatches(processed);
-    }
-
-    const { data: eventData } = await supabase
-      .from("event_attendees")
-      .select("*")
-      .eq("user_id", user.id);
-
-    if (eventData) {
-      setUserEvents(eventData);
-    }
-
-    // Profil-Daten (Custom Badges, Unlocked Badges, Login-Tage, Armeen & Avatar) laden
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("custom_badges, unlocked_badges, login_days, avatar_url, aos_armies, wh40k_armies, armies")
-      .eq("id", user.id)
-      .single();
-
-    if (profileData) {
-      if (profileData.custom_badges) setCustomBadges(profileData.custom_badges);
-      if (profileData.unlocked_badges) setUnlockedBadgeIds(profileData.unlocked_badges);
-      if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
-      if (profileData.aos_armies) setAosArmies(profileData.aos_armies);
-      else if (profileData.armies) setAosArmies(profileData.armies); // Fallback für alte Spalte
-      if (profileData.wh40k_armies) setWh40kArmies(profileData.wh40k_armies);
-      
-      // Login-Tracker für das Stammtisch-Badge (heutigen Tag registrieren)
-      const todayStr = new Date().toISOString().split("T")[0];
-      let days = profileData.login_days || [];
-      if (!days.includes(todayStr)) {
-        days.push(todayStr);
-        await supabase
-          .from("profiles")
-          .upsert({ id: user.id, login_days: days, updated_at: new Date() });
+          } else {
+            processed.push(m);
+          }
+        });
+        setFlattenedMatches(processed);
       }
-      setLoginDays(days);
+
+      const { data: eventData } = await supabase
+        .from("event_attendees")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (eventData) {
+        setUserEvents(eventData);
+      }
+
+      // Profil-Daten sicher laden (mit Fallback, falls Spalten blockieren)
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profileData) {
+        if (profileData.custom_badges) setCustomBadges(profileData.custom_badges);
+        if (profileData.unlocked_badges) setUnlockedBadgeIds(profileData.unlocked_badges);
+        if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
+        if (profileData.aos_armies) setAosArmies(profileData.aos_armies);
+        else if (profileData.armies) setAosArmies(profileData.armies);
+        if (profileData.wh40k_armies) setWh40kArmies(profileData.wh40k_armies);
+        
+        // Login-Tracker
+        const todayStr = new Date().toISOString().split("T")[0];
+        let days = profileData.login_days || [];
+        if (!days.includes(todayStr)) {
+          days.push(todayStr);
+          await supabase
+            .from("profiles")
+            .upsert({ id: user.id, login_days: days, updated_at: new Date() });
+        }
+        setLoginDays(days);
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden der Benutzerdaten:", err.message);
     }
   };
 
-  // Einmal verliehen, dauerhaft behalten Logik
   useEffect(() => {
     if (!user?.id || BADGE_DEFINITIONS.length === 0) return;
 
@@ -388,7 +392,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         club,
         aos_armies: aosArmies,
         wh40k_armies: wh40kArmies,
-        armies: aosArmies, // Abwärtskompatibilität für alte Views
+        armies: aosArmies,
         game_systems: "Age of Sigmar, Warhammer 40k",
         avatar_url: avatarUrl,
         custom_badges: customBadges,
@@ -526,7 +530,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
                 rows={3}
                 value={aosArmies}
                 onChange={(e) => setAosArmies(e.target.value)}
-                placeholder="z. B. Skaven, Sylvaneth, Daughters of Khaine..."
+                placeholder="z. B. Skaven, Sylvaneth..."
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm resize-none"
               />
             </div>
