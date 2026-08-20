@@ -14,6 +14,7 @@ import {
   Trophy,
   RotateCcw,
   Award,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -458,6 +459,9 @@ export default function AosScoreTracker({ currentUser }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
+  // State für die Sicherheitsabfrage zum Abbrechen/Löschen des Spiels
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const [players, setPlayers] = useState(() => loadSavedState("players", {
     player1: {
       name: "Spieler 1",
@@ -806,8 +810,6 @@ export default function AosScoreTracker({ currentUser }) {
       const totalP2Wins = allMatches.filter(m => m.winner === players.player2.name).length;
       const tournamentWinner = totalP1Wins > totalP2Wins ? players.player1.name : totalP2Wins > totalP1Wins ? players.player2.name : "Turnier-Unentschieden";
 
-      // HIER SETZEN WIR DEN TURNIERNAMEN DIREKT ALS SPIELER 1/2 ODER IN DEN TITEL,
-      // DAMIT DEIN PROFIL-UI DEN NAMEN EXAKT ANZEIGT UND DARUNTER DIE RUNDEN STRUKTURIERT.
       const tournamentData = {
         user_id: currentUser.id,
         player1_name: `Turnier: ${matchTitle}`,
@@ -823,7 +825,7 @@ export default function AosScoreTracker({ currentUser }) {
           player2_actual_name: players.player2.name,
           player1_faction: players.player1.faction,
           player2_faction: players.player2.faction,
-          tournament_rounds: allMatches, // Enthält Spiel 1, Spiel 2 etc. als strukturierte Blöcke
+          tournament_rounds: allMatches,
         },
       };
 
@@ -861,6 +863,7 @@ export default function AosScoreTracker({ currentUser }) {
     setActiveTurnPlayer("player1");
     setLastTurnPlayerInPrevRound("player2");
     setTurnHistory([]);
+    setShowDeleteConfirm(false);
     setPlayers((prev) => ({
       player1: {
         ...prev.player1,
@@ -1284,7 +1287,6 @@ export default function AosScoreTracker({ currentUser }) {
           </div>
         </div>
 
-        {/* BEREITS GESPIELTE TURNIER-SPIELE ANZEIGEN */}
         {matchMode === "tournament" && tournamentResultsSummary.length > 0 && (
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
             <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
@@ -1769,6 +1771,38 @@ export default function AosScoreTracker({ currentUser }) {
                 <span className="text-neutral-400">{log.action}</span>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* SICHERER LÖSCH-BEREICH (AM ENDE DER SEITE) */}
+      <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4 text-center">
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-neutral-500 hover:text-red-400 text-xs font-bold transition flex items-center gap-1.5 mx-auto"
+          >
+            <Trash2 size={14} /> Aktuelles Spiel/Turnier abbrechen & verwerfen
+          </button>
+        ) : (
+          <div className="space-y-3 max-w-sm mx-auto bg-neutral-950 border border-red-900/50 p-4 rounded-xl shadow-xl">
+            <p className="text-red-400 text-xs font-extrabold uppercase tracking-wide">
+              Möchtest du dieses Spiel wirklich verwerfen? Alle aktuellen Punkte gehen verloren!
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={resetMatch}
+                className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition shadow-md"
+              >
+                Ja, verwerfen
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition"
+              >
+                Abbrechen
+              </button>
+            </div>
           </div>
         )}
       </div>
