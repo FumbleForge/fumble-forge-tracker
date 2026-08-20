@@ -30,6 +30,7 @@ const BADGE_ICONS = {
 export default function MemberList() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTooltip, setActiveTooltip] = useState(null);
 
   useEffect(() => {
     fetchMembers();
@@ -129,14 +130,25 @@ export default function MemberList() {
                         const badgeInfo = BADGE_ICONS[badgeId];
                         const IconComp = badgeInfo ? badgeInfo.icon : Trophy;
                         const title = badgeInfo ? badgeInfo.title : badgeId;
+                        const tooltipKey = `${member.id}-${badgeId}`;
 
                         return (
                           <div
                             key={badgeId}
-                            className="w-7 h-7 rounded-lg bg-neutral-950 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm shrink-0"
-                            title={title}
+                            className="relative group cursor-pointer"
+                            onMouseEnter={() => setActiveTooltip(tooltipKey)}
+                            onMouseLeave={() => setActiveTooltip(null)}
                           >
-                            <IconComp size={14} />
+                            <div className="w-7 h-7 rounded-lg bg-neutral-950 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm shrink-0 hover:border-amber-400 transition">
+                              <IconComp size={14} />
+                            </div>
+
+                            {/* Dynamisches Tooltip-Fenster */}
+                            {activeTooltip === tooltipKey && (
+                              <div className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1 bg-neutral-950 border border-amber-500/60 text-amber-300 text-[10px] font-bold rounded-md shadow-xl whitespace-nowrap z-50 pointer-events-none">
+                                {title}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
