@@ -339,13 +339,13 @@ export default function LoginView({ onLogin }) {
             </div>
             <div>
               <label className="block text-xs uppercase font-bold text-neutral-400 mb-1">
-                Club / Hauptfraktion
+                Club / Team
               </label>
               <input
                 type="text"
                 value={club}
                 onChange={(e) => setClub(e.target.value)}
-                placeholder="z.B. Fumble Forge / Daughters of Khaine"
+                placeholder="z.B. Fumble Forge"
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none"
               />
             </div>
