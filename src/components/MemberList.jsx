@@ -93,13 +93,13 @@ export default function MemberList() {
             const unlocked = parseArrayField(member.unlocked_badges);
             const custom = parseArrayField(member.custom_badges);
 
-            // Automatische Fallback-Prüfung für die Visitenkarte (z.B. Profilbild vorhanden)
+            // Live-Ermittlung von automatischen Badges (z.B. Profilbild) direkt beim Rendern
             const dynamicAutoBadges = [];
             if (member.avatar_url) {
               dynamicAutoBadges.push("face_of_the_club");
             }
 
-            // Alle Badges zusammenführen (Gespeicherte + Admin-Badges + Live-ermittelte)
+            // Alle Badges zusammenführen (Supabase-Spalte + Admin Custom Badges + Live Fallbacks)
             const memberBadges = Array.from(
               new Set([...unlocked, ...custom, ...dynamicAutoBadges])
             );
@@ -136,7 +136,7 @@ export default function MemberList() {
                     <div className="flex items-center gap-1 flex-wrap justify-end max-w-[140px]">
                       {memberBadges.map((badgeId) => {
                         const badgeInfo = BADGE_ICONS[badgeId];
-                        if (!badgeInfo) return null; // Falls eine ID nicht im Mapping ist überspringen
+                        if (!badgeInfo) return null;
                         const IconComp = badgeInfo.icon;
                         const title = badgeInfo.title;
                         const tooltipKey = `${member.id}-${badgeId}`;
