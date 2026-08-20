@@ -22,7 +22,7 @@ import {
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
 
-// DEFINITION DER VOLLSTÄNDIGEN BADGES
+// DEFINITION DER VOLLSTÄNDIGEN BADGES (INKLUSIVE "GESICHT DES CLUBS")
 const BADGE_DEFINITIONS = [
   {
     id: "blood_and_honor",
@@ -30,7 +30,7 @@ const BADGE_DEFINITIONS = [
     desc: "Trage dein allererstes Match im Score Tracker ein.",
     category: "Schlachtfelder",
     icon: Award,
-    check: (matches, events, username, user, customBadges, loginDays) => matches.length >= 1,
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => matches.length >= 1,
   },
   {
     id: "club_veteran",
@@ -38,7 +38,7 @@ const BADGE_DEFINITIONS = [
     desc: "Trage insgesamt 5 Matches über den Tracker ein.",
     category: "Schlachtfelder",
     icon: Trophy,
-    check: (matches, events, username, user, customBadges, loginDays) => matches.length >= 5,
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => matches.length >= 5,
   },
   {
     id: "winning_streak",
@@ -46,7 +46,7 @@ const BADGE_DEFINITIONS = [
     desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
     category: "Schlachtfelder",
     icon: Flame,
-    check: (matches, events, username, user, customBadges, loginDays) => {
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => {
       let currentStreak = 0;
       for (const m of matches) {
         const isTournament = m.details?.match_mode === "tournament_complete";
@@ -95,7 +95,7 @@ const BADGE_DEFINITIONS = [
     desc: "Gewinne ein über den internen Turnier-Modus erstelltes Turnier.",
     category: "Schlachtfelder",
     icon: Shield,
-    check: (matches, events, username, user, customBadges, loginDays) => {
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         const winner = m.winner_name || "";
@@ -113,7 +113,7 @@ const BADGE_DEFINITIONS = [
     desc: "Erziele ein Unentschieden in einem getrackten Match.",
     category: "Schlachtfelder",
     icon: MapPin,
-    check: (matches, events, username, user, customBadges, loginDays) => {
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         if (isTournament && m.details?.tournament_rounds) {
@@ -131,7 +131,7 @@ const BADGE_DEFINITIONS = [
     desc: "Vom Admin verliehen: Aktive Bereitstellung von gedrucktem Club-Gelände.",
     category: "Werkstatt",
     icon: Wrench,
-    check: (matches, events, username, user, customBadges, loginDays) => customBadges.includes("machinist"),
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => customBadges.includes("machinist"),
   },
   {
     id: "master_of_magnets",
@@ -139,7 +139,7 @@ const BADGE_DEFINITIONS = [
     desc: "Vom Admin verliehen: Vorbildlich magnetisierte modulare Ruinen.",
     category: "Werkstatt",
     icon: Magnet,
-    check: (matches, events, username, user, customBadges, loginDays) => customBadges.includes("master_of_magnets"),
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => customBadges.includes("master_of_magnets"),
   },
   {
     id: "on_tour",
@@ -147,7 +147,7 @@ const BADGE_DEFINITIONS = [
     desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble).",
     category: "Community",
     icon: Calendar,
-    check: (matches, events, username, user, customBadges, loginDays) => events.length > 0,
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => events.length > 0,
   },
   {
     id: "stammtisch",
@@ -155,7 +155,7 @@ const BADGE_DEFINITIONS = [
     desc: "Logge dich an 5 verschiedenen Tagen im Club-Portal ein.",
     category: "Community",
     icon: Users,
-    check: (matches, events, username, user, customBadges, loginDays) => loginDays.length >= 5,
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => loginDays.length >= 5,
   },
   {
     id: "early_bird",
@@ -163,7 +163,15 @@ const BADGE_DEFINITIONS = [
     desc: "Zusage zu einem Event direkt nach Ankündigung.",
     category: "Community",
     icon: Clock,
-    check: (matches, events, username, user, customBadges, loginDays) => events.length > 0,
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => events.length > 0,
+  },
+  {
+    id: "face_of_the_club",
+    title: "Gesicht des Clubs",
+    desc: "Lade ein eigenes Profilbild im Mitglieder-Profil hoch.",
+    category: "Community",
+    icon: User,
+    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => Boolean(avatarUrl),
   },
 ];
 
@@ -234,16 +242,17 @@ export default function UserProfile({ user, onUpdateProfile }) {
       setUserEvents(eventData);
     }
 
-    // Profil-Daten (Custom Badges, Unlocked Badges & Login-Tage) laden
+    // Profil-Daten (Custom Badges, Unlocked Badges, Login-Tage & Avatar) laden
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("custom_badges, unlocked_badges, login_days")
+      .select("custom_badges, unlocked_badges, login_days, avatar_url")
       .eq("id", user.id)
       .single();
 
     if (profileData) {
       if (profileData.custom_badges) setCustomBadges(profileData.custom_badges);
       if (profileData.unlocked_badges) setUnlockedBadgeIds(profileData.unlocked_badges);
+      if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
       
       // Login-Tracker für das Stammtisch-Badge (heutigen Tag registrieren)
       const todayStr = new Date().toISOString().split("T")[0];
@@ -263,7 +272,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
     if (!user?.id || BADGE_DEFINITIONS.length === 0) return;
 
     const currentUnlocked = BADGE_DEFINITIONS.filter((badge) =>
-      badge.check(matches, userEvents, username, user, customBadges, loginDays)
+      badge.check(matches, userEvents, username, user, customBadges, loginDays, avatarUrl)
     ).map((b) => b.id);
 
     const merged = Array.from(new Set([...unlockedBadgeIds, ...currentUnlocked]));
@@ -275,7 +284,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         .upsert({ id: user.id, unlocked_badges: merged, updated_at: new Date() })
         .then();
     }
-  }, [matches, userEvents, username, customBadges, loginDays]);
+  }, [matches, userEvents, username, customBadges, loginDays, avatarUrl]);
 
   const toggleAdminBadge = async (badgeId) => {
     if (!isAdmin) return;

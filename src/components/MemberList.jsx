@@ -10,8 +10,10 @@ import {
   Magnet,
   Calendar,
   Clock,
+  User, // Neu für das "Gesicht des Clubs" Badge
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
+import StatsDashboard from "./StatsDashboard";
 
 // Zuordnung der Badge-IDs zu Icons & Namen für die Mini-Ansicht
 const BADGE_ICONS = {
@@ -25,6 +27,7 @@ const BADGE_ICONS = {
   on_tour: { icon: Calendar, title: "On Tour" },
   stammtisch: { icon: Users, title: "Fumble Forged Stammtisch" },
   early_bird: { icon: Clock, title: "Frühe Vögel" },
+  face_of_the_club: { icon: User, title: "Gesicht des Clubs" }, // Badge hinzugefügt
 };
 
 export default function MemberList() {
@@ -75,7 +78,6 @@ export default function MemberList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {members.map((member) => {
-            // Hilfsfunktion zum sicheren Parsen von Arrays aus Supabase
             const parseArrayField = (field) => {
               if (Array.isArray(field)) return field;
               if (typeof field === "string") {
@@ -91,7 +93,6 @@ export default function MemberList() {
 
             const unlocked = parseArrayField(member.unlocked_badges);
             const custom = parseArrayField(member.custom_badges);
-
             const memberBadges = Array.from(new Set([...unlocked, ...custom]));
 
             return (
@@ -99,7 +100,6 @@ export default function MemberList() {
                 key={member.id}
                 className="bg-neutral-900 border border-neutral-800 hover:border-amber-600/50 transition rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between"
               >
-                {/* OBERER BEREICH: Avatar, Name & Trophäen-Icons */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-neutral-950 border-2 border-amber-600/40 flex items-center justify-center overflow-hidden shrink-0">
@@ -123,7 +123,6 @@ export default function MemberList() {
                     </div>
                   </div>
 
-                  {/* BADGES / MINI-TROPHÄEN AUF DER VISITENKARTE */}
                   {memberBadges.length > 0 && (
                     <div className="flex items-center gap-1 flex-wrap justify-end max-w-[140px]">
                       {memberBadges.map((badgeId) => {
@@ -143,7 +142,6 @@ export default function MemberList() {
                               <IconComp size={14} />
                             </div>
 
-                            {/* Dynamisches Tooltip-Fenster */}
                             {activeTooltip === tooltipKey && (
                               <div className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1 bg-neutral-950 border border-amber-500/60 text-amber-300 text-[10px] font-bold rounded-md shadow-xl whitespace-nowrap z-50 pointer-events-none">
                                 {title}
@@ -156,7 +154,6 @@ export default function MemberList() {
                   )}
                 </div>
 
-                {/* UNTERER BEREICH: Details (Spielsysteme & Armeen) */}
                 <div className="space-y-2.5 pt-3 border-t border-neutral-800/80 text-xs">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-neutral-500 block">
