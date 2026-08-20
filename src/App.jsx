@@ -17,6 +17,7 @@ import UserProfile from "./components/UserProfile";
 import AdminPanel from "./components/AdminPanel";
 import MemberList from "./components/MemberList";
 import HallOfFame from "./components/HallOfFame";
+import DashboardView from "./components/DashboardView";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -364,24 +365,14 @@ export default function App() {
 
       {/* INHALTSBEREICH */}
       <main className="flex-1 p-4 md:p-8">
+        {/* NEU: Dynamische Dashboard-View für den eingeloggten Spieler */}
         {activeTab === "dashboard" && (
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl max-w-4xl space-y-2">
-            <h2 className="text-3xl font-bold text-amber-500">
-              Club Dashboard
-            </h2>
-            <p className="text-neutral-300">
-              Willkommen zurück,{" "}
-              <span className="text-amber-400 font-bold">
-                {user.username || user.name}
-              </span>
-              !
-            </p>
-          </div>
+          <DashboardView user={user} setActiveTab={setActiveTab} />
         )}
 
         {activeTab === "score" && <AosScoreTracker currentUser={user} />}
 
-        {/* NEU: Hall of Fame Ansicht */}
+        {/* Hall of Fame Ansicht */}
         {activeTab === "hof" && <HallOfFame />}
 
         {activeTab === "map" && (
