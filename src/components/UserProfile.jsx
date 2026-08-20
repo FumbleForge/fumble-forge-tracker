@@ -7,7 +7,6 @@ import {
   AlertCircle,
   Trophy,
   Trash2,
-  BarChart2,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
@@ -24,6 +23,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [matches, setMatches] = useState([]);
+  const [flattenedMatches, setFlattenedMatches] = useState([]); // NEU für StatsDashboard
 
   useEffect(() => {
     fetchUserMatches();
@@ -37,7 +37,31 @@ export default function UserProfile({ user, onUpdateProfile }) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (data) setMatches(data);
+    if (data) {
+      setMatches(data);
+
+      // Runden von Turnieren aufschlüsseln, damit das StatsDashboard sie einzeln zählt
+      const processed = [];
+      data.forEach((m) => {
+        const isTournament = m.details?.match_mode === "tournament_complete";
+        if (isTournament && m.details?.tournament_rounds) {
+          m.details.tournament_rounds.forEach((round) => {
+            processed.push({
+              ...m,
+              // Wir mappen die Runden-Daten so, dass das Statistik-Dashboard sie lesen kann
+              player1_vp: round.p1Vp,
+              player2_vp: round.p2Vp,
+              winner_name: round.winner,
+              player1_name: round.p1Name || username,
+              player2_name: round.p2Name || "Gegner",
+            });
+          });
+        } else {
+          processed.push(m);
+        }
+      });
+      setFlattenedMatches(processed);
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -147,7 +171,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
     }
   };
 
-  // Hilfsfunktion zur Ermittlung, ob ein einzelnes Runden-Spiel gewonnen wurde
   const evaluateRoundWin = (round) => {
     const winner = round.winner || "";
     const p1Name = round.p1Name || "";
@@ -289,8 +312,8 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       </form>
 
-      {/* Commander Statistik Dashboard */}
-      <StatsDashboard matches={matches} username={username} />
+      {/* Commander Statistik Dashboard (nutzt jetzt die aufgeschlüsselten Runden) */}
+      <StatsDashboard matches={flattenedMatches} username={username} />
 
       <div className="space-y-4 pt-4 border-t border-neutral-800">
         <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
@@ -316,7 +339,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
                   }`}
                 >
                   <div className="flex flex-col gap-2 w-full pr-4">
-                    {/* Turnier-Ansicht mit Runden-Unterstruktur oder normales Einzelspiel */}
                     {m.details?.match_mode === "tournament_complete" ? (
                       <div className="space-y-2">
                         <div className="text-sm font-black text-amber-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-1.5">
@@ -324,7 +346,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
                             <Trophy size={16} /> {m.details.match_title}
                           </span>
                           
-                          {/* NEU: W/L-Historie als farbiger Streifen */}
                           <div className="flex items-center gap-1.5 text-xs font-mono">
                             <span className="text-neutral-400 font-sans text-[11px]">
                               {rounds.length} {rounds.length === 1 ? "Spiel" : "Spiele"}:
@@ -353,7 +374,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
                           </div>
                         </div>
                         
-                        {/* Auflistung der einzelnen Spiele untereinander */}
                         <div className="space-y-1.5">
                           {rounds.length > 0 ? (
                             rounds.map((roundRes, rIdx) => (
@@ -380,7 +400,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
                       </div>
                     )}
 
-                    {/* Datum-Anzeige */}
                     <div className="text-[10px] text-neutral-500 font-mono pt-1">
                       Abgeschlossen am:{" "}
                       {new Date(m.created_at).toLocaleDateString("de-DE", {

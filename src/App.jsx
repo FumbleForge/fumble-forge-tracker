@@ -27,11 +27,18 @@ export default function App() {
   // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // Automatischer Update-Check via version.json
+  // Automatischer Update-Check (Erzwingt echten Server-Fetch ohne Cache)
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
-        const response = await fetch("/version.json?t=" + Date.now(), { cache: "no-store" });
+        const response = await fetch("/version.json?t=" + Date.now() + "_" + Math.random(), {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          }
+        });
+
         if (response.ok) {
           const data = await response.json();
           const serverVersion = data.version;
@@ -49,7 +56,10 @@ export default function App() {
       }
     };
 
-    // Prüfen beim Tab-Wechsel oder App-Fokus
+    // 1. Direkt beim Start prüfen
+    checkForUpdates();
+
+    // 2. Prüfen beim Tab-Wechsel oder App-Fokus
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         checkForUpdates();
@@ -57,8 +67,13 @@ export default function App() {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // 3. Zusätzlich alle 5 Minuten im Hintergrund prüfen
+    const interval = setInterval(checkForUpdates, 5 * 60 * 1000);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
     };
   }, []);
 
