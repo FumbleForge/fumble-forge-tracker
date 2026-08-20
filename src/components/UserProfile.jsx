@@ -13,33 +13,40 @@ import {
   MapPin,
   Lock,
   Wrench,
+  Magnet,
+  Calendar,
+  Users,
+  Clock,
   X,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
 
-// DEFINITION DER AUTOMATISIERTEN BADGES
+// DEFINITION DER VOLLSTÄNDIGEN BADGES
 const BADGE_DEFINITIONS = [
   {
     id: "blood_and_honor",
     title: "Blut & Ehre",
     desc: "Trage dein allererstes Match im Score Tracker ein.",
+    category: "Schlachtfelder",
     icon: Award,
-    check: (matches, events) => matches.length >= 1,
+    check: (matches, events, username, user, customBadges) => matches.length >= 1,
   },
   {
     id: "club_veteran",
     title: "Veteran des Clubs",
-    desc: "Trage insgesamt mindestens 5 Matches über den Tracker ein.",
+    desc: "Trage insgesamt 5 Matches über den Tracker ein.",
+    category: "Schlachtfelder",
     icon: Trophy,
-    check: (matches, events) => matches.length >= 5,
+    check: (matches, events, username, user, customBadges) => matches.length >= 5,
   },
   {
     id: "winning_streak",
     title: "Aufstieg der Legende",
     desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
+    category: "Schlachtfelder",
     icon: Flame,
-    check: (matches, events, username) => {
+    check: (matches, events, username, user, customBadges) => {
       let currentStreak = 0;
       for (const m of matches) {
         const isTournament = m.details?.match_mode === "tournament_complete";
@@ -86,8 +93,9 @@ const BADGE_DEFINITIONS = [
     id: "tournament_winner",
     title: "Der Hausmeister",
     desc: "Gewinne ein über den internen Turnier-Modus erstelltes Turnier.",
+    category: "Schlachtfelder",
     icon: Shield,
-    check: (matches, events, username) => {
+    check: (matches, events, username, user, customBadges) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         const winner = m.winner_name || "";
@@ -102,9 +110,10 @@ const BADGE_DEFINITIONS = [
   {
     id: "draw_master",
     title: "Unbeugsam",
-    desc: "Erzähle oder erziele ein Unentschieden in einem getrackten Match.",
+    desc: "Erziele ein Unentschieden in einem getrackten Match.",
+    category: "Schlachtfelder",
     icon: MapPin,
-    check: (matches, events) => {
+    check: (matches, events, username, user, customBadges) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         if (isTournament && m.details?.tournament_rounds) {
@@ -117,20 +126,44 @@ const BADGE_DEFINITIONS = [
     },
   },
   {
+    id: "machinist",
+    title: "Der Maschinist",
+    desc: "Vom Admin verliehen: Aktive Bereitstellung von gedrucktem Club-Gelände.",
+    category: "Werkstatt",
+    icon: Wrench,
+    check: (matches, events, username, user, customBadges) => customBadges.includes("machinist"),
+  },
+  {
+    id: "master_of_magnets",
+    title: "Master of Magnets",
+    desc: "Vom Admin verliehen: Vorbildlich magnetisierte modulare Ruinen.",
+    category: "Werkstatt",
+    icon: Magnet,
+    check: (matches, events, username, user, customBadges) => customBadges.includes("master_of_magnets"),
+  },
+  {
     id: "on_tour",
     title: "On Tour",
     desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble).",
-    icon: Trophy,
-    check: (matches, events) => events.length > 0,
+    category: "Community",
+    icon: Calendar,
+    check: (matches, events, username, user, customBadges) => events.length > 0,
   },
   {
-    id: "machinist",
-    title: "Der Maschinist",
-    desc: "Aktiver Maker: Bereitstellung von gedrucktem Club-Gelände.",
-    icon: Wrench,
-    check: (matches, events, username, profile) => {
-      return profile?.role === "admin" || (profile?.armies && profile.armies.toLowerCase().includes("bambu"));
-    },
+    id: "stammtisch",
+    title: "Fumble Forge Stammtisch",
+    desc: "Aktives Clubmitglied (mehrere Partien/Events absolviert).",
+    category: "Community",
+    icon: Users,
+    check: (matches, events, username, user, customBadges) => matches.length >= 3 || events.length >= 1,
+  },
+  {
+    id: "early_bird",
+    title: "Frühe Vögel",
+    desc: "Zusage zu einem Event direkt nach Ankündigung.",
+    category: "Community",
+    icon: Clock,
+    check: (matches, events, username, user, customBadges) => events.length > 0,
   },
 ];
 
@@ -148,9 +181,10 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const [matches, setMatches] = useState([]);
   const [flattenedMatches, setFlattenedMatches] = useState([]);
   const [userEvents, setUserEvents] = useState([]);
+  const [customBadges, setCustomBadges] = useState([]);
   
-  // State für das Modal (Alle Badges anzeigen)
   const [showAllBadgesModal, setShowAllBadgesModal] = useState(false);
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     fetchUserData();
@@ -196,6 +230,28 @@ export default function UserProfile({ user, onUpdateProfile }) {
 
     if (eventData) {
       setUserEvents(eventData);
+    }
+
+    // Admin-Badges aus Profil laden
+    if (user?.custom_badges) {
+      setCustomBadges(user.custom_badges);
+    }
+  };
+
+  const toggleAdminBadge = async (badgeId) => {
+    if (!isAdmin) return;
+    const updated = customBadges.includes(badgeId)
+      ? customBadges.filter((b) => b !== badgeId)
+      : [...customBadges, badgeId];
+
+    setCustomBadges(updated);
+
+    try {
+      await supabase
+        .from("profiles")
+        .upsert({ id: user.id, custom_badges: updated, updated_at: new Date() });
+    } catch (err) {
+      console.error("Fehler beim Speichern des Admin-Badges:", err);
     }
   };
 
@@ -252,7 +308,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
             }
           } else {
             if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
+              width = Math.round((height * maxHeight) / height);
               height = maxHeight;
             }
           }
@@ -282,6 +338,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         armies,
         game_systems: gameSystems,
         avatar_url: avatarUrl,
+        custom_badges: customBadges,
         updated_at: new Date(),
       };
 
@@ -300,7 +357,8 @@ export default function UserProfile({ user, onUpdateProfile }) {
   };
 
   const deleteMatch = async (id) => {
-    if (window.confirm("Dieses Match wirklich löschen?")) {
+    if (!isAdmin) return;
+    if (window.confirm("Dieses Test-Match wirklich unwiderruflich löschen?")) {
       await supabase.from("matches").delete().eq("id", id);
       fetchUserData();
     }
@@ -319,9 +377,8 @@ export default function UserProfile({ user, onUpdateProfile }) {
     return { isTie, isWin: !isTie && isUserWinner };
   };
 
-  // Gefilterte Liste für freigeschaltete Badges
   const unlockedBadges = BADGE_DEFINITIONS.filter((badge) =>
-    badge.check(matches, userEvents, username, user)
+    badge.check(matches, userEvents, username, user, customBadges)
   );
 
   return (
@@ -375,9 +432,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
               {username || "Mitglied"}
             </h3>
             <p className="text-xs text-neutral-500">
-              {user?.role === "admin"
-                ? "Administrator"
-                : "Fumble Forge Mitglied"}
+              {isAdmin ? "Administrator" : "Fumble Forge Mitglied"}
             </p>
           </div>
         </div>
@@ -453,7 +508,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       </form>
 
-      {/* FUMBLE FORGE TROPHÄEN & ABZEICHEN (AUFGERÄUMTES DESIGN) */}
+      {/* FUMBLE FORGE TROPHÄEN & ABZEICHEN */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
         <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
           <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
@@ -504,14 +559,21 @@ export default function UserProfile({ user, onUpdateProfile }) {
         )}
       </div>
 
-      {/* MODAL: ALLE BADGES IM DETAIL */}
+      {/* MODAL: ALLE BADGES IM DETAIL (NUR ADMIN SIEHT VERLEIH-BUTTONS) */}
       {showAllBadgesModal && (
         <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-neutral-900 border border-amber-600/40 p-6 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto space-y-6 shadow-2xl">
             <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
-              <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-                <Trophy size={16} /> Alle Fumble Forge Abzeichen ({unlockedBadges.length}/{BADGE_DEFINITIONS.length})
-              </h3>
+              <div>
+                <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                  <Trophy size={16} /> Alle Fumble Forge Abzeichen ({unlockedBadges.length}/{BADGE_DEFINITIONS.length})
+                </h3>
+                {isAdmin && (
+                  <p className="text-[10px] text-amber-400/80 mt-0.5">
+                    🛡️ Admin-Modus aktiv: Du kannst Werkstatt-Badges vergeben/entziehen.
+                  </p>
+                )}
+              </div>
               <button
                 onClick={() => setShowAllBadgesModal(false)}
                 className="text-neutral-400 hover:text-neutral-100 transition"
@@ -522,46 +584,69 @@ export default function UserProfile({ user, onUpdateProfile }) {
 
             <div className="grid grid-cols-1 gap-3">
               {BADGE_DEFINITIONS.map((badge) => {
-                const isUnlocked = badge.check(matches, userEvents, username, user);
+                const isUnlocked = badge.check(matches, userEvents, username, user, customBadges);
                 const IconComponent = badge.icon;
+                const isMakerBadge = badge.id === "machinist" || badge.id === "master_of_magnets";
 
                 return (
                   <div
                     key={badge.id}
-                    className={`p-3.5 rounded-xl border flex items-start gap-3 transition ${
+                    className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 transition ${
                       isUnlocked
                         ? "bg-neutral-950 border-amber-500/40 shadow-lg shadow-amber-950/20"
                         : "bg-neutral-950/40 border-neutral-800/60 opacity-60"
                     }`}
                   >
-                    <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
-                        isUnlocked
-                          ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
-                          : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                      }`}
-                    >
-                      {isUnlocked ? <IconComponent size={20} /> : <Lock size={16} />}
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                          isUnlocked
+                            ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                            : "bg-neutral-900 border-neutral-800 text-neutral-600"
+                        }`}
+                      >
+                        {isUnlocked ? <IconComponent size={20} /> : <Lock size={16} />}
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${isUnlocked ? "text-neutral-100" : "text-neutral-400"}`}>
+                            {badge.title}
+                          </span>
+                          <span className="text-[9px] text-neutral-500 uppercase font-mono">
+                            [{badge.category}]
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 leading-snug">
+                          {badge.desc}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="space-y-0.5 w-full">
-                      <div className="flex items-center justify-between">
-                        <span className={`text-xs font-bold ${isUnlocked ? "text-neutral-100" : "text-neutral-400"}`}>
-                          {badge.title}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {isUnlocked ? (
+                        <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.2 rounded">
+                          Freigeschaltet ✓
                         </span>
-                        {isUnlocked ? (
-                          <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.2 rounded">
-                            Freigeschaltet ✓
-                          </span>
-                        ) : (
-                          <span className="text-[9px] uppercase font-bold bg-neutral-800 text-neutral-500 px-1.5 py-0.2 rounded">
-                            Gesperrt
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-neutral-400 leading-snug">
-                        {badge.desc}
-                      </p>
+                      ) : (
+                        <span className="text-[9px] uppercase font-bold bg-neutral-800 text-neutral-500 px-1.5 py-0.2 rounded">
+                          Gesperrt
+                        </span>
+                      )}
+
+                      {/* Nur Admins können Maker-Badges manuell vergeben */}
+                      {isAdmin && isMakerBadge && (
+                        <button
+                          onClick={() => toggleAdminBadge(badge.id)}
+                          className={`mt-1 text-[10px] px-2 py-1 rounded font-bold transition ${
+                            customBadges.includes(badge.id)
+                              ? "bg-red-950 text-red-400 border border-red-800 hover:bg-red-900"
+                              : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
+                          }`}
+                        >
+                          {customBadges.includes(badge.id) ? "Entziehen" : "Verleihen"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -574,11 +659,12 @@ export default function UserProfile({ user, onUpdateProfile }) {
       {/* Commander Statistik Dashboard */}
       <StatsDashboard matches={flattenedMatches} username={username} />
 
-      {/* GESPEICHERTE MATCHES */}
+      {/* GESPEICHERTE MATCHES (MÜLLEIMER NUR FÜR ADMINS SICHTBAR) */}
       <div className="space-y-4 pt-4 border-t border-neutral-800">
-        <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-          <Trophy size={16} className="text-amber-500" /> Gespeicherte Matches (
-          {matches.length})
+        <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Trophy size={16} className="text-amber-500" /> Gespeicherte Matches ({matches.length})
+          </span>
         </h3>
 
         {matches.length === 0 ? (
@@ -672,12 +758,16 @@ export default function UserProfile({ user, onUpdateProfile }) {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => deleteMatch(m.id)}
-                    className="p-2 text-neutral-500 hover:text-red-500 transition self-start"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {/* Löschen-Button NUR für Admins sichtbar */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => deleteMatch(m.id)}
+                      className="p-2 text-neutral-500 hover:text-red-500 transition self-start cursor-pointer"
+                      title="Test-Match als Admin löschen"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               );
             })}
