@@ -6,7 +6,6 @@ import {
   Flame,
   Target,
   TrendingUp,
-  Calendar,
 } from "lucide-react";
 
 export default function StatsDashboard({ matches, username }) {
@@ -115,6 +114,17 @@ export default function StatsDashboard({ matches, username }) {
     return true; // "all"
   });
 
+  // Hilfsfunktion zur kumulativen Win-Rate Berechnung für die SVG-Kurve
+  const calculateCumulativeWinRate = (matchesList, index) => {
+    let wCount = 0;
+    for (let i = 0; i <= index; i++) {
+      const { isTie, isWin } = evaluateMatchWin(matchesList[i]);
+      if (isWin) wCount++;
+      else if (isTie) wCount += 0.5; // Unentschieden als halber Sieg
+    }
+    return (wCount / (index + 1)) * 100;
+  };
+
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6 font-sans">
       <h3 className="text-sm font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
@@ -184,11 +194,11 @@ export default function StatsDashboard({ matches, username }) {
         </div>
       </div>
 
-      {/* NEU: ZEITVERLAUF / TIMELINE SECTION */}
+      {/* WIN RATE OVER TIME - SVG LINIENDIAGRAMM */}
       <div className="space-y-4 pt-4 border-t border-neutral-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-xs uppercase font-bold text-neutral-400 flex items-center gap-1.5">
-            <TrendingUp size={14} className="text-amber-500" /> Win / Loss Zeitverlauf
+            <TrendingUp size={14} className="text-amber-500" /> Win Rate Over Time
           </div>
           
           {/* Filter-Optionen */}
@@ -226,68 +236,62 @@ export default function StatsDashboard({ matches, username }) {
           </div>
         </div>
 
-        {/* Visualisierter Verlauf */}
-        <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 space-y-3">
-          {filteredTimelineMatches.length === 0 ? (
-            <div className="text-xs text-neutral-500 italic text-center py-4">
-              Keine Spiele im gewählten Zeitraum vorhanden.
+        {/* Chart Box */}
+        <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 relative h-48 flex items-center">
+          {filteredTimelineMatches.length < 2 ? (
+            <div className="text-xs text-neutral-500 italic w-full text-center">
+              Mindestens 2 Spiele im gewählten Zeitraum für den Verlauf erforderlich.
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between text-[10px] text-neutral-500 border-b border-neutral-800 pb-2">
-                <span>Chronologischer Verlauf ({filteredTimelineMatches.length} Partien)</span>
-                <span className="flex items-center gap-2">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Sieg</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Niederlage</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-neutral-500"></span> Unentschieden</span>
-                </span>
+            <div className="w-full h-full flex">
+              {/* Prozent-Skala links */}
+              <div className="flex flex-col justify-between text-[10px] text-neutral-500 pr-3 py-1 select-none shrink-0 h-full">
+                <span>100%</span>
+                <span>75%</span>
+                <span>50%</span>
+                <span>25%</span>
+                <span>0%</span>
               </div>
 
-              {/* Timeline Items */}
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {filteredTimelineMatches.map((m, idx) => {
-                  const { isTie, isWin } = evaluateMatchWin(m);
-                  const statusColor = isTie 
-                    ? "bg-neutral-500/20 border-neutral-500/40 text-neutral-400" 
-                    : isWin 
-                    ? "bg-emerald-950/40 border-emerald-600/40 text-emerald-400" 
-                    : "bg-red-950/40 border-red-600/40 text-red-400";
-                  
-                  const dotColor = isTie ? "bg-neutral-400" : isWin ? "bg-emerald-500" : "bg-red-500";
-                  const labelText = isTie ? "Unentschieden" : isWin ? "Sieg" : "Niederlage";
+              {/* SVG Diagramm */}
+              <div className="relative flex-1 h-full">
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {/* Horizontale Gitternetzlinien (25%, 50%, 75%) */}
+                  {[25, 50, 75].map((val) => (
+                    <line
+                      key={val}
+                      x1="0"
+                      y1={100 - val}
+                      x2="100"
+                      y2={100 - val}
+                      stroke="#262626"
+                      strokeWidth="0.8"
+                      strokeDasharray="2 2"
+                    />
+                  ))}
 
-                  return (
-                    <div 
-                      key={m.id || idx}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border text-xs ${statusColor}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`}></span>
-                        <div>
-                          <div className="font-bold text-neutral-200">
-                            {m.details?.battleplan || "Einzelspiel / Partie"}
-                          </div>
-                          <div className="text-[10px] text-neutral-400">
-                            {m.player1_name} vs {m.player2_name}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="font-black uppercase tracking-wider">{labelText}</span>
-                        <div className="text-[10px] text-neutral-500">
-                          {new Date(m.created_at).toLocaleDateString("de-DE", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                  {/* SVG Kurvenpfad */}
+                  <path
+                    d={`M 0 ${100 - calculateCumulativeWinRate(filteredTimelineMatches, 0)} ${
+                      filteredTimelineMatches
+                        .map((_, i) => {
+                          if (i === 0) return "";
+                          const rate = calculateCumulativeWinRate(filteredTimelineMatches, i);
+                          const x = (i / (filteredTimelineMatches.length - 1)) * 100;
+                          const y = 100 - rate;
+                          return `L ${x} ${y}`;
+                        })
+                        .join(" ")
+                    }`}
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
