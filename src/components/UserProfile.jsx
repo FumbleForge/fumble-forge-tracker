@@ -7,9 +7,82 @@ import {
   AlertCircle,
   Trophy,
   Trash2,
+  Award,
+  Flame,
+  Shield,
+  MapPin,
+  Lock,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
+
+// DEFINITION DER AUTOMATISIERTEN BADGES
+const BADGE_DEFINITIONS = [
+  {
+    id: "blood_and_honor",
+    title: "Blut & Ehre",
+    desc: "Trage dein allererstes Match im Score Tracker ein.",
+    icon: Award,
+    check: (matches, events) => matches.length >= 1,
+  },
+  {
+    id: "club_veteran",
+    title: "Veteran des Clubs",
+    desc: "Trage insgesamt mindestens 5 Matches über den Tracker ein.",
+    icon: Trophy,
+    check: (matches, events) => matches.length >= 5,
+  },
+  {
+    id: "winning_streak",
+    title: "Aufstieg der Legende",
+    desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
+    icon: Flame,
+    check: (matches, events, username) => {
+      // Prüft ob in den letzten Spielen eine Streak von 3 Wins vorliegt
+      let currentStreak = 0;
+      for (const m of matches) {
+        const winner = m.winner_name || "";
+        const isUserWinner = username && winner.toLowerCase().includes(username.toLowerCase());
+        if (isUserWinner) {
+          currentStreak++;
+          if (currentStreak >= 3) return true;
+        } else {
+          currentStreak = 0;
+        }
+      }
+      return false;
+    },
+  },
+  {
+    id: "tournament_winner",
+    title: "Der Hausmeister",
+    desc: "Gewinne ein über den internen Turnier-Modus erstelltes Turnier.",
+    icon: Shield,
+    check: (matches, events, username) => {
+      return matches.some((m) => {
+        const isTournament = m.details?.match_mode === "tournament_complete";
+        const winner = m.winner_name || "";
+        return isTournament && username && winner.toLowerCase().includes(username.toLowerCase());
+      });
+    },
+  },
+  {
+    id: "draw_master",
+    title: "Unbeugsam",
+    desc: "Erzähle oder erziele ein Unentschieden in einem getrackten Match.",
+    icon: MapPin,
+    check: (matches, events) => {
+      return matches.some((m) => m.winner_name === "Unentschieden");
+    },
+  },
+  {
+    id: "on_tour",
+    title: "On Tour",
+    desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble).",
+    icon: Trophy,
+    check: (matches, events) => events.length > 0,
+  },
+];
 
 export default function UserProfile({ user, onUpdateProfile }) {
   const [username, setUsername] = useState(
@@ -23,32 +96,33 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [matches, setMatches] = useState([]);
-  const [flattenedMatches, setFlattenedMatches] = useState([]); // NEU für StatsDashboard
+  const [flattenedMatches, setFlattenedMatches] = useState([]);
+  const [userEvents, setUserEvents] = useState([]);
 
   useEffect(() => {
-    fetchUserMatches();
+    fetchUserData();
   }, [user]);
 
-  const fetchUserMatches = async () => {
+  const fetchUserData = async () => {
     if (!user?.id) return;
-    const { data } = await supabase
+
+    // 1. Matches laden
+    const { data: matchData } = await supabase
       .from("matches")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (data) {
-      setMatches(data);
+    if (matchData) {
+      setMatches(matchData);
 
-      // Runden von Turnieren aufschlüsseln, damit das StatsDashboard sie einzeln zählt
       const processed = [];
-      data.forEach((m) => {
+      matchData.forEach((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         if (isTournament && m.details?.tournament_rounds) {
           m.details.tournament_rounds.forEach((round) => {
             processed.push({
               ...m,
-              // Wir mappen die Runden-Daten so, dass das Statistik-Dashboard sie lesen kann
               player1_vp: round.p1Vp,
               player2_vp: round.p2Vp,
               winner_name: round.winner,
@@ -61,6 +135,16 @@ export default function UserProfile({ user, onUpdateProfile }) {
         }
       });
       setFlattenedMatches(processed);
+    }
+
+    // 2. Event-Teilnahmen laden für das "On Tour" Badge
+    const { data: eventData } = await supabase
+      .from("event_attendees")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (eventData) {
+      setUserEvents(eventData);
     }
   };
 
@@ -167,7 +251,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const deleteMatch = async (id) => {
     if (window.confirm("Dieses Match wirklich löschen?")) {
       await supabase.from("matches").delete().eq("id", id);
-      fetchUserMatches();
+      fetchUserData();
     }
   };
 
@@ -183,6 +267,11 @@ export default function UserProfile({ user, onUpdateProfile }) {
 
     return { isTie, isWin: !isTie && isUserWinner };
   };
+
+  // Zähle freigeschaltete Badges
+  const unlockedBadgesCount = BADGE_DEFINITIONS.filter((badge) =>
+    badge.check(matches, userEvents, username)
+  ).length;
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 font-sans">
@@ -201,6 +290,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       )}
 
+      {/* PROFIL FORMULAR */}
       <form
         onSubmit={handleSave}
         className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6"
@@ -312,9 +402,66 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       </form>
 
-      {/* Commander Statistik Dashboard (nutzt jetzt die aufgeschlüsselten Runden) */}
+      {/* FUMBLE FORGE TROPHÄEN & BADGES SEKTION */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
+        <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
+          <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+            <Trophy size={16} /> Fumble Forge Trophäen & Abzeichen
+          </h3>
+          <span className="text-xs font-mono font-bold bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/25">
+            {unlockedBadgesCount} / {BADGE_DEFINITIONS.length} Freigeschaltet
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {BADGE_DEFINITIONS.map((badge) => {
+            const isUnlocked = badge.check(matches, userEvents, username);
+            const IconComponent = badge.icon;
+
+            return (
+              <div
+                key={badge.id}
+                className={`p-3.5 rounded-xl border flex items-start gap-3 transition ${
+                  isUnlocked
+                    ? "bg-neutral-950 border-amber-500/40 shadow-lg shadow-amber-950/20"
+                    : "bg-neutral-950/40 border-neutral-800/60 opacity-50"
+                }`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                    isUnlocked
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                      : "bg-neutral-900 border-neutral-800 text-neutral-600"
+                  }`}
+                >
+                  {isUnlocked ? <IconComponent size={20} /> : <Lock size={16} />}
+                </div>
+
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold ${isUnlocked ? "text-neutral-100" : "text-neutral-400"}`}>
+                      {badge.title}
+                    </span>
+                    {isUnlocked && (
+                      <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.2 rounded">
+                        Freigeschaltet
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-neutral-400 leading-snug">
+                    {badge.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Commander Statistik Dashboard */}
       <StatsDashboard matches={flattenedMatches} username={username} />
 
+      {/* GESPEICHERTE MATCHES */}
       <div className="space-y-4 pt-4 border-t border-neutral-800">
         <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
           <Trophy size={16} className="text-amber-500" /> Gespeicherte Matches (
