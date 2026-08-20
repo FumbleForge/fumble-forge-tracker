@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   LayoutGrid,
   Swords,
-  Map,
+  BarChart3,
   User,
   ShieldCheck,
   LogOut,
@@ -19,6 +19,7 @@ import AdminPanel from "./components/AdminPanel";
 import MemberList from "./components/MemberList";
 import HallOfFame from "./components/HallOfFame";
 import DashboardView from "./components/DashboardView";
+import ClubMeta from "./components/ClubMeta"; // Das neue Meta-Dashboard
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -51,7 +52,6 @@ export default function App() {
           const storedVersion = localStorage.getItem("app_version");
 
           if (storedVersion && storedVersion !== serverVersion) {
-            // Zeige den Banner statt sofort neu zu laden
             setUpdateAvailable(true);
           } else if (!storedVersion) {
             localStorage.setItem("app_version", serverVersion);
@@ -62,10 +62,8 @@ export default function App() {
       }
     };
 
-    // 1. Direkt beim Start prüfen
     checkForUpdates();
 
-    // 2. Prüfen beim Tab-Wechsel oder App-Fokus
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         checkForUpdates();
@@ -79,7 +77,6 @@ export default function App() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
-    // 3. Alle 60 Sekunden im Hintergrund prüfen (schont Supabase, da reiner Vercel-Request)
     const interval = setInterval(checkForUpdates, 60 * 1000);
 
     return () => {
@@ -89,7 +86,6 @@ export default function App() {
     };
   }, []);
 
-  // Funktion zum Ausführen des Updates beim Klick auf den Banner
   const handleApplyUpdate = () => {
     fetch("/version.json?t=" + Date.now(), { cache: "no-store" })
       .then(res => res.json())
@@ -102,7 +98,6 @@ export default function App() {
       });
   };
 
-  // Funktion zum sauberen Laden aller Profile für das Admin-Panel
   const fetchAllProfiles = async () => {
     const { data: allProfiles, error } = await supabase
       .from("profiles")
@@ -115,7 +110,6 @@ export default function App() {
     }
   };
 
-  // Supabase Session und User-Liste beim Start prüfen
   useEffect(() => {
     const checkSession = async () => {
       const {
@@ -151,7 +145,6 @@ export default function App() {
       }
     );
 
-    // Listener für das automatische PWA-Installations-Event (Android/Chrome)
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -184,7 +177,6 @@ export default function App() {
     setUser({ ...user, ...updatedData });
   };
 
-  // Handler für das Admin-Panel (Freigeben, Ablehnen, Löschen)
   const handleApproveUser = async (userId) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -194,8 +186,6 @@ export default function App() {
 
     if (!error && data) {
       setUsers(users.map(u => u.id === userId ? { ...u, status: "approved" } : u));
-    } else {
-      console.error("Fehler beim Freigeben:", error?.message);
     }
   };
 
@@ -225,7 +215,6 @@ export default function App() {
     return (
       <div className="min-h-screen bg-neutral-950 text-amber-500 flex flex-col items-center justify-center font-sans p-4">
         <div className="text-center space-y-4 max-w-xs">
-          {/* Splash Screen mit eurem Club-Logo */}
           <img 
             src="/logo.png" 
             alt="Fumble Forged Logo" 
@@ -254,13 +243,11 @@ export default function App() {
     );
   }
 
-  // Prüfen ob der Nutzer Admin ist (entweder Rolle oder deine feste Master-E-Mail)
   const isAdmin = user.role === "admin" || user.email === "namebereitsvergeben@gmail.com";
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col md:flex-row font-sans relative">
       
-      {/* FIXIERTER UPDATE-BANNER (Klebt absolut oben am Bildschirm) */}
       {updateAvailable && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-amber-600 text-neutral-950 px-4 py-3 shadow-2xl flex items-center justify-between border-b border-amber-400 font-sans">
           <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold">
@@ -276,7 +263,6 @@ export default function App() {
         </div>
       )}
 
-      {/* HAUPTWRAPPER (Rückt automatisch nach unten, wenn der Banner aktiv ist) */}
       <div className={`flex-1 flex flex-col md:flex-row min-h-screen w-full ${updateAvailable ? 'pt-12 md:pt-12' : ''}`}>
         
         {/* SIDEBAR NAVIGATION */}
@@ -312,7 +298,6 @@ export default function App() {
                 <Swords size={18} /> Score Tracker
               </button>
 
-              {/* Hall of Fame Tab in der Navigation */}
               <button
                 onClick={() => setActiveTab("hof")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -324,18 +309,18 @@ export default function App() {
                 <Trophy size={18} /> Hall of Fame
               </button>
 
+              {/* Neuer Tab: Club-Meta statt Gelände-Planer */}
               <button
-                onClick={() => setActiveTab("map")}
+                onClick={() => setActiveTab("meta")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
-                  activeTab === "map"
+                  activeTab === "meta"
                     ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
                     : "text-neutral-400 hover:bg-neutral-800"
                 }`}
               >
-                <Map size={18} /> Gelände-Planer
+                <BarChart3 size={18} /> Club-Meta
               </button>
 
-              {/* Mitglieder-Tab */}
               <button
                 onClick={() => setActiveTab("members")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -373,7 +358,6 @@ export default function App() {
             </nav>
           </div>
 
-          {/* PWA INSTALLATIONS-BEREICH & USER FOOTER */}
           <div className="space-y-4 pt-6 border-t border-neutral-800">
             {installPrompt && (
               <button
@@ -417,11 +401,7 @@ export default function App() {
 
           {activeTab === "hof" && <HallOfFame />}
 
-          {activeTab === "map" && (
-            <div className="bg-neutral-900 border border-neutral-800 p-12 rounded-2xl text-center text-neutral-500 max-w-4xl">
-              [ Vorbereitung für Gelände-Planer ]
-            </div>
-          )}
+          {activeTab === "meta" && <ClubMeta />}
 
           {activeTab === "members" && <MemberList />}
 
