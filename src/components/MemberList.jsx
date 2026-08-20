@@ -10,10 +10,9 @@ import {
   Magnet,
   Calendar,
   Clock,
-  User, // Neu für das "Gesicht des Clubs" Badge
+  User,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import StatsDashboard from "./StatsDashboard";
 
 // Zuordnung der Badge-IDs zu Icons & Namen für die Mini-Ansicht
 const BADGE_ICONS = {
@@ -27,7 +26,7 @@ const BADGE_ICONS = {
   on_tour: { icon: Calendar, title: "On Tour" },
   stammtisch: { icon: Users, title: "Fumble Forged Stammtisch" },
   early_bird: { icon: Clock, title: "Frühe Vögel" },
-  face_of_the_club: { icon: User, title: "Gesicht des Clubs" }, // Badge hinzugefügt
+  face_of_the_club: { icon: User, title: "Gesicht des Clubs" },
 };
 
 export default function MemberList() {
@@ -93,7 +92,17 @@ export default function MemberList() {
 
             const unlocked = parseArrayField(member.unlocked_badges);
             const custom = parseArrayField(member.custom_badges);
-            const memberBadges = Array.from(new Set([...unlocked, ...custom]));
+
+            // Automatische Fallback-Prüfung für die Visitenkarte (z.B. Profilbild vorhanden)
+            const dynamicAutoBadges = [];
+            if (member.avatar_url) {
+              dynamicAutoBadges.push("face_of_the_club");
+            }
+
+            // Alle Badges zusammenführen (Gespeicherte + Admin-Badges + Live-ermittelte)
+            const memberBadges = Array.from(
+              new Set([...unlocked, ...custom, ...dynamicAutoBadges])
+            );
 
             return (
               <div
@@ -127,8 +136,9 @@ export default function MemberList() {
                     <div className="flex items-center gap-1 flex-wrap justify-end max-w-[140px]">
                       {memberBadges.map((badgeId) => {
                         const badgeInfo = BADGE_ICONS[badgeId];
-                        const IconComp = badgeInfo ? badgeInfo.icon : Trophy;
-                        const title = badgeInfo ? badgeInfo.title : badgeId;
+                        if (!badgeInfo) return null; // Falls eine ID nicht im Mapping ist überspringen
+                        const IconComp = badgeInfo.icon;
+                        const title = badgeInfo.title;
                         const tooltipKey = `${member.id}-${badgeId}`;
 
                         return (
