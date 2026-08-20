@@ -12,6 +12,8 @@ import {
   Shield,
   MapPin,
   Lock,
+  Wrench,
+  X,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
@@ -38,16 +40,43 @@ const BADGE_DEFINITIONS = [
     desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
     icon: Flame,
     check: (matches, events, username) => {
-      // Prüft ob in den letzten Spielen eine Streak von 3 Wins vorliegt
       let currentStreak = 0;
       for (const m of matches) {
-        const winner = m.winner_name || "";
-        const isUserWinner = username && winner.toLowerCase().includes(username.toLowerCase());
-        if (isUserWinner) {
-          currentStreak++;
-          if (currentStreak >= 3) return true;
+        const isTournament = m.details?.match_mode === "tournament_complete";
+        if (isTournament && m.details?.tournament_rounds) {
+          for (const round of m.details.tournament_rounds) {
+            const winner = round.winner || "";
+            const p1Name = round.p1Name || "";
+            const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
+            const isUserWinner =
+              (p1Name && winner.includes(p1Name)) ||
+              winner.includes("Spieler 1") ||
+              (username && winner.toLowerCase().includes(username.toLowerCase()));
+
+            if (isTie) {
+              currentStreak = 0;
+            } else if (isUserWinner) {
+              currentStreak++;
+              if (currentStreak >= 3) return true;
+            } else {
+              currentStreak = 0;
+            }
+          }
         } else {
-          currentStreak = 0;
+          const winner = m.winner_name || "";
+          const isTie = winner === "Unentschieden";
+          const isUserWinner =
+            winner.includes("Spieler 1") ||
+            (username && winner.toLowerCase().includes(username.toLowerCase()));
+
+          if (isTie) {
+            currentStreak = 0;
+          } else if (isUserWinner) {
+            currentStreak++;
+            if (currentStreak >= 3) return true;
+          } else {
+            currentStreak = 0;
+          }
         }
       }
       return false;
@@ -62,7 +91,11 @@ const BADGE_DEFINITIONS = [
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         const winner = m.winner_name || "";
-        return isTournament && username && winner.toLowerCase().includes(username.toLowerCase());
+        return (
+          isTournament &&
+          username &&
+          winner.toLowerCase().includes(username.toLowerCase())
+        );
       });
     },
   },
@@ -72,7 +105,15 @@ const BADGE_DEFINITIONS = [
     desc: "Erzähle oder erziele ein Unentschieden in einem getrackten Match.",
     icon: MapPin,
     check: (matches, events) => {
-      return matches.some((m) => m.winner_name === "Unentschieden");
+      return matches.some((m) => {
+        const isTournament = m.details?.match_mode === "tournament_complete";
+        if (isTournament && m.details?.tournament_rounds) {
+          return m.details.tournament_rounds.some(
+            (r) => r.winner === "Unentschieden" || r.p1Vp === r.p2Vp
+          );
+        }
+        return m.winner_name === "Unentschieden";
+      });
     },
   },
   {
@@ -81,6 +122,15 @@ const BADGE_DEFINITIONS = [
     desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble).",
     icon: Trophy,
     check: (matches, events) => events.length > 0,
+  },
+  {
+    id: "machinist",
+    title: "Der Maschinist",
+    desc: "Aktiver Maker: Bereitstellung von gedrucktem Club-Gelände.",
+    icon: Wrench,
+    check: (matches, events, username, profile) => {
+      return profile?.role === "admin" || (profile?.armies && profile.armies.toLowerCase().includes("bambu"));
+    },
   },
 ];
 
@@ -98,6 +148,9 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const [matches, setMatches] = useState([]);
   const [flattenedMatches, setFlattenedMatches] = useState([]);
   const [userEvents, setUserEvents] = useState([]);
+  
+  // State für das Modal (Alle Badges anzeigen)
+  const [showAllBadgesModal, setShowAllBadgesModal] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -106,7 +159,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const fetchUserData = async () => {
     if (!user?.id) return;
 
-    // 1. Matches laden
     const { data: matchData } = await supabase
       .from("matches")
       .select("*")
@@ -137,7 +189,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
       setFlattenedMatches(processed);
     }
 
-    // 2. Event-Teilnahmen laden für das "On Tour" Badge
     const { data: eventData } = await supabase
       .from("event_attendees")
       .select("*")
@@ -153,7 +204,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg("Datei ist zu groß (maximal 5MB vor der Komprimierung).");
+      setErrorMsg("Datei ist zu groß (maximal 5MB).");
       return;
     }
 
@@ -268,10 +319,10 @@ export default function UserProfile({ user, onUpdateProfile }) {
     return { isTie, isWin: !isTie && isUserWinner };
   };
 
-  // Zähle freigeschaltete Badges
-  const unlockedBadgesCount = BADGE_DEFINITIONS.filter((badge) =>
-    badge.check(matches, userEvents, username)
-  ).length;
+  // Gefilterte Liste für freigeschaltete Badges
+  const unlockedBadges = BADGE_DEFINITIONS.filter((badge) =>
+    badge.check(matches, userEvents, username, user)
+  );
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 font-sans">
@@ -402,61 +453,123 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       </form>
 
-      {/* FUMBLE FORGE TROPHÄEN & BADGES SEKTION */}
+      {/* FUMBLE FORGE TROPHÄEN & ABZEICHEN (AUFGERÄUMTES DESIGN) */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
         <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
           <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
             <Trophy size={16} /> Fumble Forge Trophäen & Abzeichen
           </h3>
-          <span className="text-xs font-mono font-bold bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/25">
-            {unlockedBadgesCount} / {BADGE_DEFINITIONS.length} Freigeschaltet
-          </span>
+          <button
+            onClick={() => setShowAllBadgesModal(true)}
+            className="text-xs font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full border border-amber-500/30 transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>{unlockedBadges.length} / {BADGE_DEFINITIONS.length} Freigeschaltet</span>
+            <span className="text-[10px] opacity-75">➔ Alle anzeigen</span>
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {BADGE_DEFINITIONS.map((badge) => {
-            const isUnlocked = badge.check(matches, userEvents, username);
-            const IconComponent = badge.icon;
-
-            return (
-              <div
-                key={badge.id}
-                className={`p-3.5 rounded-xl border flex items-start gap-3 transition ${
-                  isUnlocked
-                    ? "bg-neutral-950 border-amber-500/40 shadow-lg shadow-amber-950/20"
-                    : "bg-neutral-950/40 border-neutral-800/60 opacity-50"
-                }`}
-              >
+        {unlockedBadges.length === 0 ? (
+          <div className="text-xs text-neutral-500 italic py-4 text-center">
+            Noch keine Abzeichen freigeschaltet. Trage dein erstes Match ein!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {unlockedBadges.map((badge) => {
+              const IconComponent = badge.icon;
+              return (
                 <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
-                    isUnlocked
-                      ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
-                      : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                  }`}
+                  key={badge.id}
+                  className="bg-neutral-950 border border-amber-500/40 p-3.5 rounded-xl flex items-start gap-3 shadow-lg shadow-amber-950/20"
                 >
-                  {isUnlocked ? <IconComponent size={20} /> : <Lock size={16} />}
-                </div>
-
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold ${isUnlocked ? "text-neutral-100" : "text-neutral-400"}`}>
-                      {badge.title}
-                    </span>
-                    {isUnlocked && (
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-400 flex items-center justify-center shrink-0">
+                    <IconComponent size={20} />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-100">
+                        {badge.title}
+                      </span>
                       <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.2 rounded">
                         Freigeschaltet
                       </span>
-                    )}
+                    </div>
+                    <p className="text-[11px] text-neutral-400 leading-snug">
+                      {badge.desc}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-neutral-400 leading-snug">
-                    {badge.desc}
-                  </p>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* MODAL: ALLE BADGES IM DETAIL */}
+      {showAllBadgesModal && (
+        <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-neutral-900 border border-amber-600/40 p-6 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto space-y-6 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
+              <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                <Trophy size={16} /> Alle Fumble Forge Abzeichen ({unlockedBadges.length}/{BADGE_DEFINITIONS.length})
+              </h3>
+              <button
+                onClick={() => setShowAllBadgesModal(false)}
+                className="text-neutral-400 hover:text-neutral-100 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {BADGE_DEFINITIONS.map((badge) => {
+                const isUnlocked = badge.check(matches, userEvents, username, user);
+                const IconComponent = badge.icon;
+
+                return (
+                  <div
+                    key={badge.id}
+                    className={`p-3.5 rounded-xl border flex items-start gap-3 transition ${
+                      isUnlocked
+                        ? "bg-neutral-950 border-amber-500/40 shadow-lg shadow-amber-950/20"
+                        : "bg-neutral-950/40 border-neutral-800/60 opacity-60"
+                    }`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                        isUnlocked
+                          ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                          : "bg-neutral-900 border-neutral-800 text-neutral-600"
+                      }`}
+                    >
+                      {isUnlocked ? <IconComponent size={20} /> : <Lock size={16} />}
+                    </div>
+
+                    <div className="space-y-0.5 w-full">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-bold ${isUnlocked ? "text-neutral-100" : "text-neutral-400"}`}>
+                          {badge.title}
+                        </span>
+                        {isUnlocked ? (
+                          <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.2 rounded">
+                            Freigeschaltet ✓
+                          </span>
+                        ) : (
+                          <span className="text-[9px] uppercase font-bold bg-neutral-800 text-neutral-500 px-1.5 py-0.2 rounded">
+                            Gesperrt
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-snug">
+                        {badge.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Commander Statistik Dashboard */}
       <StatsDashboard matches={flattenedMatches} username={username} />
