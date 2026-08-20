@@ -10,6 +10,9 @@ import {
   Users,
   Trophy,
   RefreshCw,
+  Globe,
+  Instagram,
+  MessageSquare,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
@@ -368,13 +371,48 @@ export default function App() {
               </button>
             )}
 
-            <div className="text-[11px] text-neutral-500 space-y-1 bg-neutral-950/40 p-2.5 rounded-lg border border-neutral-800">
-              <p className="font-bold text-neutral-400">📱 Als App installieren:</p>
-              <p>• <strong>Android:</strong> 3 Punkte ➔ &quot;App installieren&quot;</p>
-              <p>• <strong>iPhone:</strong> Teilen-Button ➔ &quot;Zum Home-Bildschirm&quot;</p>
+            {/* NETZWERK & COMMUNITY LINKS (ERSETZT DIE PWA BOX NACH LOGIN) */}
+            <div className="bg-neutral-950/60 border border-neutral-800 p-3 rounded-xl space-y-2.5">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider block text-center">
+                Fumble Forged Netzwerk
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                <a
+                  href="https://fumbleforge.de"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
+                  title="Homepage"
+                >
+                  <Globe size={16} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>Web</span>
+                </a>
+
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
+                  title="Instagram"
+                >
+                  <Instagram size={16} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>Insta</span>
+                </a>
+
+                <a
+                  href="https://discord.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
+                  title="Discord"
+                >
+                  <MessageSquare size={16} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>Discord</span>
+                </a>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-2 border-t border-neutral-800/80">
               <div className="text-xs">
                 <div className="font-bold text-neutral-200">
                   {user.username || user.name}
