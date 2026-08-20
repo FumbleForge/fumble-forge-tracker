@@ -25,6 +25,38 @@ export default function App() {
   // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
+  // NEU: Automatischer Update-Check (verhindert hängenden Cache bei Deployments)
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch(window.location.href, { method: "HEAD", cache: "no-store" });
+        const currentEtag = response.headers.get("etag");
+        const storedEtag = localStorage.getItem("app_etag");
+
+        if (storedEtag && currentEtag && storedEtag !== currentEtag) {
+          localStorage.setItem("app_etag", currentEtag);
+          window.location.reload();
+        } else if (!storedEtag && currentEtag) {
+          localStorage.setItem("app_etag", currentEtag);
+        }
+      } catch (err) {
+        // Ignorieren, falls offline
+      }
+    };
+
+    // Prüfen beim Tab-Wechsel oder App-Fokus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkForUpdates();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   // Funktion zum sauberen Laden aller Profile für das Admin-Panel
   const fetchAllProfiles = async () => {
     const { data: allProfiles, error } = await supabase
@@ -225,7 +257,7 @@ export default function App() {
               <Map size={18} /> Gelände-Planer
             </button>
 
-            {/* NEU: Mitglieder-Tab in der Navigation */}
+            {/* Mitglieder-Tab */}
             <button
               onClick={() => setActiveTab("members")}
               className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -325,7 +357,6 @@ export default function App() {
           </div>
         )}
 
-        {/* NEU: Einbindung der Mitgliederliste */}
         {activeTab === "members" && <MemberList />}
 
         {activeTab === "profile" && (
