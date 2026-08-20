@@ -388,7 +388,7 @@ export default function App() {
 
                 {/* Instagram */}
                 <a
-                  href="https://www.instagram.com"
+                  href="https://www.instagram.com/fumbleforged?igsi=aWtucHRkMWQxeG42"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
@@ -405,7 +405,7 @@ export default function App() {
 
                 {/* Discord */}
                 <a
-                  href="https://discord.com"
+                  href="https://discord.gg/zK2j7NpRfF"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
