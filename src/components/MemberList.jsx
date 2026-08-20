@@ -35,21 +35,144 @@ export default function MemberList() {
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   useEffect(() => {
-    fetchMembers();
+    fetchMembersAndEvaluateBadges();
   }, []);
 
-  const fetchMembers = async () => {
+  const fetchMembersAndEvaluateBadges = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // 1. Alle Profile laden
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .order("username", { ascending: true });
 
-      if (error) throw error;
-      if (data) setMembers(data);
+      if (profilesError) throw profilesError;
+      if (!profilesData) return;
+
+      // 2. Alle Matches und Event-Teilnahmen für alle User vorab laden
+      const { data: allMatches } = await supabase.from("matches").select("*");
+      const { data: allEvents } = await supabase.from("event_attendees").select("*");
+
+      // 3. Für jedes Mitglied die Badges zentral live berechnen und in Supabase aktualisieren, falls etwas fehlt
+      const updatedMembers = await Promise.all(
+        profilesData.map(async (member) => {
+          const userMatches = (allMatches || []).filter((m) => m.user_id === member.id);
+          const userEvents = (allEvents || []).filter((e) => e.user_id === member.id);
+          const username = member.username || "";
+          const custom = Array.isArray(member.custom_badges) ? member.custom_badges : [];
+          const loginDays = Array.isArray(member.login_days) ? member.login_days : [];
+
+          const calculatedBadges = [];
+
+          // --- BADGE LOGIK PRÜFUNG ---
+          // Blut & Ehre (>= 1 Match)
+          if (userMatches.length >= 1) calculatedBadges.push("blood_and_honor");
+
+          // Veteran des Clubs (>= 5 Matches)
+          if (userMatches.length >= 5) calculatedBadges.push("club_veteran");
+
+          // Winning Streak (3 in Folge)
+          let currentStreak = 0;
+          let hasWinningStreak = false;
+          for (const m of userMatches) {
+            const isTournament = m.details?.match_mode === "tournament_complete";
+            if (isTournament && m.details?.tournament_rounds) {
+              for (const round of m.details.tournament_rounds) {
+                const winner = round.winner || "";
+                const p1Name = round.p1Name || "";
+                const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
+                const isUserWinner =
+                  (p1Name && winner.includes(p1Name)) ||
+                  winner.includes("Spieler 1") ||
+                  (username && winner.toLowerCase().includes(username.toLowerCase()));
+
+                if (isTie) {
+                  currentStreak = 0;
+                } else if (isUserWinner) {
+                  currentStreak++;
+                  if (currentStreak >= 3) hasWinningStreak = true;
+                } else {
+                  currentStreak = 0;
+                }
+              }
+            } else {
+              const winner = m.winner_name || "";
+              const isTie = winner === "Unentschieden";
+              const isUserWinner =
+                winner.includes("Spieler 1") ||
+                (username && winner.toLowerCase().includes(username.toLowerCase()));
+
+              if (isTie) {
+                currentStreak = 0;
+              } else if (isUserWinner) {
+                currentStreak++;
+                if (currentStreak >= 3) hasWinningStreak = true;
+              } else {
+                currentStreak = 0;
+              }
+            }
+          }
+          if (hasWinningStreak) calculatedBadges.push("winning_streak");
+
+          // Turnier-Gewinner ("Der Hausmeister")
+          const hasWonTournament = userMatches.some((m) => {
+            const isTournament = m.details?.match_mode === "tournament_complete";
+            const winner = m.winner_name || "";
+            return isTournament && username && winner.toLowerCase().includes(username.toLowerCase());
+          });
+          if (hasWonTournament) calculatedBadges.push("tournament_winner");
+
+          // Unentschieden ("Unbeugsam")
+          const hasDraw = userMatches.some((m) => {
+            const isTournament = m.details?.match_mode === "tournament_complete";
+            if (isTournament && m.details?.tournament_rounds) {
+              return m.details.tournament_rounds.some(
+                (r) => r.winner === "Unentschieden" || r.p1Vp === r.p2Vp
+              );
+            }
+            return m.winner_name === "Unentschieden";
+          });
+          if (hasDraw) calculatedBadges.push("draw_master");
+
+          // Admin Werkstatt Badges
+          if (custom.includes("machinist")) calculatedBadges.push("machinist");
+          if (custom.includes("master_of_magnets")) calculatedBadges.push("master_of_magnets");
+
+          // Community Badges (On Tour / Events)
+          if (userEvents.length > 0) {
+            calculatedBadges.push("on_tour");
+            calculatedBadges.push("early_bird");
+          }
+
+          // Stammtisch (>= 5 Login Tage)
+          if (loginDays.length >= 5) calculatedBadges.push("stammtisch");
+
+          // Gesicht des Clubs (Avatar vorhanden)
+          if (member.avatar_url) {
+            calculatedBadges.push("face_of_the_club");
+          }
+
+          const existingUnlocked = Array.isArray(member.unlocked_badges) ? member.unlocked_badges : [];
+          const mergedBadges = Array.from(new Set([...existingUnlocked, ...calculatedBadges]));
+
+          // Falls sich neue Badges ergeben haben, direkt im Hintergrund in Supabase speichern
+          if (mergedBadges.length !== existingUnlocked.length) {
+            await supabase
+              .from("profiles")
+              .update({ unlocked_badges: mergedBadges })
+              .eq("id", member.id);
+            member.unlocked_badges = mergedBadges;
+          }
+
+          return member;
+        })
+      );
+
+      setMembers(updatedMembers);
     } catch (err) {
-      console.error("Fehler beim Laden der Mitglieder:", err.message);
+      console.error("Fehler beim Laden und Evaluieren der Mitglieder:", err.message);
     } finally {
       setLoading(false);
     }
@@ -68,7 +191,7 @@ export default function MemberList() {
 
       {loading ? (
         <div className="text-xs text-neutral-500 italic py-8 text-center">
-          Lade Mitgliederliste...
+          Lade Mitgliederliste und synchronisiere Trophäen...
         </div>
       ) : members.length === 0 ? (
         <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl text-xs text-neutral-500 italic text-center">
@@ -92,17 +215,7 @@ export default function MemberList() {
 
             const unlocked = parseArrayField(member.unlocked_badges);
             const custom = parseArrayField(member.custom_badges);
-
-            // Live-Ermittlung von automatischen Badges (z.B. Profilbild) direkt beim Rendern
-            const dynamicAutoBadges = [];
-            if (member.avatar_url) {
-              dynamicAutoBadges.push("face_of_the_club");
-            }
-
-            // Alle Badges zusammenführen (Supabase-Spalte + Admin Custom Badges + Live Fallbacks)
-            const memberBadges = Array.from(
-              new Set([...unlocked, ...custom, ...dynamicAutoBadges])
-            );
+            const memberBadges = Array.from(new Set([...unlocked, ...custom]));
 
             return (
               <div
