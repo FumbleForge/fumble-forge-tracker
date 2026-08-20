@@ -180,8 +180,8 @@ export default function UserProfile({ user, onUpdateProfile }) {
     user?.username || user?.user_metadata?.username || ""
   );
   const [club, setClub] = useState(user?.club || "");
-  const [armies, setArmies] = useState(user?.armies || "");
-  const [gameSystems, setGameSystems] = useState(user?.game_systems || "");
+  const [aosArmies, setAosArmies] = useState(user?.aos_armies || user?.armies || "");
+  const [wh40kArmies, setWh40kArmies] = useState(user?.wh40k_armies || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -242,10 +242,10 @@ export default function UserProfile({ user, onUpdateProfile }) {
       setUserEvents(eventData);
     }
 
-    // Profil-Daten (Custom Badges, Unlocked Badges, Login-Tage & Avatar) laden
+    // Profil-Daten (Custom Badges, Unlocked Badges, Login-Tage, Armeen & Avatar) laden
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("custom_badges, unlocked_badges, login_days, avatar_url")
+      .select("custom_badges, unlocked_badges, login_days, avatar_url, aos_armies, wh40k_armies, armies")
       .eq("id", user.id)
       .single();
 
@@ -253,6 +253,9 @@ export default function UserProfile({ user, onUpdateProfile }) {
       if (profileData.custom_badges) setCustomBadges(profileData.custom_badges);
       if (profileData.unlocked_badges) setUnlockedBadgeIds(profileData.unlocked_badges);
       if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
+      if (profileData.aos_armies) setAosArmies(profileData.aos_armies);
+      else if (profileData.armies) setAosArmies(profileData.armies); // Fallback für alte Spalte
+      if (profileData.wh40k_armies) setWh40kArmies(profileData.wh40k_armies);
       
       // Login-Tracker für das Stammtisch-Badge (heutigen Tag registrieren)
       const todayStr = new Date().toISOString().split("T")[0];
@@ -383,8 +386,10 @@ export default function UserProfile({ user, onUpdateProfile }) {
         id: user.id,
         username,
         club,
-        armies,
-        game_systems: gameSystems,
+        aos_armies: aosArmies,
+        wh40k_armies: wh40kArmies,
+        armies: aosArmies, // Abwärtskompatibilität für alte Views
+        game_systems: "Age of Sigmar, Warhammer 40k",
         avatar_url: avatarUrl,
         custom_badges: customBadges,
         unlocked_badges: unlockedBadgeIds,
@@ -437,7 +442,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
           <User className="text-amber-500" /> Mitglieder-Profil
         </h2>
         <p className="text-xs text-neutral-400">
-          Verwalte deine persönlichen Daten und Armeen
+          Verwalte deine persönlichen Daten und Armeen nach Systemen getrennt
         </p>
       </header>
 
@@ -511,30 +516,33 @@ export default function UserProfile({ user, onUpdateProfile }) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs uppercase font-bold text-neutral-400 mb-1">
-              Spielsysteme
-            </label>
-            <input
-              type="text"
-              value={gameSystems}
-              onChange={(e) => setGameSystems(e.target.value)}
-              placeholder="z. B. Warhammer Age of Sigmar, Kill Team..."
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm"
-            />
-          </div>
+          {/* GETRENNTE ARMEEN-ZEILEN FÜR AOS UND 40K */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-neutral-800">
+            <div>
+              <label className="block text-xs uppercase font-bold text-amber-500 mb-1 flex items-center gap-1.5">
+                <Shield size={14} /> Age of Sigmar Armeen
+              </label>
+              <textarea
+                rows={3}
+                value={aosArmies}
+                onChange={(e) => setAosArmies(e.target.value)}
+                placeholder="z. B. Skaven, Sylvaneth, Daughters of Khaine..."
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm resize-none"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs uppercase font-bold text-neutral-400 mb-1">
-              Meine Armeen
-            </label>
-            <textarea
-              rows={3}
-              value={armies}
-              onChange={(e) => setArmies(e.target.value)}
-              placeholder="z. B. Daughters of Khaine, Sylvaneth, Skaven..."
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm resize-none"
-            />
+            <div>
+              <label className="block text-xs uppercase font-bold text-amber-500 mb-1 flex items-center gap-1.5">
+                <Swords size={14} /> Warhammer 40k Armeen
+              </label>
+              <textarea
+                rows={3}
+                value={wh40kArmies}
+                onChange={(e) => setWh40kArmies(e.target.value)}
+                placeholder="z. B. Space Marines, Adeptus Custodes..."
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-neutral-100 focus:border-amber-500 focus:outline-none text-sm resize-none"
+              />
+            </div>
           </div>
         </div>
 
