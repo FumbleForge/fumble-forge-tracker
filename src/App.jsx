@@ -20,7 +20,7 @@ import AdminPanel from "./components/AdminPanel";
 import MemberList from "./components/MemberList";
 import HallOfFame from "./components/HallOfFame";
 import DashboardView from "./components/DashboardView";
-import ClubMeta from "./components/ClubMeta"; // Das neue Meta-Dashboard
+import ClubMeta from "./components/ClubMeta";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -310,7 +310,6 @@ export default function App() {
                 <Trophy size={18} /> Hall of Fame
               </button>
 
-              {/* Neuer Tab: Club-Meta statt Gelände-Planer */}
               <button
                 onClick={() => setActiveTab("meta")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -369,7 +368,7 @@ export default function App() {
               </button>
             )}
 
-            {/* NETZWERK & COMMUNITY LINKS (MIT ECHTEN SVG-LOGOS) */}
+            {/* NETZWERK & COMMUNITY LINKS */}
             <div className="bg-neutral-950/60 border border-neutral-800 p-3 rounded-xl space-y-2.5">
               <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider block text-center">
                 Fumble Forged Netzwerk
@@ -377,19 +376,19 @@ export default function App() {
               <div className="grid grid-cols-3 gap-2">
                 {/* Homepage / Web */}
                 <a
-                  href="https://fumble-forged.de"
+                  href="https://www.fumble-forged.de"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
-                  title="Homepage"
+                  title="Fumble Forged Website"
                 >
                   <Globe size={16} className="text-amber-500 group-hover:scale-110 transition-transform" />
                   <span>Web</span>
                 </a>
 
-                {/* Instagram SVG */}
+                {/* Instagram */}
                 <a
-                  href="https://www.instagram.com/fumbleforged?igsi=aWtucHRkMWQxeG42"
+                  href="https://www.instagram.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
@@ -404,13 +403,13 @@ export default function App() {
                   <span>Insta</span>
                 </a>
 
-                {/* Discord SVG */}
+                {/* Discord */}
                 <a
-                  href="https://discord.gg/zK2j7NpRfF"
+                  href="https://discord.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-900 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-lg transition text-[11px] font-bold group"
-                  title="Discord"
+                  title="Discord Server"
                 >
                   <svg
                     className="w-4 h-4 fill-current text-amber-500 group-hover:scale-110 transition-transform"
