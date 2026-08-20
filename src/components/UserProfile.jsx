@@ -151,11 +151,11 @@ const BADGE_DEFINITIONS = [
   },
   {
     id: "stammtisch",
-    title: "Fumble Forge Stammtisch",
-    desc: "Aktives Clubmitglied (mehrere Partien/Events absolviert).",
+    title: "Fumble Forged Stammtisch",
+    desc: "Aktives Clubmitglied (mindestens 3 Partien oder 2 Events absolviert).",
     category: "Community",
     icon: Users,
-    check: (matches, events, username, user, customBadges) => matches.length >= 3 || events.length >= 1,
+    check: (matches, events, username, user, customBadges) => matches.length >= 3 || events.length >= 2,
   },
   {
     id: "early_bird",
@@ -308,7 +308,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
             }
           } else {
             if (height > maxHeight) {
-              width = Math.round((height * maxHeight) / height);
+              width = Math.round((width * maxHeight) / height);
               height = maxHeight;
             }
           }
@@ -432,7 +432,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
               {username || "Mitglied"}
             </h3>
             <p className="text-xs text-neutral-500">
-              {isAdmin ? "Administrator" : "Fumble Forge Mitglied"}
+              {isAdmin ? "Administrator" : "Fumble Forged Mitglied"}
             </p>
           </div>
         </div>
@@ -508,11 +508,11 @@ export default function UserProfile({ user, onUpdateProfile }) {
         </div>
       </form>
 
-      {/* FUMBLE FORGE TROPHÄEN & ABZEICHEN */}
+      {/* FUMBLE FORGED TROPHÄEN & ABZEICHEN */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
         <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
           <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-            <Trophy size={16} /> Fumble Forge Trophäen & Abzeichen
+            <Trophy size={16} /> Fumble Forged Trophäen & Abzeichen
           </h3>
           <button
             onClick={() => setShowAllBadgesModal(true)}
@@ -566,7 +566,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
             <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
               <div>
                 <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-                  <Trophy size={16} /> Alle Fumble Forge Abzeichen ({unlockedBadges.length}/{BADGE_DEFINITIONS.length})
+                  <Trophy size={16} /> Alle Fumble Forged Abzeichen ({unlockedBadges.length}/{BADGE_DEFINITIONS.length})
                 </h3>
                 {isAdmin && (
                   <p className="text-[10px] text-amber-400/80 mt-0.5">
