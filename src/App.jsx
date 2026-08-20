@@ -9,6 +9,7 @@ import {
   Download,
   Users,
   Trophy,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
@@ -25,10 +26,13 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   
+  // State für den dezenten Update-Banner
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  
   // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // Automatischer Update-Check (Erzwingt echten Server-Fetch ohne Cache)
+  // Automatischer Update-Check (Löst nun den Banner aus statt hartem Reload)
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
@@ -46,8 +50,8 @@ export default function App() {
           const storedVersion = localStorage.getItem("app_version");
 
           if (storedVersion && storedVersion !== serverVersion) {
-            localStorage.setItem("app_version", serverVersion);
-            window.location.reload();
+            // Zeige den Banner statt sofort neu zu laden
+            setUpdateAvailable(true);
           } else if (!storedVersion) {
             localStorage.setItem("app_version", serverVersion);
           }
@@ -77,6 +81,19 @@ export default function App() {
       clearInterval(interval);
     };
   }, []);
+
+  // Funktion zum Ausführen des Updates beim Klick auf den Banner
+  const handleApplyUpdate = () => {
+    fetch("/version.json?t=" + Date.now(), { cache: "no-store" })
+      .then(res => res.json())
+      .then(data => {
+        localStorage.setItem("app_version", data.version);
+        window.location.reload(true);
+      })
+      .catch(() => {
+        window.location.reload(true);
+      });
+  };
 
   // Funktion zum sauberen Laden aller Profile für das Admin-Panel
   const fetchAllProfiles = async () => {
@@ -234,7 +251,24 @@ export default function App() {
   const isAdmin = user.role === "admin" || user.email === "namebereitsvergeben@gmail.com";
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col md:flex-row font-sans relative">
+      
+      {/* DEZENTER UPDATE-BANNER */}
+      {updateAvailable && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-amber-600 text-neutral-950 px-4 py-3 shadow-2xl flex items-center justify-between border-b border-amber-400 font-sans">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold">
+            <RefreshCw size={18} className="animate-spin shrink-0" />
+            <span>Ein neues Fumble-Forge-Update ist verfügbar!</span>
+          </div>
+          <button
+            onClick={handleApplyUpdate}
+            className="bg-neutral-950 hover:bg-neutral-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition shadow-md shrink-0"
+          >
+            Jetzt aktualisieren
+          </button>
+        </div>
+      )}
+
       {/* SIDEBAR NAVIGATION */}
       <aside className="w-full md:w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col justify-between">
         <div className="space-y-8">
@@ -268,7 +302,7 @@ export default function App() {
               <Swords size={18} /> Score Tracker
             </button>
 
-            {/* NEU: Hall of Fame Tab in der Navigation */}
+            {/* Hall of Fame Tab in der Navigation */}
             <button
               onClick={() => setActiveTab("hof")}
               className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -365,14 +399,12 @@ export default function App() {
 
       {/* INHALTSBEREICH */}
       <main className="flex-1 p-4 md:p-8">
-        {/* NEU: Dynamische Dashboard-View für den eingeloggten Spieler */}
         {activeTab === "dashboard" && (
           <DashboardView user={user} setActiveTab={setActiveTab} />
         )}
 
         {activeTab === "score" && <AosScoreTracker currentUser={user} />}
 
-        {/* Hall of Fame Ansicht */}
         {activeTab === "hof" && <HallOfFame />}
 
         {activeTab === "map" && (
