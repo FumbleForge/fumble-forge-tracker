@@ -265,7 +265,7 @@ export default function App() {
         <div className="fixed top-0 left-0 right-0 z-50 bg-amber-600 text-neutral-950 px-4 py-3 shadow-2xl flex items-center justify-between border-b border-amber-400 font-sans">
           <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold">
             <RefreshCw size={18} className="animate-spin shrink-0" />
-            <span>Ein neues Fumble-Forge-Update ist verfügbar!</span>
+            <span>Ein neues Fumble-Forged-Update ist verfügbar!</span>
           </div>
           <button
             onClick={handleApplyUpdate}

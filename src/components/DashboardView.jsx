@@ -5,7 +5,26 @@ import { supabase } from "../supabaseClient";
 export default function DashboardView({ user, setActiveTab }) {
   const [myStats, setMyStats] = useState({ games: 0, wins: 0, winRate: 0, streak: 0, streakType: null });
   const [recentClubMatches, setRecentClubMatches] = useState([]);
-  const [eventAttendees, setEventAttendees] = useState({ "raccoon-rumble": [], "ff-cup": [] });
+  
+  // ZENTRALE EVENT-LISTE: Hier kannst du jederzeit Events anpassen oder neue hinzufügen!
+  const clubEvents = [
+    { 
+      id: "raccoon-rumble", 
+      title: "Raccoon Rumble 2026", 
+      desc: "Ausflug nach Hof mit dem Fumble Forge Team." 
+    },
+    { 
+      id: "ff-cup", 
+      title: "Fumble Bowl VI", 
+      desc: "Unser Turnier am 10.10.2026" 
+    }
+  ];
+
+  // Dynamischer initialer State basierend auf der Event-Liste
+  const [eventAttendees, setEventAttendees] = useState(
+    clubEvents.reduce((acc, ev) => ({ ...acc, [ev.id]: [] }), {})
+  );
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,7 +138,7 @@ export default function DashboardView({ user, setActiveTab }) {
         .select("*");
 
       if (!attError && attendees) {
-        const grouped = { "raccoon-rumble": [], "ff-cup": [] };
+        const grouped = clubEvents.reduce((acc, ev) => ({ ...acc, [ev.id]: [] }), {});
         attendees.forEach((att) => {
           if (grouped[att.event_id]) {
             grouped[att.event_id].push({
@@ -282,97 +301,57 @@ export default function DashboardView({ user, setActiveTab }) {
             </h3>
             <div className="space-y-3 text-xs">
               
-              {/* Event 1: Raccoon Rumble */}
-              <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-neutral-200">Raccoon Rumble 2026</div>
-                    <p className="text-neutral-400 text-[11px] mt-0.5">Ausflug nach Hof mit dem Fumble Forge Team.</p>
+              {clubEvents.map((event) => {
+                const attendeesList = eventAttendees[event.id] || [];
+                const attending = isAttendingEvent(event.id);
+
+                return (
+                  <div key={event.id} className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-neutral-200">{event.title}</div>
+                        <p className="text-neutral-400 text-[11px] mt-0.5">{event.desc}</p>
+                      </div>
+                    </div>
+
+                    {/* Teilnehmerliste */}
+                    <div className="pt-1 border-t border-neutral-900">
+                      <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({attendeesList.length}):</div>
+                      <div className="flex flex-wrap gap-1">
+                        {attendeesList.length === 0 ? (
+                          <span className="text-[10px] text-neutral-600 italic">Noch keine Zusagen</span>
+                        ) : (
+                          attendeesList.map((att, idx) => (
+                            <span key={idx} className="text-[10px] bg-neutral-900 text-amber-400 px-2 py-0.5 rounded border border-neutral-800 font-mono">
+                              {att.name}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RSVP Button */}
+                    <button
+                      onClick={() => handleRsvp(event.id)}
+                      className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
+                        attending
+                          ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
+                          : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
+                      }`}
+                    >
+                      {attending ? (
+                        <>
+                          <XCircle size={14} /> Teilnahme absagen
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 size={14} /> Teilnahme bestätigen
+                        </>
+                      )}
+                    </button>
                   </div>
-                </div>
-
-                {/* Teilnehmerliste */}
-                <div className="pt-1 border-t border-neutral-900">
-                  <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({eventAttendees["raccoon-rumble"].length}):</div>
-                  <div className="flex flex-wrap gap-1">
-                    {eventAttendees["raccoon-rumble"].length === 0 ? (
-                      <span className="text-[10px] text-neutral-600 italic">Noch keine Zusagen</span>
-                    ) : (
-                      eventAttendees["raccoon-rumble"].map((att, idx) => (
-                        <span key={idx} className="text-[10px] bg-neutral-900 text-amber-400 px-2 py-0.5 rounded border border-neutral-800 font-mono">
-                          {att.name}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* RSVP Button */}
-                <button
-                  onClick={() => handleRsvp("raccoon-rumble")}
-                  className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
-                    isAttendingEvent("raccoon-rumble")
-                      ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
-                      : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
-                  }`}
-                >
-                  {isAttendingEvent("raccoon-rumble") ? (
-                    <>
-                      <XCircle size={14} /> Teilnahme absagen
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={14} /> Teilnahme bestätigen
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Event 2: Fumble Forge Cup */}
-              <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-neutral-200">Fumble Forge Cup</div>
-                    <p className="text-neutral-400 text-[11px] mt-0.5">Internes Club-Turnier in Planung.</p>
-                  </div>
-                </div>
-
-                {/* Teilnehmerliste */}
-                <div className="pt-1 border-t border-neutral-900">
-                  <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({eventAttendees["ff-cup"].length}):</div>
-                  <div className="flex flex-wrap gap-1">
-                    {eventAttendees["ff-cup"].length === 0 ? (
-                      <span className="text-[10px] text-neutral-600 italic">Noch keine Zusagen</span>
-                    ) : (
-                      eventAttendees["ff-cup"].map((att, idx) => (
-                        <span key={idx} className="text-[10px] bg-neutral-900 text-amber-400 px-2 py-0.5 rounded border border-neutral-800 font-mono">
-                          {att.name}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* RSVP Button */}
-                <button
-                  onClick={() => handleRsvp("ff-cup")}
-                  className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
-                    isAttendingEvent("ff-cup")
-                      ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
-                      : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
-                  }`}
-                >
-                  {isAttendingEvent("ff-cup") ? (
-                    <>
-                      <XCircle size={14} /> Teilnahme absagen
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={14} /> Teilnahme bestätigen
-                    </>
-                  )}
-                </button>
-              </div>
+                );
+              })}
 
             </div>
           </div>
