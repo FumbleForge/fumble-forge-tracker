@@ -1,15 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   BarChart2,
   Trophy,
   Swords,
   Flame,
   Target,
-  ShieldAlert,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 
 export default function StatsDashboard({ matches, username }) {
   if (!matches || matches.length === 0) return null;
+
+  // Filter-State für den Zeitverlauf: "30days", "1year", "all"
+  const [timeFilter, setTimeFilter] = useState("all");
 
   let totalGames = matches.length;
   let wins = 0;
@@ -26,21 +30,22 @@ export default function StatsDashboard({ matches, username }) {
   const battleplans = {};
   const battleTactics = {};
 
-  sortedMatches.forEach((m) => {
+  // Hilfsfunktion zur Bestimmung ob ein Match ein Sieg ist
+  const evaluateMatchWin = (m) => {
     const winner = m.winner_name || "";
     const p1Name = m.player1_name || "";
     const isTie = winner === "Unentschieden" || m.player1_vp === m.player2_vp;
 
-    // INTELLIGENTE WIN-LOGIK: 
-    // Ein Sieg für dich (Spieler 1 / Referenz) liegt vor, wenn:
-    // 1. Der Gewinner exakt dem Namen von Spieler 1 entspricht (egal was du eingetragen hast!)
-    // 2. Oder dein Login-Name im winner_name vorkommt.
     const isUserWinner = 
       (p1Name && winner.includes(p1Name)) || 
       (username && winner.toLowerCase().includes(username.toLowerCase())) ||
       winner.includes("Spieler 1");
 
-    const isWin = !isTie && isUserWinner;
+    return { isTie, isWin: !isTie && isUserWinner };
+  };
+
+  sortedMatches.forEach((m) => {
+    const { isTie, isWin } = evaluateMatchWin(m);
 
     if (isTie) {
       draws++;
@@ -93,6 +98,22 @@ export default function StatsDashboard({ matches, username }) {
       return acc + (isP1 ? m.player1_vp : m.player2_vp);
     }, 0) / totalGames
   );
+
+  // Zeitverlauf-Filter anwenden
+  const now = new Date();
+  const filteredTimelineMatches = sortedMatches.filter((m) => {
+    const matchDate = new Date(m.created_at);
+    if (timeFilter === "30days") {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(now.getDate() - 30);
+      return matchDate >= thirtyDaysAgo;
+    } else if (timeFilter === "1year") {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(now.getFullYear() - 1);
+      return matchDate >= oneYearAgo;
+    }
+    return true; // "all"
+  });
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6 font-sans">
@@ -160,6 +181,114 @@ export default function StatsDashboard({ matches, username }) {
           <div className="text-2xl font-black text-amber-400 mt-1">
             {avgVP} VP
           </div>
+        </div>
+      </div>
+
+      {/* NEU: ZEITVERLAUF / TIMELINE SECTION */}
+      <div className="space-y-4 pt-4 border-t border-neutral-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs uppercase font-bold text-neutral-400 flex items-center gap-1.5">
+            <TrendingUp size={14} className="text-amber-500" /> Win / Loss Zeitverlauf
+          </div>
+          
+          {/* Filter-Optionen */}
+          <div className="flex bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-[11px]">
+            <button
+              onClick={() => setTimeFilter("30days")}
+              className={`px-3 py-1 rounded-md font-bold transition ${
+                timeFilter === "30days"
+                  ? "bg-amber-600 text-neutral-950"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              -30 Tage
+            </button>
+            <button
+              onClick={() => setTimeFilter("1year")}
+              className={`px-3 py-1 rounded-md font-bold transition ${
+                timeFilter === "1year"
+                  ? "bg-amber-600 text-neutral-950"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              -1 Jahr
+            </button>
+            <button
+              onClick={() => setTimeFilter("all")}
+              className={`px-3 py-1 rounded-md font-bold transition ${
+                timeFilter === "all"
+                  ? "bg-amber-600 text-neutral-950"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              Gesamt
+            </button>
+          </div>
+        </div>
+
+        {/* Visualisierter Verlauf */}
+        <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 space-y-3">
+          {filteredTimelineMatches.length === 0 ? (
+            <div className="text-xs text-neutral-500 italic text-center py-4">
+              Keine Spiele im gewählten Zeitraum vorhanden.
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-[10px] text-neutral-500 border-b border-neutral-800 pb-2">
+                <span>Chronologischer Verlauf ({filteredTimelineMatches.length} Partien)</span>
+                <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Sieg</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Niederlage</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-neutral-500"></span> Unentschieden</span>
+                </span>
+              </div>
+
+              {/* Timeline Items */}
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {filteredTimelineMatches.map((m, idx) => {
+                  const { isTie, isWin } = evaluateMatchWin(m);
+                  const statusColor = isTie 
+                    ? "bg-neutral-500/20 border-neutral-500/40 text-neutral-400" 
+                    : isWin 
+                    ? "bg-emerald-950/40 border-emerald-600/40 text-emerald-400" 
+                    : "bg-red-950/40 border-red-600/40 text-red-400";
+                  
+                  const dotColor = isTie ? "bg-neutral-400" : isWin ? "bg-emerald-500" : "bg-red-500";
+                  const labelText = isTie ? "Unentschieden" : isWin ? "Sieg" : "Niederlage";
+
+                  return (
+                    <div 
+                      key={m.id || idx}
+                      className={`flex items-center justify-between p-2.5 rounded-lg border text-xs ${statusColor}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`}></span>
+                        <div>
+                          <div className="font-bold text-neutral-200">
+                            {m.details?.battleplan || "Einzelspiel / Partie"}
+                          </div>
+                          <div className="text-[10px] text-neutral-400">
+                            {m.player1_name} vs {m.player2_name}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="font-black uppercase tracking-wider">{labelText}</span>
+                        <div className="text-[10px] text-neutral-500">
+                          {new Date(m.created_at).toLocaleDateString("de-DE", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
