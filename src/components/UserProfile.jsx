@@ -30,7 +30,7 @@ const BADGE_DEFINITIONS = [
     desc: "Trage dein allererstes Match im Score Tracker ein.",
     category: "Schlachtfelder",
     icon: Award,
-    check: (matches, events, username, user, customBadges) => matches.length >= 1,
+    check: (matches, events, username, user, customBadges, loginDays) => matches.length >= 1,
   },
   {
     id: "club_veteran",
@@ -38,7 +38,7 @@ const BADGE_DEFINITIONS = [
     desc: "Trage insgesamt 5 Matches über den Tracker ein.",
     category: "Schlachtfelder",
     icon: Trophy,
-    check: (matches, events, username, user, customBadges) => matches.length >= 5,
+    check: (matches, events, username, user, customBadges, loginDays) => matches.length >= 5,
   },
   {
     id: "winning_streak",
@@ -46,7 +46,7 @@ const BADGE_DEFINITIONS = [
     desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
     category: "Schlachtfelder",
     icon: Flame,
-    check: (matches, events, username, user, customBadges) => {
+    check: (matches, events, username, user, customBadges, loginDays) => {
       let currentStreak = 0;
       for (const m of matches) {
         const isTournament = m.details?.match_mode === "tournament_complete";
@@ -95,7 +95,7 @@ const BADGE_DEFINITIONS = [
     desc: "Gewinne ein über den internen Turnier-Modus erstelltes Turnier.",
     category: "Schlachtfelder",
     icon: Shield,
-    check: (matches, events, username, user, customBadges) => {
+    check: (matches, events, username, user, customBadges, loginDays) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         const winner = m.winner_name || "";
@@ -113,7 +113,7 @@ const BADGE_DEFINITIONS = [
     desc: "Erziele ein Unentschieden in einem getrackten Match.",
     category: "Schlachtfelder",
     icon: MapPin,
-    check: (matches, events, username, user, customBadges) => {
+    check: (matches, events, username, user, customBadges, loginDays) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         if (isTournament && m.details?.tournament_rounds) {
@@ -131,7 +131,7 @@ const BADGE_DEFINITIONS = [
     desc: "Vom Admin verliehen: Aktive Bereitstellung von gedrucktem Club-Gelände.",
     category: "Werkstatt",
     icon: Wrench,
-    check: (matches, events, username, user, customBadges) => customBadges.includes("machinist"),
+    check: (matches, events, username, user, customBadges, loginDays) => customBadges.includes("machinist"),
   },
   {
     id: "master_of_magnets",
@@ -139,7 +139,7 @@ const BADGE_DEFINITIONS = [
     desc: "Vom Admin verliehen: Vorbildlich magnetisierte modulare Ruinen.",
     category: "Werkstatt",
     icon: Magnet,
-    check: (matches, events, username, user, customBadges) => customBadges.includes("master_of_magnets"),
+    check: (matches, events, username, user, customBadges, loginDays) => customBadges.includes("master_of_magnets"),
   },
   {
     id: "on_tour",
@@ -147,15 +147,15 @@ const BADGE_DEFINITIONS = [
     desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble).",
     category: "Community",
     icon: Calendar,
-    check: (matches, events, username, user, customBadges) => events.length > 0,
+    check: (matches, events, username, user, customBadges, loginDays) => events.length > 0,
   },
   {
     id: "stammtisch",
     title: "Fumble Forged Stammtisch",
-    desc: "Aktives Clubmitglied (mindestens 3 Partien oder 2 Events absolviert).",
+    desc: "Logge dich an 5 verschiedenen Tagen im Club-Portal ein.",
     category: "Community",
     icon: Users,
-    check: (matches, events, username, user, customBadges) => matches.length >= 3 || events.length >= 2,
+    check: (matches, events, username, user, customBadges, loginDays) => loginDays.length >= 5,
   },
   {
     id: "early_bird",
@@ -163,7 +163,7 @@ const BADGE_DEFINITIONS = [
     desc: "Zusage zu einem Event direkt nach Ankündigung.",
     category: "Community",
     icon: Clock,
-    check: (matches, events, username, user, customBadges) => events.length > 0,
+    check: (matches, events, username, user, customBadges, loginDays) => events.length > 0,
   },
 ];
 
@@ -182,6 +182,8 @@ export default function UserProfile({ user, onUpdateProfile }) {
   const [flattenedMatches, setFlattenedMatches] = useState([]);
   const [userEvents, setUserEvents] = useState([]);
   const [customBadges, setCustomBadges] = useState([]);
+  const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
+  const [loginDays, setLoginDays] = useState([]);
   
   const [showAllBadgesModal, setShowAllBadgesModal] = useState(false);
   const isAdmin = user?.role === "admin";
@@ -232,11 +234,48 @@ export default function UserProfile({ user, onUpdateProfile }) {
       setUserEvents(eventData);
     }
 
-    // Admin-Badges aus Profil laden
-    if (user?.custom_badges) {
-      setCustomBadges(user.custom_badges);
+    // Profil-Daten (Custom Badges, Unlocked Badges & Login-Tage) laden
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("custom_badges, unlocked_badges, login_days")
+      .eq("id", user.id)
+      .single();
+
+    if (profileData) {
+      if (profileData.custom_badges) setCustomBadges(profileData.custom_badges);
+      if (profileData.unlocked_badges) setUnlockedBadgeIds(profileData.unlocked_badges);
+      
+      // Login-Tracker für das Stammtisch-Badge (heutigen Tag registrieren)
+      const todayStr = new Date().toISOString().split("T")[0];
+      let days = profileData.login_days || [];
+      if (!days.includes(todayStr)) {
+        days.push(todayStr);
+        await supabase
+          .from("profiles")
+          .upsert({ id: user.id, login_days: days, updated_at: new Date() });
+      }
+      setLoginDays(days);
     }
   };
+
+  // Einmal verliehen, dauerhaft behalten Logik
+  useEffect(() => {
+    if (!user?.id || BADGE_DEFINITIONS.length === 0) return;
+
+    const currentUnlocked = BADGE_DEFINITIONS.filter((badge) =>
+      badge.check(matches, userEvents, username, user, customBadges, loginDays)
+    ).map((b) => b.id);
+
+    const merged = Array.from(new Set([...unlockedBadgeIds, ...currentUnlocked]));
+
+    if (merged.length !== unlockedBadgeIds.length) {
+      setUnlockedBadgeIds(merged);
+      supabase
+        .from("profiles")
+        .upsert({ id: user.id, unlocked_badges: merged, updated_at: new Date() })
+        .then();
+    }
+  }, [matches, userEvents, username, customBadges, loginDays]);
 
   const toggleAdminBadge = async (badgeId) => {
     if (!isAdmin) return;
@@ -339,6 +378,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         game_systems: gameSystems,
         avatar_url: avatarUrl,
         custom_badges: customBadges,
+        unlocked_badges: unlockedBadgeIds,
         updated_at: new Date(),
       };
 
@@ -378,7 +418,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
   };
 
   const unlockedBadges = BADGE_DEFINITIONS.filter((badge) =>
-    badge.check(matches, userEvents, username, user, customBadges)
+    unlockedBadgeIds.includes(badge.id)
   );
 
   return (
@@ -559,7 +599,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         )}
       </div>
 
-      {/* MODAL: ALLE BADGES IM DETAIL (NUR ADMIN SIEHT VERLEIH-BUTTONS) */}
+      {/* MODAL: ALLE BADGES IM DETAIL */}
       {showAllBadgesModal && (
         <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-neutral-900 border border-amber-600/40 p-6 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto space-y-6 shadow-2xl">
@@ -584,7 +624,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
 
             <div className="grid grid-cols-1 gap-3">
               {BADGE_DEFINITIONS.map((badge) => {
-                const isUnlocked = badge.check(matches, userEvents, username, user, customBadges);
+                const isUnlocked = unlockedBadgeIds.includes(badge.id);
                 const IconComponent = badge.icon;
                 const isMakerBadge = badge.id === "machinist" || badge.id === "master_of_magnets";
 
@@ -634,7 +674,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
                         </span>
                       )}
 
-                      {/* Nur Admins können Maker-Badges manuell vergeben */}
                       {isAdmin && isMakerBadge && (
                         <button
                           onClick={() => toggleAdminBadge(badge.id)}
@@ -659,7 +698,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
       {/* Commander Statistik Dashboard */}
       <StatsDashboard matches={flattenedMatches} username={username} />
 
-      {/* GESPEICHERTE MATCHES (MÜLLEIMER NUR FÜR ADMINS SICHTBAR) */}
+      {/* GESPEICHERTE MATCHES */}
       <div className="space-y-4 pt-4 border-t border-neutral-800">
         <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -758,7 +797,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
                     </div>
                   </div>
 
-                  {/* Löschen-Button NUR für Admins sichtbar */}
                   {isAdmin && (
                     <button
                       onClick={() => deleteMatch(m.id)}
