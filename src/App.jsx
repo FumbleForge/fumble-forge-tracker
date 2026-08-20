@@ -8,6 +8,7 @@ import {
   LogOut,
   Download,
   Users,
+  Trophy,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
@@ -15,29 +16,33 @@ import AosScoreTracker from "./components/AosScoreTracker";
 import UserProfile from "./components/UserProfile";
 import AdminPanel from "./components/AdminPanel";
 import MemberList from "./components/MemberList";
+import HallOfFame from "./components/HallOfFame";
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("score");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   
   // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // NEU: Automatischer Update-Check (verhindert hängenden Cache bei Deployments)
+  // Automatischer Update-Check via version.json
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
-        const response = await fetch(window.location.href, { method: "HEAD", cache: "no-store" });
-        const currentEtag = response.headers.get("etag");
-        const storedEtag = localStorage.getItem("app_etag");
+        const response = await fetch("/version.json?t=" + Date.now(), { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          const serverVersion = data.version;
+          const storedVersion = localStorage.getItem("app_version");
 
-        if (storedEtag && currentEtag && storedEtag !== currentEtag) {
-          localStorage.setItem("app_etag", currentEtag);
-          window.location.reload();
-        } else if (!storedEtag && currentEtag) {
-          localStorage.setItem("app_etag", currentEtag);
+          if (storedVersion && storedVersion !== serverVersion) {
+            localStorage.setItem("app_version", serverVersion);
+            window.location.reload();
+          } else if (!storedVersion) {
+            localStorage.setItem("app_version", serverVersion);
+          }
         }
       } catch (err) {
         // Ignorieren, falls offline
@@ -202,7 +207,8 @@ export default function App() {
       <LoginView 
         onLogin={(userData) => { 
           setUser(userData); 
-          fetchAllProfiles(); // Direkt nach Login die Mitglieder laden
+          fetchAllProfiles(); 
+          setActiveTab("dashboard"); 
         }} 
       />
     );
@@ -244,6 +250,18 @@ export default function App() {
               }`}
             >
               <Swords size={18} /> Score Tracker
+            </button>
+
+            {/* NEU: Hall of Fame Tab in der Navigation */}
+            <button
+              onClick={() => setActiveTab("hof")}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                activeTab === "hof"
+                  ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                  : "text-neutral-400 hover:bg-neutral-800"
+              }`}
+            >
+              <Trophy size={18} /> Hall of Fame
             </button>
 
             <button
@@ -297,7 +315,6 @@ export default function App() {
 
         {/* PWA INSTALLATIONS-BEREICH & USER FOOTER */}
         <div className="space-y-4 pt-6 border-t border-neutral-800">
-          {/* Direkt-Installationsbutton, falls Android/Chrome das Event feuert */}
           {installPrompt && (
             <button
               onClick={handleInstallClick}
@@ -307,14 +324,12 @@ export default function App() {
             </button>
           )}
 
-          {/* Kurze Anleitung für alle Geräte */}
           <div className="text-[11px] text-neutral-500 space-y-1 bg-neutral-950/40 p-2.5 rounded-lg border border-neutral-800">
             <p className="font-bold text-neutral-400">📱 Als App installieren:</p>
             <p>• <strong>Android:</strong> 3 Punkte ➔ &quot;App installieren&quot;</p>
             <p>• <strong>iPhone:</strong> Teilen-Button ➔ &quot;Zum Home-Bildschirm&quot;</p>
           </div>
 
-          {/* User Status & Logout */}
           <div className="flex items-center justify-between pt-2">
             <div className="text-xs">
               <div className="font-bold text-neutral-200">
@@ -350,6 +365,9 @@ export default function App() {
         )}
 
         {activeTab === "score" && <AosScoreTracker currentUser={user} />}
+
+        {/* NEU: Hall of Fame Ansicht */}
+        {activeTab === "hof" && <HallOfFame />}
 
         {activeTab === "map" && (
           <div className="bg-neutral-900 border border-neutral-800 p-12 rounded-2xl text-center text-neutral-500 max-w-4xl">
