@@ -74,13 +74,24 @@ export default function MemberList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {members.map((member) => {
-            // Sammle freigeschaltete Badges aus unlocked_badges oder custom_badges
-            const memberBadges = Array.from(
-              new Set([
-                ...(member.unlocked_badges || []),
-                ...(member.custom_badges || []),
-              ])
-            );
+            // Hilfsfunktion zum sicheren Parsen von Arrays aus Supabase
+            const parseArrayField = (field) => {
+              if (Array.isArray(field)) return field;
+              if (typeof field === "string") {
+                try {
+                  const parsed = JSON.parse(field);
+                  if (Array.isArray(parsed)) return parsed;
+                } catch (e) {
+                  return [];
+                }
+              }
+              return [];
+            };
+
+            const unlocked = parseArrayField(member.unlocked_badges);
+            const custom = parseArrayField(member.custom_badges);
+
+            const memberBadges = Array.from(new Set([...unlocked, ...custom]));
 
             return (
               <div
