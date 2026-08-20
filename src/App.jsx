@@ -32,7 +32,7 @@ export default function App() {
   // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // Automatischer Update-Check (Löst nun den Banner aus statt hartem Reload)
+  // Automatischer Update-Check (Prüft alle 60 Sek. und beim Fokus im Hintergrund)
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
@@ -71,13 +71,19 @@ export default function App() {
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    const handleFocus = () => {
+      checkForUpdates();
+    };
 
-    // 3. Zusätzlich alle 5 Minuten im Hintergrund prüfen
-    const interval = setInterval(checkForUpdates, 5 * 60 * 1000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // 3. Alle 60 Sekunden im Hintergrund prüfen (schont Supabase, da reiner Vercel-Request)
+    const interval = setInterval(checkForUpdates, 60 * 1000);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
       clearInterval(interval);
     };
   }, []);
