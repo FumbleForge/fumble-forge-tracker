@@ -18,7 +18,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
   );
   const [club, setClub] = useState(user?.club || "");
   const [armies, setArmies] = useState(user?.armies || "");
-  const [gameSystems, setGameSystems] = useState(user?.game_systems || ""); // Neu: Spielsysteme State
+  const [gameSystems, setGameSystems] = useState(user?.game_systems || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -121,7 +121,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         username,
         club,
         armies,
-        game_systems: gameSystems, // Neu: Spielsysteme in Supabase speichern
+        game_systems: gameSystems,
         avatar_url: avatarUrl,
         updated_at: new Date(),
       };
@@ -140,12 +140,25 @@ export default function UserProfile({ user, onUpdateProfile }) {
     }
   };
 
-  // Match löschen Funktion
   const deleteMatch = async (id) => {
     if (window.confirm("Dieses Match wirklich löschen?")) {
       await supabase.from("matches").delete().eq("id", id);
-      fetchUserMatches(); // Liste neu laden
+      fetchUserMatches();
     }
+  };
+
+  // Hilfsfunktion zur Ermittlung, ob ein einzelnes Runden-Spiel gewonnen wurde
+  const evaluateRoundWin = (round) => {
+    const winner = round.winner || "";
+    const p1Name = round.p1Name || "";
+    const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
+
+    const isUserWinner = 
+      (p1Name && winner.includes(p1Name)) || 
+      (username && winner.toLowerCase().includes(username.toLowerCase())) ||
+      winner.includes("Spieler 1");
+
+    return { isTie, isWin: !isTie && isUserWinner };
   };
 
   return (
@@ -230,7 +243,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
             />
           </div>
 
-          {/* Neu: Eingabefeld für Spielsysteme */}
           <div>
             <label className="block text-xs uppercase font-bold text-neutral-400 mb-1">
               Spielsysteme
@@ -292,71 +304,104 @@ export default function UserProfile({ user, onUpdateProfile }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {matches.map((m) => (
-              <div
-                key={m.id}
-                className={`bg-neutral-950 border p-4 rounded-xl flex justify-between items-start ${
-                  m.details?.match_mode === "tournament_complete"
-                    ? "border-amber-600/50"
-                    : "border-neutral-800"
-                }`}
-              >
-                <div className="flex flex-col gap-2 w-full pr-4">
-                  {/* Turnier-Ansicht mit Runden-Unterstruktur oder normales Einzelspiel */}
-                  {m.details?.match_mode === "tournament_complete" ? (
-                    <div className="space-y-2">
-                      <div className="text-sm font-black text-amber-500 flex items-center gap-2 border-b border-neutral-800 pb-1.5">
-                        <Trophy size={16} /> {m.details.match_title} (Turniersieger: {m.winner_name})
-                      </div>
-                      
-                      {/* Auflistung der einzelnen Spiele untereinander */}
-                      <div className="space-y-1.5">
-                        {m.details.tournament_rounds && m.details.tournament_rounds.length > 0 ? (
-                          m.details.tournament_rounds.map((roundRes, rIdx) => (
-                            <div key={rIdx} className="text-xs bg-neutral-900 border border-neutral-800/60 p-2 rounded-lg flex justify-between items-center">
-                              <div>
-                                <span className="font-bold text-amber-400 mr-2">Spiel {roundRes.matchIndex}:</span>
-                                <span className="text-neutral-300">{roundRes.battleplan}</span>
-                              </div>
-                              <div className="text-neutral-400">
-                                {roundRes.p1Name} ({roundRes.p1Vp}) vs {roundRes.p2Name} ({roundRes.p2Vp}) ➔ <strong className="text-amber-500">{roundRes.winner}</strong>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-xs text-neutral-500 italic">Keine Runden-Details verfügbar.</div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-neutral-300">
-                      <span className="font-bold">{m.player1_name}</span> vs{" "}
-                      <span className="font-bold">{m.player2_name}</span> |
-                      Sieger: {m.winner_name}
-                    </div>
-                  )}
-
-                  {/* Datum-Anzeige */}
-                  <div className="text-[10px] text-neutral-500 font-mono pt-1">
-                    Abgeschlossen am:{" "}
-                    {new Date(m.created_at).toLocaleDateString("de-DE", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => deleteMatch(m.id)}
-                  className="p-2 text-neutral-500 hover:text-red-500 transition self-start"
+            {matches.map((m) => {
+              const rounds = m.details?.tournament_rounds || [];
+              return (
+                <div
+                  key={m.id}
+                  className={`bg-neutral-950 border p-4 rounded-xl flex justify-between items-start ${
+                    m.details?.match_mode === "tournament_complete"
+                      ? "border-amber-600/50"
+                      : "border-neutral-800"
+                  }`}
                 >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
+                  <div className="flex flex-col gap-2 w-full pr-4">
+                    {/* Turnier-Ansicht mit Runden-Unterstruktur oder normales Einzelspiel */}
+                    {m.details?.match_mode === "tournament_complete" ? (
+                      <div className="space-y-2">
+                        <div className="text-sm font-black text-amber-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-1.5">
+                          <span className="flex items-center gap-2">
+                            <Trophy size={16} /> {m.details.match_title}
+                          </span>
+                          
+                          {/* NEU: W/L-Historie als farbiger Streifen */}
+                          <div className="flex items-center gap-1.5 text-xs font-mono">
+                            <span className="text-neutral-400 font-sans text-[11px]">
+                              {rounds.length} {rounds.length === 1 ? "Spiel" : "Spiele"}:
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {rounds.map((round, rIdx) => {
+                                const { isTie, isWin } = evaluateRoundWin(round);
+                                const badgeColor = isTie 
+                                  ? "bg-neutral-800 text-neutral-300 border-neutral-700" 
+                                  : isWin 
+                                  ? "bg-emerald-950/80 text-emerald-400 border-emerald-600/60" 
+                                  : "bg-red-950/80 text-red-400 border-red-600/60";
+                                const label = isTie ? "D" : isWin ? "W" : "L";
+
+                                return (
+                                  <span
+                                    key={rIdx}
+                                    className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] border ${badgeColor}`}
+                                    title={`Spiel ${round.matchIndex}: ${label}`}
+                                  >
+                                    {label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Auflistung der einzelnen Spiele untereinander */}
+                        <div className="space-y-1.5">
+                          {rounds.length > 0 ? (
+                            rounds.map((roundRes, rIdx) => (
+                              <div key={rIdx} className="text-xs bg-neutral-900 border border-neutral-800/60 p-2 rounded-lg flex justify-between items-center">
+                                <div>
+                                  <span className="font-bold text-amber-400 mr-2">Spiel {roundRes.matchIndex}:</span>
+                                  <span className="text-neutral-300">{roundRes.battleplan}</span>
+                                </div>
+                                <div className="text-neutral-400">
+                                  {roundRes.p1Name} ({roundRes.p1Vp}) vs {roundRes.p2Name} ({roundRes.p2Vp}) ➔ <strong className="text-amber-500">{roundRes.winner}</strong>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-xs text-neutral-500 italic">Keine Runden-Details verfügbar.</div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-neutral-300">
+                        <span className="font-bold">{m.player1_name}</span> vs{" "}
+                        <span className="font-bold">{m.player2_name}</span> |
+                        Sieger: {m.winner_name}
+                      </div>
+                    )}
+
+                    {/* Datum-Anzeige */}
+                    <div className="text-[10px] text-neutral-500 font-mono pt-1">
+                      Abgeschlossen am:{" "}
+                      {new Date(m.created_at).toLocaleDateString("de-DE", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => deleteMatch(m.id)}
+                    className="p-2 text-neutral-500 hover:text-red-500 transition self-start"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
