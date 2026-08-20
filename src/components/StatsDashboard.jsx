@@ -114,17 +114,6 @@ export default function StatsDashboard({ matches, username }) {
     return true; // "all"
   });
 
-  // Hilfsfunktion zur kumulativen Win-Rate Berechnung für die SVG-Kurve
-  const calculateCumulativeWinRate = (matchesList, index) => {
-    let wCount = 0;
-    for (let i = 0; i <= index; i++) {
-      const { isTie, isWin } = evaluateMatchWin(matchesList[i]);
-      if (isWin) wCount++;
-      else if (isTie) wCount += 0.5; // Unentschieden als halber Sieg
-    }
-    return (wCount / (index + 1)) * 100;
-  };
-
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6 font-sans">
       <h3 className="text-sm font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
@@ -270,13 +259,26 @@ export default function StatsDashboard({ matches, username }) {
                     />
                   ))}
 
-                  {/* SVG Kurvenpfad */}
+                  {/* SVG Kurvenpfad mit direkter Filter-Synchronität */}
                   <path
-                    d={`M 0 ${100 - calculateCumulativeWinRate(filteredTimelineMatches, 0)} ${
+                    d={`M 0 ${100 - (() => {
+                      if (filteredTimelineMatches.length === 0) return 0;
+                      let w = 0; 
+                      const { isTie, isWin } = evaluateMatchWin(filteredTimelineMatches[0]);
+                      if (isWin) w = 100; 
+                      else if (isTie) w = 50;
+                      return w;
+                    })()} ${
                       filteredTimelineMatches
                         .map((_, i) => {
                           if (i === 0) return "";
-                          const rate = calculateCumulativeWinRate(filteredTimelineMatches, i);
+                          let wCount = 0;
+                          for (let k = 0; k <= i; k++) {
+                            const { isTie, isWin } = evaluateMatchWin(filteredTimelineMatches[k]);
+                            if (isWin) wCount += 100; 
+                            else if (isTie) wCount += 50;
+                          }
+                          const rate = wCount / (i + 1);
                           const x = (i / (filteredTimelineMatches.length - 1)) * 100;
                           const y = 100 - rate;
                           return `L ${x} ${y}`;
