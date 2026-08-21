@@ -329,8 +329,8 @@ export default function App() {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-3 pb-2 mb-2 border-b border-neutral-800 text-[10px] uppercase font-bold text-neutral-500 tracking-wider">
+                <div className="absolute right-0 mt-2 w-60 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 pb-2 mb-2 border-b border-neutral-800 text-[11px] uppercase font-bold text-neutral-500 tracking-wider">
                     Schnellzugriff
                   </div>
                   
@@ -339,11 +339,11 @@ export default function App() {
                       setActiveTab("events");
                       setMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                    className={`w-full text-left px-3 py-2.5 text-sm font-bold transition flex items-center gap-2.5 hover:bg-neutral-800 ${
                       activeTab === "events" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
                     }`}
                   >
-                    <Calendar size={14} className="text-amber-500" />
+                    <Calendar size={16} className="text-amber-500" />
                     <span>Turniere und Events</span>
                   </button>
 
@@ -352,11 +352,11 @@ export default function App() {
                       setActiveTab("hof");
                       setMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                    className={`w-full text-left px-3 py-2.5 text-sm font-bold transition flex items-center gap-2.5 hover:bg-neutral-800 ${
                       activeTab === "hof" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
                     }`}
                   >
-                    <Trophy size={14} className="text-amber-500" />
+                    <Trophy size={16} className="text-amber-500" />
                     <span>Hall of Fame</span>
                   </button>
 
@@ -365,11 +365,11 @@ export default function App() {
                       setActiveTab("meta");
                       setMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                    className={`w-full text-left px-3 py-2.5 text-sm font-bold transition flex items-center gap-2.5 hover:bg-neutral-800 ${
                       activeTab === "meta" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
                     }`}
                   >
-                    <BarChart3 size={14} className="text-amber-500" />
+                    <BarChart3 size={16} className="text-amber-500" />
                     <span>Club-Meta</span>
                   </button>
 
@@ -378,11 +378,11 @@ export default function App() {
                       setActiveTab("members");
                       setMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                    className={`w-full text-left px-3 py-2.5 text-sm font-bold transition flex items-center gap-2.5 hover:bg-neutral-800 ${
                       activeTab === "members" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
                     }`}
                   >
-                    <Users size={14} className="text-amber-500" />
+                    <Users size={16} className="text-amber-500" />
                     <span>Club-Mitglieder</span>
                   </button>
 
@@ -391,11 +391,11 @@ export default function App() {
                       setActiveTab("profile");
                       setMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                    className={`w-full text-left px-3 py-2.5 text-sm font-bold transition flex items-center gap-2.5 hover:bg-neutral-800 ${
                       activeTab === "profile" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
                     }`}
                   >
-                    <User size={14} className="text-amber-500" />
+                    <User size={16} className="text-amber-500" />
                     <span>Profil</span>
                   </button>
 
@@ -405,11 +405,11 @@ export default function App() {
                         setActiveTab("admin");
                         setMenuOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 border-t border-neutral-800/50 mt-1 pt-2 ${
+                      className={`w-full text-left px-3 py-2.5 text-sm font-bold transition flex items-center gap-2.5 hover:bg-neutral-800 border-t border-neutral-800/50 mt-1 pt-2.5 ${
                         activeTab === "admin" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
                       }`}
                     >
-                      <ShieldCheck size={14} className="text-amber-500" />
+                      <ShieldCheck size={16} className="text-amber-500" />
                       <span>Admin-Panel</span>
                     </button>
                   )}
