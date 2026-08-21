@@ -457,6 +457,7 @@ export default function AosScoreTracker({ currentUser }) {
   const [lastTurnPlayerInPrevRound, setLastTurnPlayerInPrevRound] = useState(() => loadSavedState("lastTurnPlayer", "player2"));
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [turnHistory, setTurnHistory] = useState(() => loadSavedState("turnHistory", []));
+  const [roundHistory, setRoundHistory] = useState(() => loadSavedState("roundHistory", []));
 
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -509,6 +510,7 @@ export default function AosScoreTracker({ currentUser }) {
     localStorage.setItem("fumble_forge_aos_lastTurnPlayer", JSON.stringify(lastTurnPlayerInPrevRound));
     localStorage.setItem("fumble_forge_aos_turnHistory", JSON.stringify(turnHistory));
     localStorage.setItem("fumble_forge_aos_players", JSON.stringify(players));
+    localStorage.setItem("fumble_forge_aos_roundHistory", JSON.stringify(roundHistory));
   }, [
     setupStep,
     matchMode,
@@ -522,6 +524,7 @@ export default function AosScoreTracker({ currentUser }) {
     lastTurnPlayerInPrevRound,
     turnHistory,
     players,
+    roundHistory,
   ]);
 
   const handleFactionChange = (pKey, newFaction) => {
@@ -663,6 +666,16 @@ export default function AosScoreTracker({ currentUser }) {
       return;
     }
 
+    // Save snapshot of current round before transition
+    const snapshot = {
+      round: currentRound,
+      players: JSON.parse(JSON.stringify(players)),
+      activeTurnPlayer: activeTurnPlayer,
+      lastTurnPlayerInPrevRound: lastTurnPlayerInPrevRound,
+      turnHistory: JSON.parse(JSON.stringify(turnHistory)),
+    };
+    setRoundHistory((prev) => [...prev, snapshot]);
+
     const nextR = currentRound + 1;
     const secondPlayer =
       chosenFirstPlayer === "player1" ? "player2" : "player1";
@@ -713,6 +726,24 @@ export default function AosScoreTracker({ currentUser }) {
     setActiveTurnPlayer(chosenFirstPlayer);
     setLastTurnPlayerInPrevRound(secondPlayer);
     setShowRoundModal(false);
+  };
+
+  const handlePreviousRound = () => {
+    if (currentRound <= 1) return;
+
+    if (roundHistory.length > 0) {
+      const updatedHistory = [...roundHistory];
+      const previousState = updatedHistory.pop();
+
+      setCurrentRound(previousState.round);
+      setPlayers(previousState.players);
+      setActiveTurnPlayer(previousState.activeTurnPlayer);
+      setLastTurnPlayerInPrevRound(previousState.lastTurnPlayerInPrevRound);
+      setTurnHistory(previousState.turnHistory);
+      setRoundHistory(updatedHistory);
+    } else {
+      setCurrentRound((prev) => Math.max(1, prev - 1));
+    }
   };
 
   const handleSaveMatch = async () => {
@@ -792,6 +823,7 @@ export default function AosScoreTracker({ currentUser }) {
       setActiveTurnPlayer("player1");
       setLastTurnPlayerInPrevRound("player2");
       setTurnHistory([]);
+      setRoundHistory([]);
       setSaveSuccess(false);
       setPlayers((prev) => ({
         player1: { ...prev.player1, vp: 0, cp: 4, completedStepKeys: [], currentSelectedStepKey: "", isUnderdog: false, scoredRulesByRound: {} },
@@ -858,6 +890,7 @@ export default function AosScoreTracker({ currentUser }) {
     localStorage.removeItem("fumble_forge_aos_lastTurnPlayer");
     localStorage.removeItem("fumble_forge_aos_turnHistory");
     localStorage.removeItem("fumble_forge_aos_players");
+    localStorage.removeItem("fumble_forge_aos_roundHistory");
 
     setSetupStep("mode_select");
     setCurrentRound(1);
@@ -866,6 +899,7 @@ export default function AosScoreTracker({ currentUser }) {
     setActiveTurnPlayer("player1");
     setLastTurnPlayerInPrevRound("player2");
     setTurnHistory([]);
+    setRoundHistory([]);
     setShowDeleteConfirm(false);
     setPlayers((prev) => ({
       player1: {
@@ -1367,6 +1401,15 @@ export default function AosScoreTracker({ currentUser }) {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 px-5 py-2 rounded-xl">
+            {currentRound > 1 && (
+              <button
+                onClick={handlePreviousRound}
+                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold px-2.5 py-1 rounded text-xs transition flex items-center gap-1 cursor-pointer border border-neutral-700"
+                title="Vorherige Runde"
+              >
+                <RotateCcw size={12} /> Zurück
+              </button>
+            )}
             <span className="text-xs uppercase font-bold text-neutral-400">
               Runde
             </span>
