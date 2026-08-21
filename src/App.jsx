@@ -11,17 +11,19 @@ import {
   Trophy,
   RefreshCw,
   Globe,
+  Crosshair, // Icon für 40k (optional, passt perfekt)
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
 import AosScoreTracker from "./components/AosScoreTracker";
+import Wh40kScoreTracker from "./components/40k/Wh40kScoreTracker"; // Neu: 40k Tracker Komponente
 import UserProfile from "./components/UserProfile";
 import AdminPanel from "./components/AdminPanel";
 import MemberList from "./components/MemberList";
 import HallOfFame from "./components/HallOfFame";
 import DashboardView from "./components/DashboardView";
 import ClubMeta from "./components/ClubMeta";
-import LegalModal from "./components/LegalModal"; // Neu: Importiertes Impressum & Datenschutz Modal
+import LegalModal from "./components/LegalModal";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -29,16 +31,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   
-  // State für das Legal-Modal (Impressum & Datenschutz)
   const [showLegalModal, setShowLegalModal] = useState(false);
-  
-  // State für den dezenten Update-Banner
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  
-  // PWA Installations-State für Android/Chrome
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // Automatischer Update-Check (Mit starkem Cache-Busting gegen PWA-Caching)
   useEffect(() => {
     const checkForUpdates = async () => {
       try {
@@ -62,22 +58,15 @@ export default function App() {
             localStorage.setItem("app_version", serverVersion);
           }
         }
-      } catch (err) {
-        // Ignorieren, falls offline
-      }
+      } catch (err) {}
     };
 
     checkForUpdates();
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        checkForUpdates();
-      }
+      if (document.visibilityState === "visible") checkForUpdates();
     };
-
-    const handleFocus = () => {
-      checkForUpdates();
-    };
+    const handleFocus = () => checkForUpdates();
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
@@ -292,6 +281,7 @@ export default function App() {
                 <LayoutGrid size={18} /> Dashboard
               </button>
 
+              {/* AoS Tracker */}
               <button
                 onClick={() => setActiveTab("score")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
@@ -300,7 +290,19 @@ export default function App() {
                     : "text-neutral-400 hover:bg-neutral-800"
                 }`}
               >
-                <Swords size={18} /> Score Tracker
+                <Swords size={18} /> AoS Score Tracker
+              </button>
+
+              {/* NEU: 40k Tracker */}
+              <button
+                onClick={() => setActiveTab("score_40k")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-bold transition ${
+                  activeTab === "score_40k"
+                    ? "bg-amber-600/20 text-amber-500 border border-amber-600/30"
+                    : "text-neutral-400 hover:bg-neutral-800"
+                }`}
+              >
+                <Crosshair size={18} /> 40k Score Tracker
               </button>
 
               <button
@@ -372,13 +374,11 @@ export default function App() {
               </button>
             )}
 
-            {/* NETZWERK & COMMUNITY LINKS */}
             <div className="bg-neutral-950/60 border border-neutral-800 p-3 rounded-xl space-y-2.5">
               <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider block text-center">
                 Fumble Forged Netzwerk
               </span>
               <div className="grid grid-cols-3 gap-2">
-                {/* Homepage / Web */}
                 <a
                   href="https://www.fumble-forged.de"
                   target="_blank"
@@ -390,7 +390,6 @@ export default function App() {
                   <span>Web</span>
                 </a>
 
-                {/* Instagram */}
                 <a
                   href="https://www.instagram.com/fumbleforged?igsi=aWtucHRkMWQxeG42"
                   target="_blank"
@@ -407,7 +406,6 @@ export default function App() {
                   <span>Insta</span>
                 </a>
 
-                {/* Discord */}
                 <a
                   href="https://discord.gg/zK2j7NpRfF"
                   target="_blank"
@@ -426,7 +424,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Impressum & Datenschutz Link */}
             <div className="text-center pt-1">
               <button
                 onClick={() => setShowLegalModal(true)}
@@ -461,6 +458,9 @@ export default function App() {
 
           {activeTab === "score" && <AosScoreTracker currentUser={user} />}
 
+          {/* NEU: Rendert den 40k Tracker, wenn aktiv */}
+          {activeTab === "score_40k" && <Wh40kScoreTracker currentUser={user} />}
+
           {activeTab === "hof" && <HallOfFame />}
 
           {activeTab === "meta" && <ClubMeta />}
@@ -484,7 +484,6 @@ export default function App() {
 
       </div>
 
-      {/* LEGAL MODAL (IMPRESSUM & DATENSCHUTZ) */}
       {showLegalModal && (
         <LegalModal onClose={() => setShowLegalModal(false)} />
       )}

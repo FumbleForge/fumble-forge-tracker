@@ -1,0 +1,117 @@
+[
+  {
+    "id": "space-marines",
+    "name": "Space Marines (Adeptus Astartes)",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "astra-militarum",
+    "name": "Astra Militarum (Imperiale Armee)",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "adeptus-mechanicus",
+    "name": "Adeptus Mechanicus",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "adepta-sororitas",
+    "name": "Adepta Sororitas",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "adeptus-custodes",
+    "name": "Adeptus Custodes",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "grey-knights",
+    "name": "Grey Knights",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "imperial-knights",
+    "name": "Imperial Knights",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "agents-of-the-imperium",
+    "name": "Agents of the Imperium",
+    "category": "Das Imperium"
+  },
+  {
+    "id": "chaos-space-marines",
+    "name": "Chaos Space Marines",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "chaos-daemons",
+    "name": "Chaos Daemons",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "death-guard",
+    "name": "Death Guard",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "thousand-sons",
+    "name": "Thousand Sons",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "world-eaters",
+    "name": "World Eaters",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "emperors-children",
+    "name": "Emperor's Children",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "chaos-knights",
+    "name": "Chaos Knights",
+    "category": "Mächte des Chaos"
+  },
+  {
+    "id": "aeldari",
+    "name": "Aeldari (Eldar)",
+    "category": "Xenos"
+  },
+  {
+    "id": "drukhari",
+    "name": "Drukhari (Dark Eldar)",
+    "category": "Xenos"
+  },
+  {
+    "id": "orks",
+    "name": "Orks",
+    "category": "Xenos"
+  },
+  {
+    "id": "necrons",
+    "name": "Necrons",
+    "category": "Xenos"
+  },
+  {
+    "id": "tau-empire",
+    "name": "T'au Empire",
+    "category": "Xenos"
+  },
+  {
+    "id": "tyranids",
+    "name": "Tyraniden",
+    "category": "Xenos"
+  },
+  {
+    "id": "genestealer-cults",
+    "name": "Genestealer Cults",
+    "category": "Xenos"
+  },
+  {
+    "id": "leagues-of-votann",
+    "name": "Leagues of Votann",
+    "category": "Xenos"
+  }
+]

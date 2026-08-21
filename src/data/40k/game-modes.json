@@ -1,0 +1,30 @@
+[
+  {
+    "id": "matched-play",
+    "name": "Matched Play",
+    "description": "The competitive, points-balanced game mode — the default scope for every entity that omits game_modes.",
+    "is_competitive": true,
+    "game_version": { "edition": "11th", "dataslate": "pre-launch-provisional" }
+  },
+  {
+    "id": "combat-patrol",
+    "name": "Combat Patrol",
+    "description": "The fixed boxed-roster starter mode with its own detachment, enhancements, and stratagems drawn from a Combat Patrol product.",
+    "is_competitive": false,
+    "game_version": { "edition": "11th", "dataslate": "pre-launch-provisional" }
+  },
+  {
+    "id": "boarding-actions",
+    "name": "Boarding Actions",
+    "description": "The confined, low-points cramped-corridors mode played on boarding tiles.",
+    "is_competitive": false,
+    "game_version": { "edition": "11th", "dataslate": "pre-launch-provisional" }
+  },
+  {
+    "id": "crusade",
+    "name": "Crusade",
+    "description": "The narrative campaign mode where forces gain experience, battle honours, and scars across linked games.",
+    "is_competitive": false,
+    "game_version": { "edition": "11th", "dataslate": "pre-launch-provisional" }
+  }
+]
