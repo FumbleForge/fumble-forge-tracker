@@ -1,27 +1,57 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Swords, Flame, Calendar, Users, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
+import { Trophy, Swords, Flame, Users, ArrowRight, Calendar, BarChart3, User, ShieldCheck, Globe } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
-export default function DashboardView({ user, setActiveTab }) {
+export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
+  const isAdmin = user?.role === "admin" || user?.email === "namebereitsvergeben@gmail.com";
   const [myStats, setMyStats] = useState({ games: 0, wins: 0, winRate: 0, streak: 0, streakType: null });
   const [recentClubMatches, setRecentClubMatches] = useState([]);
-  
-  const clubEvents = [
-    { 
-      id: "raccoon-rumble", 
-      title: "Raccoon Rumble 2026", 
-      desc: "Ausflug nach Hof mit dem Fumble Forge Team." 
-    },
-    { 
-      id: "ff-cup", 
-      title: "Fumble Bowl VI", 
-      desc: "Unser Turnier am 10.10.2026" 
-    }
-  ];
+  const [activeAosGame, setActiveAosGame] = useState(null);
+  const [active40kGame, setActive40kGame] = useState(null);
 
-  const [eventAttendees, setEventAttendees] = useState(
-    clubEvents.reduce((acc, ev) => ({ ...acc, [ev.id]: [] }), {})
-  );
+  useEffect(() => {
+    // Check AoS game
+    const aosStep = localStorage.getItem("fumble_forge_aos_setupStep");
+    if (aosStep && aosStep !== '"mode_select"') {
+      try {
+        const stepParsed = JSON.parse(aosStep);
+        if (stepParsed !== "mode_select") {
+          const title = JSON.parse(localStorage.getItem("fumble_forge_aos_matchTitle") || '"Freies Spiel"');
+          const round = JSON.parse(localStorage.getItem("fumble_forge_aos_currentRound") || '1');
+          const players = JSON.parse(localStorage.getItem("fumble_forge_aos_players") || '{}');
+          const p1Name = players?.player1?.name || "Player 1";
+          const p2Name = players?.player2?.name || "Player 2";
+          setActiveAosGame({ title, round, p1Name, p2Name });
+        } else {
+          setActiveAosGame(null);
+        }
+      } catch (e) {
+        setActiveAosGame(null);
+      }
+    } else {
+      setActiveAosGame(null);
+    }
+
+    // Check 40k game
+    const whStep = localStorage.getItem("fumble_forge_40k_step");
+    if (whStep && whStep !== '"setup"') {
+      try {
+        const stepParsed = JSON.parse(whStep);
+        if (stepParsed !== "setup") {
+          const p1Name = JSON.parse(localStorage.getItem("fumble_forge_40k_player1Name") || '"Player 1"');
+          const p2Name = JSON.parse(localStorage.getItem("fumble_forge_40k_player2Name") || '"Player 2"');
+          const round = JSON.parse(localStorage.getItem("fumble_forge_40k_currentRound") || '1');
+          setActive40kGame({ p1Name, p2Name, round });
+        } else {
+          setActive40kGame(null);
+        }
+      } catch (e) {
+        setActive40kGame(null);
+      }
+    } else {
+      setActive40kGame(null);
+    }
+  }, []);
   
   const [loading, setLoading] = useState(true);
 
@@ -126,68 +156,11 @@ export default function DashboardView({ user, setActiveTab }) {
         setMyStats({ games, wins, winRate, streak: currentStreak, streakType });
       }
 
-      const { data: attendees, error: attError } = await supabase
-        .from("event_attendees")
-        .select("*");
-
-      if (!attError && attendees) {
-        const grouped = clubEvents.reduce((acc, ev) => ({ ...acc, [ev.id]: [] }), {});
-        attendees.forEach((att) => {
-          if (grouped[att.event_id]) {
-            grouped[att.event_id].push({
-              userId: att.user_id,
-              name: profileMap[att.user_id] || "Commander",
-            });
-          }
-        });
-        setEventAttendees(grouped);
-      }
-
     } catch (err) {
       console.error("Fehler beim Laden des Dashboards:", err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleRsvp = async (eventId) => {
-    const attendeesList = eventAttendees[eventId] || [];
-    const isAlreadyAttending = attendeesList.some((a) => a.userId === user.id);
-
-    try {
-      if (isAlreadyAttending) {
-        const { error } = await supabase
-          .from("event_attendees")
-          .delete()
-          .eq("event_id", eventId)
-          .eq("user_id", user.id);
-
-        if (!error) {
-          setEventAttendees({
-            ...eventAttendees,
-            [eventId]: attendeesList.filter((a) => a.userId !== user.id),
-          });
-        }
-      } else {
-        const { error } = await supabase
-          .from("event_attendees")
-          .insert([{ event_id: eventId, user_id: user.id }]);
-
-        if (!error) {
-          const userName = user.username || user.name || "Commander";
-          setEventAttendees({
-            ...eventAttendees,
-            [eventId]: [...attendeesList, { userId: user.id, name: userName }],
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Fehler beim RSVP:", err);
-    }
-  };
-
-  const isAttendingEvent = (eventId) => {
-    return (eventAttendees[eventId] || []).some((a) => a.userId === user.id);
   };
 
   return (
@@ -202,13 +175,63 @@ export default function DashboardView({ user, setActiveTab }) {
             Willkommen zurück, <span className="text-amber-400 font-bold">{user.username || user.name}</span>! Bereit für die nächste Schlacht?
           </p>
         </div>
-        <button
-          onClick={() => setActiveTab("score")}
-          className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase flex items-center gap-2 transition shadow-lg shrink-0 cursor-pointer"
-        >
-          <Swords size={16} /> Partie erfassen <ArrowRight size={14} />
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setActiveTab("score")}
+            className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase flex items-center gap-2 transition shadow-lg shrink-0 cursor-pointer justify-center"
+          >
+            <Swords size={16} /> Partie AoS erfassen <ArrowRight size={14} />
+          </button>
+          <button
+            onClick={() => setActiveTab("score_40k")}
+            className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase flex items-center gap-2 transition shadow-lg shrink-0 cursor-pointer justify-center"
+          >
+            <Swords size={16} /> Partie 40k erfassen <ArrowRight size={14} />
+          </button>
+        </div>
       </header>
+
+      {/* LAUFENDE PARTIEN FORTSETZEN */}
+      {(activeAosGame || active40kGame) && (
+        <div className="bg-neutral-900 border border-amber-600/30 p-5 rounded-2xl space-y-4 shadow-xl">
+          <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+            <Flame size={16} className="text-amber-500" /> Laufende Schlacht fortführen
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activeAosGame && (
+              <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex flex-col justify-between gap-3 text-xs">
+                <div>
+                  <div className="font-bold text-neutral-200 text-sm mb-1">Age of Sigmar</div>
+                  <div className="text-neutral-400 font-bold">{activeAosGame.title}</div>
+                  <div className="text-neutral-500 mt-1">{activeAosGame.p1Name} vs {activeAosGame.p2Name} • Runde {activeAosGame.round}</div>
+                </div>
+                <button
+                  onClick={() => setActiveTab("score")}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-2 rounded-lg text-xs uppercase transition cursor-pointer"
+                >
+                  Schlacht fortsetzen ➔
+                </button>
+              </div>
+            )}
+
+            {active40kGame && (
+              <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex flex-col justify-between gap-3 text-xs">
+                <div>
+                  <div className="font-bold text-neutral-200 text-sm mb-1">Warhammer 40.000</div>
+                  <div className="text-neutral-400 font-bold">{active40kGame.p1Name} vs {active40kGame.p2Name}</div>
+                  <div className="text-neutral-500 mt-1">Runde {active40kGame.round} / 5</div>
+                </div>
+                <button
+                  onClick={() => setActiveTab("score_40k")}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-2 rounded-lg text-xs uppercase transition cursor-pointer"
+                >
+                  Schlacht fortsetzen ➔
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* QUICK STATS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -282,89 +305,134 @@ export default function DashboardView({ user, setActiveTab }) {
           )}
         </div>
 
-        {/* SPALTE 3: Events & Quick Links */}
+        {/* SPALTE 3: Quick Links */}
         <div className="space-y-6">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
-            <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
-              <Calendar size={16} /> Events & Termine
-            </h3>
-            <div className="space-y-3 text-xs">
-              
-              {clubEvents.map((event) => {
-                const attendeesList = eventAttendees[event.id] || [];
-                const attending = isAttendingEvent(event.id);
-
-                return (
-                  <div key={event.id} className="bg-neutral-950 border border-neutral-800 p-3 rounded-xl space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-neutral-200">{event.title}</div>
-                        <p className="text-neutral-400 text-[11px] mt-0.5">{event.desc}</p>
-                      </div>
-                    </div>
-
-                    <div className="pt-1 border-t border-neutral-900">
-                      <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({attendeesList.length}):</div>
-                      <div className="flex flex-wrap gap-1">
-                        {attendeesList.length === 0 ? (
-                          <span className="text-[10px] text-neutral-600 italic">Noch keine Zusagen</span>
-                        ) : (
-                          attendeesList.map((att, idx) => (
-                            <span key={idx} className="text-[10px] bg-neutral-900 text-amber-400 px-2 py-0.5 rounded border border-neutral-800 font-mono">
-                              {att.name}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleRsvp(event.id)}
-                      className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                        attending
-                          ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
-                          : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
-                      }`}
-                    >
-                      {attending ? (
-                        <>
-                          <XCircle size={14} /> Teilnahme absagen
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 size={14} /> Teilnahme bestätigen
-                        </>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-
-            </div>
-          </div>
-
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
             <h3 className="text-sm font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
               <Trophy size={16} className="text-amber-500" /> Schnellzugriff
             </h3>
             <div className="space-y-2 text-xs">
               <button
+                onClick={() => setActiveTab("events")}
+                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar size={14} className="text-amber-500" /> Turniere und Events
+                </span>
+                <ArrowRight size={14} className="text-neutral-500" />
+              </button>
+              <button
                 onClick={() => setActiveTab("hof")}
                 className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
               >
-                <span>🏆 Hall of Fame</span> <ArrowRight size={14} className="text-neutral-500" />
+                <span className="flex items-center gap-2">
+                  <Trophy size={14} className="text-amber-500" /> Hall of Fame
+                </span>
+                <ArrowRight size={14} className="text-neutral-500" />
+              </button>
+              <button
+                onClick={() => setActiveTab("meta")}
+                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <BarChart3 size={14} className="text-amber-500" /> Club-Meta
+                </span>
+                <ArrowRight size={14} className="text-neutral-500" />
               </button>
               <button
                 onClick={() => setActiveTab("members")}
                 className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
               >
-                <span>👥 Club-Mitglieder</span> <ArrowRight size={14} className="text-neutral-500" />
+                <span className="flex items-center gap-2">
+                  <Users size={14} className="text-amber-500" /> Club-Mitglieder
+                </span>
+                <ArrowRight size={14} className="text-neutral-500" />
               </button>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <User size={14} className="text-amber-500" /> Profil
+                </span>
+                <ArrowRight size={14} className="text-neutral-500" />
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab("admin")}
+                  className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-amber-500" /> Admin-Panel
+                  </span>
+                  <ArrowRight size={14} className="text-neutral-500" />
+                </button>
+              )}
             </div>
           </div>
 
+          {/* Fumble Forged Netzwerk */}
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
+            <h3 className="text-sm font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
+              <Globe size={16} className="text-amber-500" /> Fumble Forged Netzwerk
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              <a
+                href="https://www.fumble-forged.de"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-950 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-xl transition text-[11px] font-bold group"
+                title="Fumble Forged Website"
+              >
+                <Globe size={16} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                <span>Web</span>
+              </a>
+
+              <a
+                href="https://www.instagram.com/fumbleforged?igsi=aWtucHRkMWQxeG42"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-950 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-xl transition text-[11px] font-bold group"
+                title="Instagram"
+              >
+                <svg
+                  className="w-4 h-4 fill-current text-amber-500 group-hover:scale-110 transition-transform"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                </svg>
+                <span>Insta</span>
+              </a>
+
+              <a
+                href="https://discord.gg/zK2j7NpRfF"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1 p-2 bg-neutral-950 hover:bg-amber-600/20 text-neutral-300 hover:text-amber-400 border border-neutral-800 hover:border-amber-600/40 rounded-xl transition text-[11px] font-bold group"
+                title="Discord Server"
+              >
+                <svg
+                  className="w-4 h-4 fill-current text-amber-500 group-hover:scale-110 transition-transform"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.011c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                </svg>
+                <span>Discord</span>
+              </a>
+            </div>
+          </div>
         </div>
 
+      </div>
+
+      {/* Impressum & Datenschutz */}
+      <div className="text-center pt-8 border-t border-neutral-800">
+        <button
+          onClick={onOpenLegal}
+          className="text-[10px] text-neutral-500 hover:text-amber-400 transition underline underline-offset-2 cursor-pointer"
+        >
+          Impressum & Datenschutz
+        </button>
       </div>
     </div>
   );

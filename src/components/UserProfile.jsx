@@ -168,7 +168,7 @@ const BADGE_DEFINITIONS = [
   },
 ];
 
-export default function UserProfile({ user, onUpdateProfile }) {
+export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
   const [username, setUsername] = useState(
     user?.username || user?.user_metadata?.username || ""
   );
@@ -818,6 +818,17 @@ export default function UserProfile({ user, onUpdateProfile }) {
             })}
           </div>
         )}
+      </div>
+
+      {/* Impressum & Datenschutz */}
+      <div className="text-center pt-8 border-t border-neutral-800">
+        <button
+          type="button"
+          onClick={onOpenLegal}
+          className="text-[10px] text-neutral-500 hover:text-amber-400 transition underline underline-offset-2 cursor-pointer"
+        >
+          Impressum & Datenschutz
+        </button>
       </div>
     </div>
   );

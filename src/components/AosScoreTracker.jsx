@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Award,
   Trash2,
+  X,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -434,13 +435,17 @@ const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
   {}
 );
 
-export default function AosScoreTracker({ currentUser }) {
+export default function AosScoreTracker({ currentUser, onClose }) {
   const defaultPlayer1Name = currentUser?.username || currentUser?.name || "Dein Name";
   const defaultPlayer2Name = "Gegner";
 
   const loadSavedState = (key, fallback) => {
-    const saved = localStorage.getItem(`fumble_forge_aos_${key}`);
-    return saved !== null ? JSON.parse(saved) : fallback;
+    try {
+      const saved = localStorage.getItem(`fumble_forge_aos_${key}`);
+      return saved !== null ? JSON.parse(saved) : fallback;
+    } catch (e) {
+      return fallback;
+    }
   };
 
   const [setupStep, setSetupStep] = useState(() => loadSavedState("setupStep", "mode_select"));
@@ -465,6 +470,91 @@ export default function AosScoreTracker({ currentUser }) {
 
   // State für die Sicherheitsabfrage zum Abbrechen/Löschen des Spiels
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Touch Gestures for Swiping (Left = Next, Right = Back)
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchEndY, setTouchEndY] = useState(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    const tagName = e.target.tagName.toLowerCase();
+    if (
+      ["input", "select", "option", "button", "textarea"].includes(tagName) ||
+      e.target.closest("button") ||
+      e.target.closest("select") ||
+      e.target.closest("svg")
+    ) {
+      return;
+    }
+    setTouchEndX(null);
+    setTouchEndY(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+    setTouchEndY(e.targetTouches[0].clientY);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
+    const distanceX = touchStartX - touchEndX;
+    const distanceY = touchStartY - touchEndY;
+    const isHorizontalSwipe = Math.abs(distanceX) > Math.abs(distanceY);
+    if (isHorizontalSwipe && Math.abs(distanceX) > minSwipeDistance) {
+      if (distanceX > 0) {
+        // Swipe Left -> Go Forward / Next
+        handleSwipeNext();
+      } else {
+        // Swipe Right -> Go Backward / Prev
+        handleSwipePrev();
+      }
+    }
+  };
+
+  const handleSwipeNext = () => {
+    if (setupStep === "mode_select") {
+      setSetupStep("roster");
+    } else if (setupStep === "roster") {
+      setSetupStep("terrain");
+    } else if (setupStep === "terrain") {
+      setSetupStep("playing");
+    } else if (setupStep === "playing") {
+      if (currentRound >= 5) {
+        setSetupStep("summary");
+      } else {
+        setShowRoundModal(true);
+      }
+    } else if (setupStep === "summary") {
+      handleProceedAfterSummary();
+    }
+  };
+
+  const handleSwipePrev = () => {
+    if (setupStep === "roster") {
+      setSetupStep("mode_select");
+    } else if (setupStep === "terrain") {
+      setSetupStep("roster");
+    } else if (setupStep === "playing") {
+      if (currentRound > 1) {
+        handlePreviousRound();
+      } else {
+        setSetupStep("terrain");
+      }
+    } else if (setupStep === "summary") {
+      setSetupStep("playing");
+    }
+  };
+
+  const swipeHandlers = {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  };
 
   const [players, setPlayers] = useState(() => loadSavedState("players", {
     player1: {
@@ -928,7 +1018,16 @@ export default function AosScoreTracker({ currentUser }) {
   // SCHRITT 0: MODUS & SETUP AUSWAHL
   if (setupStep === "mode_select") {
     return (
-      <div className="max-w-xl mx-auto space-y-6 font-sans py-12">
+      <div {...swipeHandlers} className="max-w-xl mx-auto space-y-6 font-sans py-12 relative">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white rounded-full transition z-50 cursor-pointer shadow-lg"
+            title="Zurück zur Commander Zentrale"
+          >
+            <X size={20} />
+          </button>
+        )}
         <div className="bg-neutral-900 border border-amber-600/40 rounded-2xl p-6 space-y-6 shadow-2xl">
           <div className="text-center space-y-2">
             <Swords className="mx-auto text-amber-500" size={36} />
@@ -1025,7 +1124,16 @@ export default function AosScoreTracker({ currentUser }) {
 
   if (setupStep === "roster") {
     return (
-      <div className="max-w-4xl mx-auto space-y-6 font-sans">
+      <div {...swipeHandlers} className="max-w-4xl mx-auto space-y-6 font-sans relative">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white rounded-full transition z-50 cursor-pointer shadow-lg"
+            title="Zurück zur Commander Zentrale"
+          >
+            <X size={20} />
+          </button>
+        )}
         <header className="border-b border-amber-600/30 pb-4 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest flex items-center gap-2">
@@ -1193,7 +1301,16 @@ export default function AosScoreTracker({ currentUser }) {
     );
 
     return (
-      <div className="max-w-xl mx-auto space-y-6 font-sans py-8">
+      <div {...swipeHandlers} className="max-w-xl mx-auto space-y-6 font-sans py-8 relative">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white rounded-full transition z-50 cursor-pointer shadow-lg"
+            title="Zurück zur Commander Zentrale"
+          >
+            <X size={20} />
+          </button>
+        )}
         <div className="bg-neutral-900 border border-amber-600/40 rounded-2xl p-6 space-y-6 shadow-2xl">
           <div className="text-center space-y-2">
             <MapPin className="mx-auto text-amber-500" size={32} />
@@ -1270,7 +1387,16 @@ export default function AosScoreTracker({ currentUser }) {
     const isLastTournamentMatch = matchMode === "tournament" && currentTournamentMatchIndex >= totalTournamentRounds;
 
     return (
-      <div className="max-w-4xl mx-auto space-y-6 font-sans py-6">
+      <div {...swipeHandlers} className="max-w-4xl mx-auto space-y-6 font-sans py-6 relative">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white rounded-full transition z-50 cursor-pointer shadow-lg"
+            title="Zurück zur Commander Zentrale"
+          >
+            <X size={20} />
+          </button>
+        )}
         <div className="bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-amber-500/50 rounded-2xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-amber-500 shadow-[0_0_15px_#f59e0b]"></div>
 
@@ -1384,7 +1510,16 @@ export default function AosScoreTracker({ currentUser }) {
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 font-sans">
+    <div {...swipeHandlers} className="max-w-5xl mx-auto space-y-6 font-sans relative">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white rounded-full transition z-50 cursor-pointer shadow-lg"
+          title="Zurück zur Commander Zentrale"
+        >
+          <X size={20} />
+        </button>
+      )}
       <header className="flex flex-col md:flex-row justify-between items-center border-b border-amber-600/30 pb-4 gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-amber-500 uppercase tracking-widest flex items-center gap-2">

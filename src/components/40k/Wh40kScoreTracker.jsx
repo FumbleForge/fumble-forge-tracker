@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Dice5, Eye, ArrowRight, ArrowLeft, Check, X, Shield, Swords, Target, Plus, Minus, Trophy, Save } from 'lucide-react';
+import { Map, Dice5, Eye, ArrowRight, ArrowLeft, Check, X, Shield, Swords, Target, Plus, Minus, Trophy, Save, Trash2 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 
 // Daten-Layer
@@ -546,61 +546,118 @@ function BattlefieldMapSvg({ deploymentPattern, terrainLayout, showMeasurements 
   );
 }
 
-export default function Wh40kScoreTracker({ currentUser }) {
-  // Steps: 'setup' -> 'mission_selection' -> 'player1_primary' -> 'player2_primary' -> 'deployment' -> 'mission_rules' -> 'player1_secondaries' -> 'player2_secondaries' -> 'live_tracker' -> 'summary'
-  const [step, setStep] = useState('setup');
+export default function Wh40kScoreTracker({ currentUser, onClose }) {
+  const loadSavedState = (key, fallback) => {
+    try {
+      const saved = localStorage.getItem(`fumble_forge_40k_${key}`);
+      return saved !== null ? JSON.parse(saved) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  };
 
-  const [matchDate, setMatchDate] = useState(new Date().toISOString().split('T')[0]);
+  // Steps: 'setup' -> 'mission_selection' -> 'player1_primary' -> 'player2_primary' -> 'deployment' -> 'mission_rules' -> 'player1_secondaries' -> 'player2_secondaries' -> 'live_tracker' -> 'summary'
+  const [step, setStep] = useState(() => loadSavedState('step', 'setup'));
+
+  const [matchDate, setMatchDate] = useState(() => loadSavedState('matchDate', new Date().toISOString().split('T')[0]));
   
   // Spieler 1
-  const [player1Name, setPlayer1Name] = useState(currentUser?.username || currentUser?.name || 'You');
-  const [player1List, setPlayer1List] = useState('');
-  const [player1Faction, setPlayer1Faction] = useState(factionsData?.[0]?.name || 'Aeldari');
-  const [player1Disposition, setPlayer1Disposition] = useState(forceDispositionsData?.[0]?.id || 'take-and-hold');
-  const [player1BattleReady, setPlayer1BattleReady] = useState(true);
-  const [player1Primary, setPlayer1Primary] = useState('Unstoppable Force');
-  const [player1SecondaryMode, setPlayer1SecondaryMode] = useState('tactical');
-  const [player1FixedSecondaries, setPlayer1FixedSecondaries] = useState(['assassination', 'engage-on-all-fronts']);
+  const [player1Name, setPlayer1Name] = useState(() => loadSavedState('player1Name', currentUser?.username || currentUser?.name || 'You'));
+  const [player1List, setPlayer1List] = useState(() => loadSavedState('player1List', ''));
+  const [player1Faction, setPlayer1Faction] = useState(() => loadSavedState('player1Faction', factionsData?.[0]?.name || 'Aeldari'));
+  const [player1Disposition, setPlayer1Disposition] = useState(() => loadSavedState('player1Disposition', forceDispositionsData?.[0]?.id || 'take-and-hold'));
+  const [player1BattleReady, setPlayer1BattleReady] = useState(() => loadSavedState('player1BattleReady', true));
+  const [player1Primary, setPlayer1Primary] = useState(() => loadSavedState('player1Primary', 'Unstoppable Force'));
+  const [player1SecondaryMode, setPlayer1SecondaryMode] = useState(() => loadSavedState('player1SecondaryMode', 'tactical'));
+  const [player1FixedSecondaries, setPlayer1FixedSecondaries] = useState(() => loadSavedState('player1FixedSecondaries', ['assassination', 'engage-on-all-fronts']));
 
   // Spieler 2
-  const [player2Name, setPlayer2Name] = useState('Opponent');
-  const [player2List, setPlayer2List] = useState('');
-  const [player2Faction, setPlayer2Faction] = useState(factionsData?.[1]?.name || 'Adeptus Custodes');
-  const [player2Disposition, setPlayer2Disposition] = useState(forceDispositionsData?.[2]?.id || 'purge-the-foe');
-  const [player2BattleReady, setPlayer2BattleReady] = useState(true);
-  const [player2Primary, setPlayer2Primary] = useState('Unstoppable Force');
-  const [player2SecondaryMode, setPlayer2SecondaryMode] = useState('tactical');
-  const [player2FixedSecondaries, setPlayer2FixedSecondaries] = useState(['bring-it-down', 'a-grievous-blow']);
+  const [player2Name, setPlayer2Name] = useState(() => loadSavedState('player2Name', 'Opponent'));
+  const [player2List, setPlayer2List] = useState(() => loadSavedState('player2List', ''));
+  const [player2Faction, setPlayer2Faction] = useState(() => loadSavedState('player2Faction', factionsData?.[1]?.name || 'Adeptus Custodes'));
+  const [player2Disposition, setPlayer2Disposition] = useState(() => loadSavedState('player2Disposition', forceDispositionsData?.[2]?.id || 'purge-the-foe'));
+  const [player2BattleReady, setPlayer2BattleReady] = useState(() => loadSavedState('player2BattleReady', true));
+  const [player2Primary, setPlayer2Primary] = useState(() => loadSavedState('player2Primary', 'Unstoppable Force'));
+  const [player2SecondaryMode, setPlayer2SecondaryMode] = useState(() => loadSavedState('player2SecondaryMode', 'tactical'));
+  const [player2FixedSecondaries, setPlayer2FixedSecondaries] = useState(() => loadSavedState('player2FixedSecondaries', ['bring-it-down', 'a-grievous-blow']));
 
   // Mission & Deployment
-  const [selectedMatchupId, setSelectedMatchupId] = useState('');
-  const [selectedDeploymentPatternId, setSelectedDeploymentPatternId] = useState('dawn-of-war');
-  const [selectedTerrainLayoutId, setSelectedTerrainLayoutId] = useState('');
+  const [selectedMatchupId, setSelectedMatchupId] = useState(() => loadSavedState('selectedMatchupId', ''));
+  const [selectedDeploymentPatternId, setSelectedDeploymentPatternId] = useState(() => loadSavedState('selectedDeploymentPatternId', 'dawn-of-war'));
+  const [selectedTerrainLayoutId, setSelectedTerrainLayoutId] = useState(() => loadSavedState('selectedTerrainLayoutId', ''));
   const [showLayoutModal, setShowLayoutModal] = useState(false);
   const [showMeasurements, setShowMeasurements] = useState(true);
-  const [selectedMissionRule, setSelectedMissionRule] = useState('none');
+  const [selectedMissionRule, setSelectedMissionRule] = useState(() => loadSavedState('selectedMissionRule', 'none'));
 
   // Live Tracker State
-  const [currentRound, setCurrentRound] = useState(1);
+  const [currentRound, setCurrentRound] = useState(() => loadSavedState('currentRound', 1));
   const [showLiveStatsModal, setShowLiveStatsModal] = useState(false);
   const [savingMatch, setSavingMatch] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Touch Gestures for Swiping (Left = Next, Right = Back)
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchEndY, setTouchEndY] = useState(null);
 
   // CP Counters
-  const [p1CpGained, setP1CpGained] = useState(0);
-  const [p1CpSpent, setP1CpSpent] = useState(0);
-  const [p2CpGained, setP2CpGained] = useState(0);
-  const [p2CpSpent, setP2CpSpent] = useState(0);
+  const [p1CpGained, setP1CpGained] = useState(() => loadSavedState('p1CpGained', 0));
+  const [p1CpSpent, setP1CpSpent] = useState(() => loadSavedState('p1CpSpent', 0));
+  const [p2CpGained, setP2CpGained] = useState(() => loadSavedState('p2CpGained', 0));
+  const [p2CpSpent, setP2CpSpent] = useState(() => loadSavedState('p2CpSpent', 0));
 
   // Scored States
-  const [p1ScoredPrimaries, setP1ScoredPrimaries] = useState({});
-  const [p2ScoredPrimaries, setP2ScoredPrimaries] = useState({});
-  const [p1ScoredSecondaries, setP1ScoredSecondaries] = useState({});
-  const [p2ScoredSecondaries, setP2ScoredSecondaries] = useState({});
+  const [p1ScoredPrimaries, setP1ScoredPrimaries] = useState(() => loadSavedState('p1ScoredPrimaries', {}));
+  const [p2ScoredPrimaries, setP2ScoredPrimaries] = useState(() => loadSavedState('p2ScoredPrimaries', {}));
+  const [p1ScoredSecondaries, setP1ScoredSecondaries] = useState(() => loadSavedState('p1ScoredSecondaries', {}));
+  const [p2ScoredSecondaries, setP2ScoredSecondaries] = useState(() => loadSavedState('p2ScoredSecondaries', {}));
 
   // Tactical Hand (2 aktive Karten)
-  const [p1TacticalHand, setP1TacticalHand] = useState(['assassination', 'cleanse']);
-  const [p2TacticalHand, setP2TacticalHand] = useState(['bring-it-down', 'engage-on-all-fronts']);
+  const [p1TacticalHand, setP1TacticalHand] = useState(() => loadSavedState('p1TacticalHand', ['assassination', 'cleanse']));
+  const [p2TacticalHand, setP2TacticalHand] = useState(() => loadSavedState('p2TacticalHand', ['bring-it-down', 'engage-on-all-fronts']));
+
+  useEffect(() => {
+    localStorage.setItem("fumble_forge_40k_step", JSON.stringify(step));
+    localStorage.setItem("fumble_forge_40k_matchDate", JSON.stringify(matchDate));
+    localStorage.setItem("fumble_forge_40k_player1Name", JSON.stringify(player1Name));
+    localStorage.setItem("fumble_forge_40k_player1List", JSON.stringify(player1List));
+    localStorage.setItem("fumble_forge_40k_player1Faction", JSON.stringify(player1Faction));
+    localStorage.setItem("fumble_forge_40k_player1Disposition", JSON.stringify(player1Disposition));
+    localStorage.setItem("fumble_forge_40k_player1BattleReady", JSON.stringify(player1BattleReady));
+    localStorage.setItem("fumble_forge_40k_player1Primary", JSON.stringify(player1Primary));
+    localStorage.setItem("fumble_forge_40k_player1SecondaryMode", JSON.stringify(player1SecondaryMode));
+    localStorage.setItem("fumble_forge_40k_player1FixedSecondaries", JSON.stringify(player1FixedSecondaries));
+    localStorage.setItem("fumble_forge_40k_player2Name", JSON.stringify(player2Name));
+    localStorage.setItem("fumble_forge_40k_player2List", JSON.stringify(player2List));
+    localStorage.setItem("fumble_forge_40k_player2Faction", JSON.stringify(player2Faction));
+    localStorage.setItem("fumble_forge_40k_player2Disposition", JSON.stringify(player2Disposition));
+    localStorage.setItem("fumble_forge_40k_player2BattleReady", JSON.stringify(player2BattleReady));
+    localStorage.setItem("fumble_forge_40k_player2Primary", JSON.stringify(player2Primary));
+    localStorage.setItem("fumble_forge_40k_player2SecondaryMode", JSON.stringify(player2SecondaryMode));
+    localStorage.setItem("fumble_forge_40k_player2FixedSecondaries", JSON.stringify(player2FixedSecondaries));
+    localStorage.setItem("fumble_forge_40k_selectedMatchupId", JSON.stringify(selectedMatchupId));
+    localStorage.setItem("fumble_forge_40k_selectedDeploymentPatternId", JSON.stringify(selectedDeploymentPatternId));
+    localStorage.setItem("fumble_forge_40k_selectedTerrainLayoutId", JSON.stringify(selectedTerrainLayoutId));
+    localStorage.setItem("fumble_forge_40k_selectedMissionRule", JSON.stringify(selectedMissionRule));
+    localStorage.setItem("fumble_forge_40k_currentRound", JSON.stringify(currentRound));
+    localStorage.setItem("fumble_forge_40k_p1CpGained", JSON.stringify(p1CpGained));
+    localStorage.setItem("fumble_forge_40k_p1CpSpent", JSON.stringify(p1CpSpent));
+    localStorage.setItem("fumble_forge_40k_p2CpGained", JSON.stringify(p2CpGained));
+    localStorage.setItem("fumble_forge_40k_p2CpSpent", JSON.stringify(p2CpSpent));
+    localStorage.setItem("fumble_forge_40k_p1ScoredPrimaries", JSON.stringify(p1ScoredPrimaries));
+    localStorage.setItem("fumble_forge_40k_p2ScoredPrimaries", JSON.stringify(p2ScoredPrimaries));
+    localStorage.setItem("fumble_forge_40k_p1ScoredSecondaries", JSON.stringify(p1ScoredSecondaries));
+    localStorage.setItem("fumble_forge_40k_p2ScoredSecondaries", JSON.stringify(p2ScoredSecondaries));
+    localStorage.setItem("fumble_forge_40k_p1TacticalHand", JSON.stringify(p1TacticalHand));
+    localStorage.setItem("fumble_forge_40k_p2TacticalHand", JSON.stringify(p2TacticalHand));
+  }, [
+    step, matchDate, player1Name, player1List, player1Faction, player1Disposition, player1BattleReady, player1Primary, player1SecondaryMode, player1FixedSecondaries,
+    player2Name, player2List, player2Faction, player2Disposition, player2BattleReady, player2Primary, player2SecondaryMode, player2FixedSecondaries,
+    selectedMatchupId, selectedDeploymentPatternId, selectedTerrainLayoutId, selectedMissionRule, currentRound,
+    p1CpGained, p1CpSpent, p2CpGained, p2CpSpent, p1ScoredPrimaries, p2ScoredPrimaries, p1ScoredSecondaries, p2ScoredSecondaries, p1TacticalHand, p2TacticalHand
+  ]);
 
   const allSecondaryCards = Object.entries(SECONDARY_RULES_CATALOG).map(([id, item]) => ({
     id,
@@ -957,6 +1014,39 @@ export default function Wh40kScoreTracker({ currentUser }) {
     setP1ScoredSecondaries({});
     setP2ScoredSecondaries({});
     setSaveSuccess(false);
+
+    setPlayer1Name(currentUser?.username || currentUser?.name || 'You');
+    setPlayer1List('');
+    setPlayer1Faction(factionsData?.[0]?.name || 'Aeldari');
+    setPlayer1Disposition(forceDispositionsData?.[0]?.id || 'take-and-hold');
+    setPlayer1BattleReady(true);
+    setPlayer1Primary('Unstoppable Force');
+    setPlayer1SecondaryMode('tactical');
+    setPlayer1FixedSecondaries(['assassination', 'engage-on-all-fronts']);
+
+    setPlayer2Name('Opponent');
+    setPlayer2List('');
+    setPlayer2Faction(factionsData?.[1]?.name || 'Adeptus Custodes');
+    setPlayer2Disposition(forceDispositionsData?.[2]?.id || 'purge-the-foe');
+    setPlayer2BattleReady(true);
+    setPlayer2Primary('Unstoppable Force');
+    setPlayer2SecondaryMode('tactical');
+    setPlayer2FixedSecondaries(['bring-it-down', 'a-grievous-blow']);
+
+    setSelectedMatchupId('');
+    setSelectedDeploymentPatternId('dawn-of-war');
+    setSelectedTerrainLayoutId('');
+    setSelectedMissionRule('none');
+    setP1TacticalHand(['assassination', 'cleanse']);
+    setP2TacticalHand(['bring-it-down', 'engage-on-all-fronts']);
+
+    const keys = [
+      'step', 'matchDate', 'player1Name', 'player1List', 'player1Faction', 'player1Disposition', 'player1BattleReady', 'player1Primary', 'player1SecondaryMode', 'player1FixedSecondaries',
+      'player2Name', 'player2List', 'player2Faction', 'player2Disposition', 'player2BattleReady', 'player2Primary', 'player2SecondaryMode', 'player2FixedSecondaries',
+      'selectedMatchupId', 'selectedDeploymentPatternId', 'selectedTerrainLayoutId', 'selectedMissionRule', 'currentRound',
+      'p1CpGained', 'p1CpSpent', 'p2CpGained', 'p2CpSpent', 'p1ScoredPrimaries', 'p2ScoredPrimaries', 'p1ScoredSecondaries', 'p2ScoredSecondaries', 'p1TacticalHand', 'p2TacticalHand'
+    ];
+    keys.forEach(k => localStorage.removeItem(`fumble_forge_40k_${k}`));
   };
 
   const getSortedLayoutGroups = () => {
@@ -987,8 +1077,130 @@ export default function Wh40kScoreTracker({ currentUser }) {
     return `${getDispositionName(matchup.disposition)} vs ${getDispositionName(matchup.opponent_disposition)}`;
   };
 
+  const onTouchStart = (e) => {
+    const tagName = e.target.tagName.toLowerCase();
+    if (
+      ["input", "select", "option", "button", "textarea"].includes(tagName) ||
+      e.target.closest("button") ||
+      e.target.closest("select") ||
+      e.target.closest("svg")
+    ) {
+      return;
+    }
+    setTouchEndX(null);
+    setTouchEndY(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+    setTouchEndY(e.targetTouches[0].clientY);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
+    const distanceX = touchStartX - touchEndX;
+    const distanceY = touchStartY - touchEndY;
+    const isHorizontalSwipe = Math.abs(distanceX) > Math.abs(distanceY);
+    const minSwipeDistance = 50;
+    if (isHorizontalSwipe && Math.abs(distanceX) > minSwipeDistance) {
+      if (distanceX > 0) {
+        // Swipe Left -> Go Forward / Next
+        handleSwipeNext();
+      } else {
+        // Swipe Right -> Go Backward / Prev
+        handleSwipePrev();
+      }
+    }
+  };
+
+  const handleSwipeNext = () => {
+    if (step === 'setup') {
+      if (!player1Name || !player2Name) {
+        alert("Bitte trage die Namen beider Spieler ein!");
+        return;
+      }
+      const uniqueMatchup = uniqueMatchups.find(m => 
+        (m.disposition === player1Disposition && m.opponent_disposition === player2Disposition) ||
+        (m.disposition === player2Disposition && m.opponent_disposition === player1Disposition)
+      ) || uniqueMatchups[0];
+      setSelectedMatchupId(uniqueMatchup?.id || '');
+      setStep('mission_selection');
+    } else if (step === 'mission_selection') {
+      const av = getPlayer1AvailableMissions();
+      if (av.length > 0 && !player1Primary) setPlayer1Primary(av[0].name);
+      setStep('player1_primary');
+    } else if (step === 'player1_primary') {
+      const av = getPlayer2AvailableMissions();
+      if (av.length > 0 && !player2Primary) setPlayer2Primary(av[0].name);
+      setStep('player2_primary');
+    } else if (step === 'player2_primary') {
+      setStep('deployment');
+    } else if (step === 'deployment') {
+      setStep('mission_rules');
+    } else if (step === 'mission_rules') {
+      setStep('player1_secondaries');
+    } else if (step === 'player1_secondaries') {
+      if (player1SecondaryMode === 'fixed' && player1FixedSecondaries.length !== 2) {
+        alert("Bitte wähle genau 2 Fixed Secondary Missions aus!");
+        return;
+      }
+      setStep('player2_secondaries');
+    } else if (step === 'player2_secondaries') {
+      setStep('live_tracker');
+    } else if (step === 'live_tracker') {
+      if (currentRound < 5) {
+        setCurrentRound(currentRound + 1);
+      } else {
+        setStep('summary');
+      }
+    }
+  };
+
+  const handleSwipePrev = () => {
+    if (step === 'mission_selection') {
+      setStep('setup');
+    } else if (step === 'player1_primary') {
+      setStep('mission_selection');
+    } else if (step === 'player2_primary') {
+      setStep('player1_primary');
+    } else if (step === 'deployment') {
+      setStep('player2_primary');
+    } else if (step === 'mission_rules') {
+      setStep('deployment');
+    } else if (step === 'player1_secondaries') {
+      setStep('mission_rules');
+    } else if (step === 'player2_secondaries') {
+      setStep('player1_secondaries');
+    } else if (step === 'live_tracker') {
+      if (currentRound > 1) {
+        setCurrentRound(currentRound - 1);
+      } else {
+        setStep('player2_secondaries');
+      }
+    } else if (step === 'summary') {
+      setStep('live_tracker');
+    }
+  };
+
+  const swipeHandlers = {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  };
+
   return (
-    <div className="max-w-3xl mx-auto bg-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-8 text-neutral-100 font-sans shadow-2xl relative">
+    <div {...swipeHandlers} className="max-w-3xl mx-auto bg-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-8 text-neutral-100 font-sans shadow-2xl relative">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white rounded-full transition z-50 cursor-pointer shadow-lg"
+          title="Zurück zur Commander Zentrale"
+        >
+          <X size={20} />
+        </button>
+      )}
       
       {/* Top Header */}
       {step !== 'summary' && (
@@ -1749,6 +1961,41 @@ export default function Wh40kScoreTracker({ currentUser }) {
               >
                 Finish Game <Trophy size={16} />
               </button>
+            )}
+          </div>
+
+          {/* SICHERER LÖSCH-BEREICH */}
+          <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4 text-center mt-6">
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-neutral-500 hover:text-red-400 text-xs font-bold transition flex items-center gap-1.5 mx-auto cursor-pointer"
+              >
+                <Trash2 size={14} /> Aktuelles Spiel/Turnier abbrechen & verwerfen
+              </button>
+            ) : (
+              <div className="space-y-3 max-w-sm mx-auto bg-neutral-950 border border-red-900/50 p-4 rounded-xl shadow-xl">
+                <p className="text-red-400 text-xs font-extrabold uppercase tracking-wide">
+                  Möchtest du dieses Spiel wirklich verwerfen? Alle aktuellen Punkte gehen verloren!
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      resetMatch();
+                      setShowDeleteConfirm(false);
+                    }}
+                    className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition shadow-md cursor-pointer"
+                  >
+                    Ja, verwerfen
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
