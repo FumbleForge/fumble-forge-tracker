@@ -51,20 +51,18 @@ export default function HallOfFame() {
         );
 
         sortedMatches.forEach((m) => {
+          const userId = m.user_id;
+          if (!statsMap[userId]) return;
+
           const isTournament = m.details?.match_mode === "tournament_complete";
           
           if (isTournament && m.details?.tournament_rounds) {
             m.details.tournament_rounds.forEach((round) => {
-              const userId = m.user_id;
-              if (!statsMap[userId]) return;
-
               statsMap[userId].gamesPlayed++;
               statsMap[userId].totalVp += Number(round.p1Vp) || 0;
 
-              const winner = round.winner || "";
-              const p1Name = round.p1Name || "";
-              const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
-              const isUserWinner = (p1Name && winner.includes(p1Name)) || winner.includes("Spieler 1");
+              const isTie = round.winner === "Unentschieden" || Number(round.p1Vp) === Number(round.p2Vp);
+              const isUserWinner = Number(round.p1Vp) > Number(round.p2Vp);
 
               if (isTie) {
                 statsMap[userId].draws++;
@@ -89,18 +87,13 @@ export default function HallOfFame() {
               }
             });
           } else {
-            const userId = m.user_id;
-            if (!statsMap[userId]) return;
-
             statsMap[userId].gamesPlayed++;
-            
-            const isP1 = m.player1_name?.includes(statsMap[userId].name) || m.player1_name?.includes("Spieler 1");
-            const userVp = isP1 ? Number(m.player1_vp) || 0 : Number(m.player2_vp) || 0;
-            statsMap[userId].totalVp += userVp;
+            const p1Vp = Number(m.player1_vp) || 0;
+            const p2Vp = Number(m.player2_vp) || 0;
+            statsMap[userId].totalVp += p1Vp;
 
-            const winner = m.winner_name || "";
-            const isTie = winner === "Unentschieden" || m.player1_vp === m.player2_vp;
-            const isUserWinner = winner.includes(statsMap[userId].name) || winner.includes("Spieler 1");
+            const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
+            const isUserWinner = p1Vp > p2Vp;
 
             if (isTie) {
               statsMap[userId].draws++;
@@ -141,7 +134,6 @@ export default function HallOfFame() {
     }
   };
 
-  // Dynamische Sortierung basierend auf dem gewählten Filter-Tab
   const sortedLeaderboard = [...leaderboard].sort((a, b) => {
     if (filterMode === "streak") {
       const aStreak = a.streakType === "win" ? a.currentStreak : 0;
@@ -152,7 +144,6 @@ export default function HallOfFame() {
       if (b.avgVp !== a.avgVp) return b.avgVp - a.avgVp;
       return b.wins - a.wins;
     } else {
-      // Standard: Wins ➔ WinRate ➔ GamesPlayed
       if (b.wins !== a.wins) return b.wins - a.wins;
       if (b.winRate !== a.winRate) return b.winRate - a.winRate;
       return b.gamesPlayed - a.gamesPlayed;
@@ -182,7 +173,7 @@ export default function HallOfFame() {
       <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-neutral-800 text-xs gap-1">
         <button
           onClick={() => setFilterMode("wins")}
-          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
             filterMode === "wins"
               ? "bg-amber-600 text-neutral-950 shadow"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
@@ -192,7 +183,7 @@ export default function HallOfFame() {
         </button>
         <button
           onClick={() => setFilterMode("streak")}
-          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
             filterMode === "streak"
               ? "bg-amber-600 text-neutral-950 shadow"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
@@ -202,7 +193,7 @@ export default function HallOfFame() {
         </button>
         <button
           onClick={() => setFilterMode("vp")}
-          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 rounded-lg font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
             filterMode === "vp"
               ? "bg-amber-600 text-neutral-950 shadow"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
@@ -212,7 +203,7 @@ export default function HallOfFame() {
         </button>
       </div>
 
-      {/* --- DESKTOP TABELLE (ab md sichtbar) --- */}
+      {/* DESKTOP TABELLE */}
       <div className="hidden md:block bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-xl">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -302,7 +293,7 @@ export default function HallOfFame() {
         </table>
       </div>
 
-      {/* --- MOBILE KARTEN-ANSICHT (unter md sichtbar, kein Scrollen nötig) --- */}
+      {/* MOBILE KARTEN-ANSICHT */}
       <div className="block md:hidden space-y-3">
         {sortedLeaderboard.map((player, idx) => {
           const rank = idx + 1;
@@ -315,11 +306,9 @@ export default function HallOfFame() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* Rang Badge */}
                   <div className="w-8 h-8 rounded-full bg-neutral-950 border border-neutral-800 flex items-center justify-center font-bold text-xs text-amber-500 shrink-0">
                     {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
                   </div>
-                  {/* Avatar & Name */}
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-full bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
                       {player.avatar ? (
@@ -335,14 +324,12 @@ export default function HallOfFame() {
                   </div>
                 </div>
 
-                {/* Win Rate Highlight */}
                 <div className="text-right">
                   <div className="text-base font-black text-amber-500">{player.winRate}%</div>
                   <div className="text-[9px] text-neutral-500 uppercase">Win Rate</div>
                 </div>
               </div>
 
-              {/* Untere Reihe: Stats im Kompaktformat */}
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-800/60 text-center text-xs">
                 <div className="bg-neutral-950 p-2 rounded-lg border border-neutral-800/40">
                   <div className="text-[9px] text-neutral-500 uppercase">W / L / D</div>

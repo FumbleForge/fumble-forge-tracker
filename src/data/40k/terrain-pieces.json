@@ -1,0 +1,324 @@
+[
+  {
+    "id": "area-large",
+    "name": "Large Area",
+    "kind": "area",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": 0, "y": 7 }, { "x": 1.48, "y": 7 }, { "x": 1.65, "y": 7.18 }, { "x": 2.24, "y": 7.26 }, { "x": 2.78, "y": 7.43 }, { "x": 3.33, "y": 7.38 }, { "x": 3.55, "y": 7 }, { "x": 4.68, "y": 7 }, { "x": 4.98, "y": 7.14 }, { "x": 5.87, "y": 7 }, { "x": 6.6, "y": 7.31 }, { "x": 7.5, "y": 7.27 }, { "x": 7.94, "y": 7 }, { "x": 11.5, "y": 7 }, { "x": 11.5, "y": 0 }, { "x": 0, "y": 0 }]
+    }
+  },
+  {
+    "id": "area-medium",
+    "name": "Medium Area",
+    "kind": "area",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": 0, "y": 4 }, { "x": -0.28, "y": 2.84 }, { "x": -0.48, "y": 1.87 }, { "x": 0, "y": 0.99 }, { "x": 0, "y": 0 }, { "x": 6, "y": 0 }, { "x": 6, "y": 4 }, { "x": 4.52, "y": 4.2 }, { "x": 3.54, "y": 4.24 }, { "x": 2.66, "y": 4 }, { "x": 0, "y": 3.94 }]
+    }
+  },
+  {
+    "id": "area-short-line",
+    "name": "Short Line Area",
+    "kind": "area",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": 6, "y": 2 }, { "x": 6, "y": 0 }, { "x": 1.84, "y": -0.26 }, { "x": 0, "y": 0 }, { "x": 0, "y": 2 }, { "x": 3.8, "y": 2.29 }, { "x": 4.66, "y": 2.32 }, { "x": 5.89, "y": 1.94 }]
+    }
+  },
+  {
+    "id": "area-long-line",
+    "name": "Long Line Area",
+    "kind": "area",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": 10, "y": 2.5 }, { "x": 10, "y": 0 }, { "x": 8.66, "y": -0.49 }, { "x": 1.78, "y": -0.1 }, { "x": 0, "y": 0 }, { "x": 0, "y": 2.5 }, { "x": 3.08, "y": 2.86 }, { "x": 4.15, "y": 3.07 }]
+    }
+  },
+  {
+    "id": "area-trapezoid",
+    "name": "Trapezoid Area",
+    "kind": "area",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": 0, "y": 11.5 }, { "x": 8, "y": 11.5 }, { "x": 2, "y": 0 }, { "x": 0, "y": 0 }]
+    }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-ab",
+    "name": "Battlemaster AB",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 3.75, "height": 4.5 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-co",
+    "name": "Battlemaster CO",
+    "kind": "feature",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": -3, "y": -1.25 }, { "x": 3, "y": -1.25 }, { "x": 3, "y": -0.5 }, { "x": -2.25, "y": -0.5 }, { "x": -2.25, "y": 1.25 }, { "x": -3, "y": 1.25 }]
+    }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-corner",
+    "name": "Battlemaster Corner",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 1.5, "height": 1.5 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-ef",
+    "name": "Battlemaster EF",
+    "kind": "feature",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": -2.25, "y": -3 }, { "x": 2.25, "y": -3 }, { "x": 2.25, "y": -2.25 }, { "x": -1.5, "y": -2.25 }, { "x": -1.5, "y": 3 }, { "x": -2.25, "y": 3 }]
+    }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-generator",
+    "name": "Battlemaster Generator",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 4.5, "height": 2 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-gh",
+    "name": "Battlemaster GH",
+    "kind": "feature",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": -1.5, "y": -3 }, { "x": 1.5, "y": -3 }, { "x": 1.5, "y": -2.25 }, { "x": -0.75, "y": -2.25 }, { "x": -0.75, "y": 3 }, { "x": -1.5, "y": 3 }]
+    }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-long-barrier",
+    "name": "Battlemaster Long Barrier",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 4.5, "height": 0.6 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-pipes",
+    "name": "Battlemaster Pipes",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 6, "height": 1 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-short-barrier",
+    "name": "Battlemaster Short Barrier",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 3.75, "height": 0.6 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-small-l",
+    "name": "Battlemaster Small L",
+    "kind": "feature",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": -0.75, "y": -1.25 }, { "x": 0.75, "y": -1.25 }, { "x": 0.75, "y": -0.5 }, { "x": 0, "y": -0.5 }, { "x": 0, "y": 1.25 }, { "x": -0.75, "y": 1.25 }]
+    }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-small-l-flip",
+    "name": "Battlemaster Small L flip",
+    "kind": "feature",
+    "footprint": {
+      "type": "polygon",
+      "points": [{ "x": -0.75, "y": -1.25 }, { "x": 0.75, "y": -1.25 }, { "x": 0.75, "y": 1.25 }, { "x": 0, "y": 1.25 }, { "x": 0, "y": -0.5 }, { "x": -0.75, "y": -0.5 }]
+    }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-part-tower",
+    "name": "Battlemaster Tower",
+    "kind": "feature",
+    "footprint": { "type": "rectangle", "width": 2, "height": 2.5 }
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-01-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 4.02, "y": -0.05 }, "rotation_degrees": 90 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": -2.22, "y": -1.55 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-03-m1-p0",
+    "template": "area-short-line",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-pipes", "position": { "x": 0, "y": 0 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-04-m1-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -4.47, "y": 1.69 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": 2.27, "y": -0.8 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-05-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": 3.02, "y": -0.05 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": -2.22, "y": -1.55 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-07-m0-p3",
+    "template": "area-trapezoid",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ab", "position": { "x": -0.42, "y": 1.85 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-corner", "position": { "x": -1.55, "y": -5.65 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-08-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 2.27, "y": -1.8 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -3.97, "y": -2.3 }, "rotation_degrees": 90 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-09-m1-p0",
+    "template": "area-medium",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-generator", "position": { "x": 0.03, "y": -0.02 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-10-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": 3.02, "y": -0.05 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -4.47, "y": 1.69 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-11-m0-p0",
+    "template": "area-long-line",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-short-barrier", "position": { "x": 3.07, "y": -0.48 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-short-barrier", "position": { "x": -3.17, "y": -0.48 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-tower", "position": { "x": -0.05, "y": 0.01 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-12-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": -2.97, "y": -0.05 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": 2.27, "y": 1.44 }, "rotation_degrees": 90 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-14-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.52, "y": -1.8 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -3.97, "y": -0.05 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-16-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 2.27, "y": -1.8 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -4.47, "y": 1.69 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-17-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 4.02, "y": -0.05 }, "rotation_degrees": 90 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -4.47, "y": 1.69 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-18-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": 2.27, "y": -0.8 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": -3.72, "y": -0.05 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-19-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -3.97, "y": -0.05 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.02, "y": 2.19 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-20-m1-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -3.97, "y": -0.05 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": 2.27, "y": 1.44 }, "rotation_degrees": 90 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-21-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": -3.72, "y": -0.05 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 2.27, "y": -1.8 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-22-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 2.27, "y": -1.8 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": -2.22, "y": 0.69 }, "rotation_degrees": 90 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-23-m1-p2",
+    "template": "area-trapezoid",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ab", "position": { "x": 0.05, "y": 2.22 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-corner", "position": { "x": 1.55, "y": -5.64 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-24-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": -2.22, "y": 0.69 }, "rotation_degrees": 90 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.02, "y": 2.19 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-26-m1-p0",
+    "template": "area-medium",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l-flip", "position": { "x": -1.71, "y": -0.27 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-small-l-flip", "position": { "x": 1.78, "y": 0.22 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-27-m0-p0",
+    "template": "area-medium",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-generator", "position": { "x": 0.03, "y": -0.02 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-28-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.02, "y": 2.19 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -2.22, "y": 1.69 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-29-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -3.97, "y": -0.05 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": 3.77, "y": -0.05 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-30-m0-p0",
+    "template": "area-short-line",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-pipes", "position": { "x": 0, "y": 0 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-31-m0-p0",
+    "template": "area-short-line",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-long-barrier", "position": { "x": 0, "y": 0 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-32-m1-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": 2.27, "y": -1.8 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -3.97, "y": -2.3 }, "rotation_degrees": 90 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-33-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": -2.22, "y": 0.69 }, "rotation_degrees": 90 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": 3.77, "y": -0.05 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-34-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.52, "y": -1.8 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": -2.22, "y": -1.55 }, "rotation_degrees": 270 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-35-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.52, "y": -1.8 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -2.22, "y": 1.69 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-36-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -2.22, "y": 1.69 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": 3.77, "y": -0.05 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-37-m1-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": -2.22, "y": 0.69 }, "rotation_degrees": 90 }, { "template": "bm-bm-terrain-11e-1-part-gh", "position": { "x": 3.77, "y": -0.05 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-38-m1-p0",
+    "template": "area-long-line",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-short-barrier", "position": { "x": -3.17, "y": -0.48 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-short-barrier", "position": { "x": 3.07, "y": -0.48 }, "rotation_degrees": 0 }, { "template": "bm-bm-terrain-11e-1-part-tower", "position": { "x": -0.05, "y": 0.01 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-39-m0-p0",
+    "template": "area-medium",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-small-l-flip", "position": { "x": -1.71, "y": -0.27 }, "rotation_degrees": 180 }, { "template": "bm-bm-terrain-11e-1-part-small-l-flip", "position": { "x": 1.78, "y": 0.22 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-40-m0-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ef", "position": { "x": 2.27, "y": -0.8 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": -4.47, "y": 1.69 }, "rotation_degrees": 0 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-41-m1-p0",
+    "template": "area-short-line",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-long-barrier", "position": { "x": 0, "y": 0 }, "rotation_degrees": 180 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-42-m0-p0",
+    "template": "area-trapezoid",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-ab", "position": { "x": -0.05, "y": -2.22 }, "rotation_degrees": 90 }, { "template": "bm-bm-terrain-11e-1-part-corner", "position": { "x": -1.55, "y": 5.65 }, "rotation_degrees": 90 }]
+  },
+  {
+    "id": "bm-bm-terrain-11e-1-composite-44-m1-p0",
+    "template": "area-large",
+    "features": [{ "template": "bm-bm-terrain-11e-1-part-co", "position": { "x": -3.97, "y": -0.05 }, "rotation_degrees": 270 }, { "template": "bm-bm-terrain-11e-1-part-small-l", "position": { "x": 4.52, "y": -1.8 }, "rotation_degrees": 180 }]
+  }
+]

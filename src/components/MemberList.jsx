@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
-// Zuordnung der Badge-IDs zu Icons & Namen für die Mini-Ansicht
 const BADGE_ICONS = {
   blood_and_honor: { icon: Award, title: "Blut & Ehre" },
   club_veteran: { icon: Trophy, title: "Veteran des Clubs" },
@@ -42,7 +41,6 @@ export default function MemberList() {
     try {
       setLoading(true);
 
-      // 1. Alle Profile laden
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -51,42 +49,32 @@ export default function MemberList() {
       if (profilesError) throw profilesError;
       if (!profilesData) return;
 
-      // 2. Alle Matches und Event-Teilnahmen für alle User vorab laden
       const { data: allMatches } = await supabase.from("matches").select("*");
       const { data: allEvents } = await supabase.from("event_attendees").select("*");
 
-      // 3. Für jedes Mitglied die Badges zentral live berechnen und in Supabase aktualisieren, falls etwas fehlt
       const updatedMembers = await Promise.all(
         profilesData.map(async (member) => {
           const userMatches = (allMatches || []).filter((m) => m.user_id === member.id);
           const userEvents = (allEvents || []).filter((e) => e.user_id === member.id);
-          const username = member.username || "";
           const custom = Array.isArray(member.custom_badges) ? member.custom_badges : [];
           const loginDays = Array.isArray(member.login_days) ? member.login_days : [];
 
           const calculatedBadges = [];
 
-          // --- BADGE LOGIK PRÜFUNG ---
-          // Blut & Ehre (>= 1 Match)
           if (userMatches.length >= 1) calculatedBadges.push("blood_and_honor");
-
-          // Veteran des Clubs (>= 5 Matches)
           if (userMatches.length >= 5) calculatedBadges.push("club_veteran");
 
-          // Winning Streak (3 in Folge)
           let currentStreak = 0;
           let hasWinningStreak = false;
+
           for (const m of userMatches) {
             const isTournament = m.details?.match_mode === "tournament_complete";
             if (isTournament && m.details?.tournament_rounds) {
               for (const round of m.details.tournament_rounds) {
-                const winner = round.winner || "";
-                const p1Name = round.p1Name || "";
-                const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
-                const isUserWinner =
-                  (p1Name && winner.includes(p1Name)) ||
-                  winner.includes("Spieler 1") ||
-                  (username && winner.toLowerCase().includes(username.toLowerCase()));
+                const p1Vp = Number(round.p1Vp) || 0;
+                const p2Vp = Number(round.p2Vp) || 0;
+                const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
+                const isUserWinner = p1Vp > p2Vp;
 
                 if (isTie) {
                   currentStreak = 0;
@@ -98,11 +86,10 @@ export default function MemberList() {
                 }
               }
             } else {
-              const winner = m.winner_name || "";
-              const isTie = winner === "Unentschieden";
-              const isUserWinner =
-                winner.includes("Spieler 1") ||
-                (username && winner.toLowerCase().includes(username.toLowerCase()));
+              const p1Vp = Number(m.player1_vp) || 0;
+              const p2Vp = Number(m.player2_vp) || 0;
+              const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
+              const isUserWinner = p1Vp > p2Vp;
 
               if (isTie) {
                 currentStreak = 0;
@@ -114,42 +101,38 @@ export default function MemberList() {
               }
             }
           }
+
           if (hasWinningStreak) calculatedBadges.push("winning_streak");
 
-          // Turnier-Gewinner ("Der Hausmeister")
           const hasWonTournament = userMatches.some((m) => {
             const isTournament = m.details?.match_mode === "tournament_complete";
-            const winner = m.winner_name || "";
-            return isTournament && username && winner.toLowerCase().includes(username.toLowerCase());
+            const p1Vp = Number(m.player1_vp) || 0;
+            const p2Vp = Number(m.player2_vp) || 0;
+            return isTournament && p1Vp > p2Vp;
           });
           if (hasWonTournament) calculatedBadges.push("tournament_winner");
 
-          // Unentschieden ("Unbeugsam")
           const hasDraw = userMatches.some((m) => {
             const isTournament = m.details?.match_mode === "tournament_complete";
             if (isTournament && m.details?.tournament_rounds) {
               return m.details.tournament_rounds.some(
-                (r) => r.winner === "Unentschieden" || r.p1Vp === r.p2Vp
+                (r) => r.winner === "Unentschieden" || Number(r.p1Vp) === Number(r.p2Vp)
               );
             }
-            return m.winner_name === "Unentschieden";
+            return m.winner_name === "Unentschieden" || Number(m.player1_vp) === Number(m.player2_vp);
           });
           if (hasDraw) calculatedBadges.push("draw_master");
 
-          // Admin Werkstatt Badges
           if (custom.includes("machinist")) calculatedBadges.push("machinist");
           if (custom.includes("master_of_magnets")) calculatedBadges.push("master_of_magnets");
 
-          // Community Badges (On Tour / Events)
           if (userEvents.length > 0) {
             calculatedBadges.push("on_tour");
             calculatedBadges.push("early_bird");
           }
 
-          // Stammtisch (>= 5 Login Tage)
           if (loginDays.length >= 5) calculatedBadges.push("stammtisch");
 
-          // Gesicht des Clubs (Avatar vorhanden)
           if (member.avatar_url) {
             calculatedBadges.push("face_of_the_club");
           }
@@ -157,7 +140,6 @@ export default function MemberList() {
           const existingUnlocked = Array.isArray(member.unlocked_badges) ? member.unlocked_badges : [];
           const mergedBadges = Array.from(new Set([...existingUnlocked, ...calculatedBadges]));
 
-          // Falls sich neue Badges ergeben haben, direkt im Hintergrund in Supabase speichern
           if (mergedBadges.length !== existingUnlocked.length) {
             await supabase
               .from("profiles")

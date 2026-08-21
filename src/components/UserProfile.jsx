@@ -23,7 +23,6 @@ import {
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
 
-// DEFINITION DER VOLLSTÄNDIGEN BADGES (INKLUSIVE "GESICHT DES CLUBS")
 const BADGE_DEFINITIONS = [
   {
     id: "blood_and_honor",
@@ -31,7 +30,7 @@ const BADGE_DEFINITIONS = [
     desc: "Trage dein allererstes Match im Score Tracker ein.",
     category: "Schlachtfelder",
     icon: Award,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => matches.length >= 1,
+    check: (matches) => matches.length >= 1,
   },
   {
     id: "club_veteran",
@@ -39,7 +38,7 @@ const BADGE_DEFINITIONS = [
     desc: "Trage insgesamt 5 Matches über den Tracker ein.",
     category: "Schlachtfelder",
     icon: Trophy,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => matches.length >= 5,
+    check: (matches) => matches.length >= 5,
   },
   {
     id: "winning_streak",
@@ -47,19 +46,16 @@ const BADGE_DEFINITIONS = [
     desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
     category: "Schlachtfelder",
     icon: Flame,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => {
+    check: (matches) => {
       let currentStreak = 0;
       for (const m of matches) {
         const isTournament = m.details?.match_mode === "tournament_complete";
         if (isTournament && m.details?.tournament_rounds) {
           for (const round of m.details.tournament_rounds) {
-            const winner = round.winner || "";
-            const p1Name = round.p1Name || "";
-            const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
-            const isUserWinner =
-              (p1Name && winner.includes(p1Name)) ||
-              winner.includes("Spieler 1") ||
-              (username && winner.toLowerCase().includes(username.toLowerCase()));
+            const p1Vp = Number(round.p1Vp) || 0;
+            const p2Vp = Number(round.p2Vp) || 0;
+            const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
+            const isUserWinner = p1Vp > p2Vp;
 
             if (isTie) {
               currentStreak = 0;
@@ -71,11 +67,10 @@ const BADGE_DEFINITIONS = [
             }
           }
         } else {
-          const winner = m.winner_name || "";
-          const isTie = winner === "Unentschieden";
-          const isUserWinner =
-            winner.includes("Spieler 1") ||
-            (username && winner.toLowerCase().includes(username.toLowerCase()));
+          const p1Vp = Number(m.player1_vp) || 0;
+          const p2Vp = Number(m.player2_vp) || 0;
+          const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
+          const isUserWinner = p1Vp > p2Vp;
 
           if (isTie) {
             currentStreak = 0;
@@ -96,15 +91,12 @@ const BADGE_DEFINITIONS = [
     desc: "Gewinne ein über den internen Turnier-Modus erstelltes Turnier.",
     category: "Schlachtfelder",
     icon: Shield,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => {
+    check: (matches) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
-        const winner = m.winner_name || "";
-        return (
-          isTournament &&
-          username &&
-          winner.toLowerCase().includes(username.toLowerCase())
-        );
+        const p1Vp = Number(m.player1_vp) || 0;
+        const p2Vp = Number(m.player2_vp) || 0;
+        return isTournament && p1Vp > p2Vp;
       });
     },
   },
@@ -114,15 +106,15 @@ const BADGE_DEFINITIONS = [
     desc: "Erziele ein Unentschieden in einem getrackten Match.",
     category: "Schlachtfelder",
     icon: MapPin,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => {
+    check: (matches) => {
       return matches.some((m) => {
         const isTournament = m.details?.match_mode === "tournament_complete";
         if (isTournament && m.details?.tournament_rounds) {
           return m.details.tournament_rounds.some(
-            (r) => r.winner === "Unentschieden" || r.p1Vp === r.p2Vp
+            (r) => r.winner === "Unentschieden" || Number(r.p1Vp) === Number(r.p2Vp)
           );
         }
-        return m.winner_name === "Unentschieden";
+        return m.winner_name === "Unentschieden" || Number(m.player1_vp) === Number(m.player2_vp);
       });
     },
   },
@@ -132,7 +124,7 @@ const BADGE_DEFINITIONS = [
     desc: "Vom Admin verliehen: Aktive Bereitstellung von gedrucktem Club-Gelände.",
     category: "Werkstatt",
     icon: Wrench,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => customBadges.includes("machinist"),
+    check: (matches, events, username, user, customBadges) => customBadges.includes("machinist"),
   },
   {
     id: "master_of_magnets",
@@ -140,7 +132,7 @@ const BADGE_DEFINITIONS = [
     desc: "Vom Admin verliehen: Vorbildlich magnetisierte modulare Ruinen.",
     category: "Werkstatt",
     icon: Magnet,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => customBadges.includes("master_of_magnets"),
+    check: (matches, events, username, user, customBadges) => customBadges.includes("master_of_magnets"),
   },
   {
     id: "on_tour",
@@ -148,7 +140,7 @@ const BADGE_DEFINITIONS = [
     desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble).",
     category: "Community",
     icon: Calendar,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => events.length > 0,
+    check: (matches, events) => events.length > 0,
   },
   {
     id: "stammtisch",
@@ -156,7 +148,7 @@ const BADGE_DEFINITIONS = [
     desc: "Logge dich an 5 verschiedenen Tagen im Club-Portal ein.",
     category: "Community",
     icon: Users,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => loginDays.length >= 5,
+    check: (matches, events, username, user, customBadges, loginDays) => loginDays.length >= 5,
   },
   {
     id: "early_bird",
@@ -164,7 +156,7 @@ const BADGE_DEFINITIONS = [
     desc: "Zusage zu einem Event direkt nach Ankündigung.",
     category: "Community",
     icon: Clock,
-    check: (matches, events, username, user, customBadges, loginDays, avatarUrl) => events.length > 0,
+    check: (matches, events) => events.length > 0,
   },
   {
     id: "face_of_the_club",
@@ -244,8 +236,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
         setUserEvents(eventData);
       }
 
-      // Profil-Daten sicher laden (mit Fallback, falls Spalten blockieren)
-      const { data: profileData, error } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
@@ -259,7 +250,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
         else if (profileData.armies) setAosArmies(profileData.armies);
         if (profileData.wh40k_armies) setWh40kArmies(profileData.wh40k_armies);
         
-        // Login-Tracker
         const todayStr = new Date().toISOString().split("T")[0];
         let days = profileData.login_days || [];
         if (!days.includes(todayStr)) {
@@ -415,24 +405,23 @@ export default function UserProfile({ user, onUpdateProfile }) {
   };
 
   const deleteMatch = async (id) => {
-    if (!isAdmin) return;
-    if (window.confirm("Dieses Test-Match wirklich unwiderruflich löschen?")) {
-      await supabase.from("matches").delete().eq("id", id);
-      fetchUserData();
+    if (window.confirm("Möchtest du dieses Match wirklich unwiderruflich löschen?")) {
+      const { error } = await supabase.from("matches").delete().eq("id", id);
+      if (!error) {
+        fetchUserData();
+      } else {
+        setErrorMsg("Fehler beim Löschen des Matches.");
+      }
     }
   };
 
   const evaluateRoundWin = (round) => {
-    const winner = round.winner || "";
-    const p1Name = round.p1Name || "";
-    const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
+    const p1Vp = Number(round.p1Vp) || 0;
+    const p2Vp = Number(round.p2Vp) || 0;
+    const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
+    const isWin = p1Vp > p2Vp;
 
-    const isUserWinner = 
-      (p1Name && winner.includes(p1Name)) || 
-      (username && winner.toLowerCase().includes(username.toLowerCase())) ||
-      winner.includes("Spieler 1");
-
-    return { isTie, isWin: !isTie && isUserWinner };
+    return { isTie, isWin };
   };
 
   const unlockedBadges = BADGE_DEFINITIONS.filter((badge) =>
@@ -520,7 +509,6 @@ export default function UserProfile({ user, onUpdateProfile }) {
             />
           </div>
 
-          {/* GETRENNTE ARMEEN-ZEILEN FÜR AOS UND 40K */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-neutral-800">
             <div>
               <label className="block text-xs uppercase font-bold text-amber-500 mb-1 flex items-center gap-1.5">
@@ -562,7 +550,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
           <button
             type="submit"
             disabled={loading}
-            className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-6 py-2.5 rounded-lg text-sm uppercase flex items-center gap-2 transition disabled:opacity-50"
+            className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-6 py-2.5 rounded-lg text-sm uppercase flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
           >
             <Save size={16} /> {loading ? "Speichert..." : "Speichern"}
           </button>
@@ -698,7 +686,7 @@ export default function UserProfile({ user, onUpdateProfile }) {
                       {isAdmin && isMakerBadge && (
                         <button
                           onClick={() => toggleAdminBadge(badge.id)}
-                          className={`mt-1 text-[10px] px-2 py-1 rounded font-bold transition ${
+                          className={`mt-1 text-[10px] px-2 py-1 rounded font-bold transition cursor-pointer ${
                             customBadges.includes(badge.id)
                               ? "bg-red-950 text-red-400 border border-red-800 hover:bg-red-900"
                               : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
@@ -818,15 +806,13 @@ export default function UserProfile({ user, onUpdateProfile }) {
                     </div>
                   </div>
 
-                  {isAdmin && (
-                    <button
-                      onClick={() => deleteMatch(m.id)}
-                      className="p-2 text-neutral-500 hover:text-red-500 transition self-start cursor-pointer"
-                      title="Test-Match als Admin löschen"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => deleteMatch(m.id)}
+                    className="p-2 text-neutral-500 hover:text-red-500 transition self-start cursor-pointer"
+                    title="Match löschen"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               );
             })}

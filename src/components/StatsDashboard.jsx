@@ -11,7 +11,6 @@ import {
 export default function StatsDashboard({ matches, username }) {
   if (!matches || matches.length === 0) return null;
 
-  // Filter-State für den Zeitverlauf: "30days", "1year", "all"
   const [timeFilter, setTimeFilter] = useState("all");
 
   let totalGames = matches.length;
@@ -29,18 +28,13 @@ export default function StatsDashboard({ matches, username }) {
   const battleplans = {};
   const battleTactics = {};
 
-  // Hilfsfunktion zur Bestimmung ob ein Match ein Sieg ist
   const evaluateMatchWin = (m) => {
-    const winner = m.winner_name || "";
-    const p1Name = m.player1_name || "";
-    const isTie = winner === "Unentschieden" || m.player1_vp === m.player2_vp;
+    const p1Vp = Number(m.player1_vp) || 0;
+    const p2Vp = Number(m.player2_vp) || 0;
+    const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
+    const isWin = p1Vp > p2Vp;
 
-    const isUserWinner = 
-      (p1Name && winner.includes(p1Name)) || 
-      (username && winner.toLowerCase().includes(username.toLowerCase())) ||
-      winner.includes("Spieler 1");
-
-    return { isTie, isWin: !isTie && isUserWinner };
+    return { isTie, isWin };
   };
 
   sortedMatches.forEach((m) => {
@@ -68,13 +62,11 @@ export default function StatsDashboard({ matches, username }) {
       }
     }
 
-    // Battleplan Auswertung
     const bpName = m.details?.battleplan || "Unbekannt";
     if (!battleplans[bpName]) battleplans[bpName] = { played: 0, wins: 0 };
     battleplans[bpName].played++;
     if (isWin) battleplans[bpName].wins++;
 
-    // Taktiken Auswertung
     const history = m.details?.history || [];
     history.forEach((h) => {
       if (h.action && h.action.includes("Battle Tactic erfüllt")) {
@@ -90,15 +82,9 @@ export default function StatsDashboard({ matches, username }) {
 
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
   const avgVP = Math.round(
-    matches.reduce((acc, m) => {
-      const isP1 =
-        m.player1_name?.includes(username) ||
-        m.player1_name?.includes("Spieler 1");
-      return acc + (isP1 ? m.player1_vp : m.player2_vp);
-    }, 0) / totalGames
+    matches.reduce((acc, m) => acc + (Number(m.player1_vp) || 0), 0) / totalGames
   );
 
-  // Zeitverlauf-Filter anwenden
   const now = new Date();
   const filteredTimelineMatches = sortedMatches.filter((m) => {
     const matchDate = new Date(m.created_at);
@@ -111,7 +97,7 @@ export default function StatsDashboard({ matches, username }) {
       oneYearAgo.setFullYear(now.getFullYear() - 1);
       return matchDate >= oneYearAgo;
     }
-    return true; // "all"
+    return true;
   });
 
   return (
@@ -133,8 +119,7 @@ export default function StatsDashboard({ matches, username }) {
 
         <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800">
           <div className="text-[10px] text-neutral-500 uppercase flex items-center gap-1">
-            <Trophy size={12} className="text-emerald-500" /> Wins / Losses /
-            Draws
+            <Trophy size={12} className="text-emerald-500" /> Wins / Losses / Draws
           </div>
           <div className="text-xl font-black text-emerald-400 mt-1">
             {wins} <span className="text-neutral-600">/</span> {losses}{" "}
@@ -183,20 +168,19 @@ export default function StatsDashboard({ matches, username }) {
         </div>
       </div>
 
-      {/* WIN RATE OVER TIME - SVG LINIENDIAGRAMM */}
+      {/* WIN RATE OVER TIME */}
       <div className="space-y-4 pt-4 border-t border-neutral-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-xs uppercase font-bold text-neutral-400 flex items-center gap-1.5">
             <TrendingUp size={14} className="text-amber-500" /> Win Rate Over Time
           </div>
           
-          {/* Filter-Optionen */}
           <div className="flex bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-[11px]">
             {["30days", "1year", "all"].map((filter) => (
               <button
                 key={filter}
                 onClick={() => setTimeFilter(filter)}
-                className={`px-3 py-1 rounded-md font-bold transition ${
+                className={`px-3 py-1 rounded-md font-bold transition cursor-pointer ${
                   timeFilter === filter ? "bg-amber-600 text-neutral-950" : "text-neutral-400 hover:text-neutral-200"
                 }`}
               >
@@ -206,7 +190,6 @@ export default function StatsDashboard({ matches, username }) {
           </div>
         </div>
 
-        {/* Chart Box */}
         <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 relative h-48 flex items-center">
           {filteredTimelineMatches.length < 2 ? (
             <div className="text-xs text-neutral-500 italic w-full text-center">
@@ -214,7 +197,6 @@ export default function StatsDashboard({ matches, username }) {
             </div>
           ) : (
             <div className="w-full h-full flex">
-              {/* Prozent-Skala links */}
               <div className="flex flex-col justify-between text-[10px] text-neutral-500 pr-3 py-1 select-none shrink-0 h-full">
                 <span>100%</span>
                 <span>75%</span>
@@ -223,10 +205,8 @@ export default function StatsDashboard({ matches, username }) {
                 <span>0%</span>
               </div>
 
-              {/* SVG Diagramm mit key-Attribut für erzwungenes Neu-Rerendering */}
               <div className="relative flex-1 h-full">
                 <svg key={timeFilter} className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  {/* Horizontale Gitternetzlinien (25%, 50%, 75%) */}
                   {[25, 50, 75].map((val) => (
                     <line
                       key={val}
@@ -240,7 +220,6 @@ export default function StatsDashboard({ matches, username }) {
                     />
                   ))}
 
-                  {/* SVG Kurvenpfad */}
                   <path
                     d={(() => {
                       const points = filteredTimelineMatches.map((m, i) => {
@@ -273,8 +252,7 @@ export default function StatsDashboard({ matches, username }) {
       {/* BATTLEPLAN STATISTIK */}
       <div className="space-y-3 pt-2 border-t border-neutral-800">
         <div className="text-xs uppercase font-bold text-neutral-400 flex items-center gap-1">
-          <Target size={14} className="text-amber-500" /> Battleplan Performance
-          & Win Rate
+          <Target size={14} className="text-amber-500" /> Battleplan Performance & Win Rate
         </div>
         <div className="space-y-2">
           {Object.entries(battleplans).map(([bp, data]) => {

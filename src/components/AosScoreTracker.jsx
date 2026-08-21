@@ -435,6 +435,9 @@ const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
 );
 
 export default function AosScoreTracker({ currentUser }) {
+  const defaultPlayer1Name = currentUser?.username || currentUser?.name || "Dein Name";
+  const defaultPlayer2Name = "Gegner";
+
   const loadSavedState = (key, fallback) => {
     const saved = localStorage.getItem(`fumble_forge_aos_${key}`);
     return saved !== null ? JSON.parse(saved) : fallback;
@@ -464,7 +467,7 @@ export default function AosScoreTracker({ currentUser }) {
 
   const [players, setPlayers] = useState(() => loadSavedState("players", {
     player1: {
-      name: "Spieler 1",
+      name: defaultPlayer1Name,
       faction: "Daughters of Khaine",
       formation: "Slaughter Troupe",
       chosenCardIds: ["blazing_onslaught", "burning_for_vengeance"],
@@ -478,7 +481,7 @@ export default function AosScoreTracker({ currentUser }) {
       scoredRulesByRound: {},
     },
     player2: {
-      name: "Spieler 2",
+      name: defaultPlayer2Name,
       faction: "Skaven",
       formation: "Warpcog Enginecluster",
       chosenCardIds: ["siege_of_ashes", "legend_of_the_parch"],
@@ -867,6 +870,7 @@ export default function AosScoreTracker({ currentUser }) {
     setPlayers((prev) => ({
       player1: {
         ...prev.player1,
+        name: defaultPlayer1Name,
         vp: 0,
         cp: 4,
         completedStepKeys: [],
@@ -876,6 +880,7 @@ export default function AosScoreTracker({ currentUser }) {
       },
       player2: {
         ...prev.player2,
+        name: defaultPlayer2Name,
         vp: 0,
         cp: 4,
         completedStepKeys: [],
@@ -1019,12 +1024,12 @@ export default function AosScoreTracker({ currentUser }) {
                 className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4"
               >
                 <div className="text-sm font-black text-amber-500 uppercase tracking-wider">
-                  Spieler {idx + 1} Konfiguration
+                  {idx === 0 ? "Dein Profil / Spieler 1" : "Gegner / Spieler 2"}
                 </div>
 
                 <div>
                   <label className="block text-xs uppercase font-bold text-neutral-400 mb-1">
-                    Spielername
+                    {idx === 0 ? "Dein Name (Spieler 1)" : "Gegner (Spieler 2)"}
                   </label>
                   <input
                     type="text"
@@ -1312,7 +1317,7 @@ export default function AosScoreTracker({ currentUser }) {
           <button
             onClick={handleSaveMatch}
             disabled={saving}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg cursor-pointer"
           >
             {saveSuccess ? <Check size={18} /> : <Save size={18} />}
             {saving
@@ -1324,7 +1329,7 @@ export default function AosScoreTracker({ currentUser }) {
 
           <button
             onClick={handleProceedAfterSummary}
-            className="flex-1 bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg"
+            className="flex-1 bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
           >
             {matchMode === "tournament" ? (isLastTournamentMatch ? "Turnier Abschließen & Sichern" : `Nächstes Spiel (${currentTournamentMatchIndex + 1}/${totalTournamentRounds})`) : "Neues Match Starten"} <ArrowRight size={18} />
           </button>
@@ -1376,7 +1381,7 @@ export default function AosScoreTracker({ currentUser }) {
                   setShowRoundModal(true);
                 }
               }}
-              className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1"
+              className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1 cursor-pointer"
             >
               {currentRound >= 5 ? "Spiel Beenden" : "Nächste Runde"}{" "}
               <ArrowRight size={14} />
@@ -1413,7 +1418,7 @@ export default function AosScoreTracker({ currentUser }) {
                   <button
                     key={pKey}
                     onClick={() => confirmNextRound(pKey)}
-                    className="w-full bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 p-4 rounded-xl text-left transition flex items-center justify-between group"
+                    className="w-full bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 p-4 rounded-xl text-left transition flex items-center justify-between group cursor-pointer"
                   >
                     <div>
                       <div className="font-bold text-neutral-200 group-hover:text-amber-400">
@@ -1504,7 +1509,7 @@ export default function AosScoreTracker({ currentUser }) {
                   )}
                   <button
                     onClick={() => setActiveTurnPlayer(pKey)}
-                    className={`text-xs px-3 py-1 rounded font-bold transition ${
+                    className={`text-xs px-3 py-1 rounded font-bold transition cursor-pointer ${
                       isCurrentTurn
                         ? "bg-amber-500 text-neutral-950"
                         : "bg-neutral-800 text-neutral-400"
@@ -1528,20 +1533,20 @@ export default function AosScoreTracker({ currentUser }) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => updateResource(pKey, "vp", -1)}
-                    className="bg-neutral-800 p-2 rounded"
+                    className="bg-neutral-800 p-2 rounded cursor-pointer hover:bg-neutral-700 transition"
                   >
                     <Minus size={16} />
                   </button>
                   <button
                     onClick={() => updateResource(pKey, "vp", 1)}
-                    className="bg-amber-600 text-neutral-950 p-2 rounded"
+                    className="bg-amber-600 text-neutral-950 p-2 rounded cursor-pointer hover:bg-amber-500 transition"
                   >
                     <Plus size={16} />
                   </button>
                 </div>
               </div>
 
-              {/* DYNAMISCHE SCORING BUTTONS FÜR DEN GEWÄHLTEN BATTLEPLAN */}
+              {/* DYNAMISCHE SCORING BUTTONS */}
               <div className="space-y-2 pt-2 border-t border-neutral-800">
                 <label className="block text-xs uppercase font-bold text-neutral-400 flex items-center justify-between">
                   <span className="flex items-center gap-1">
@@ -1567,7 +1572,7 @@ export default function AosScoreTracker({ currentUser }) {
                             rule.label
                           )
                         }
-                        className={`w-full p-2 rounded text-xs flex justify-between items-center transition border ${
+                        className={`w-full p-2 rounded text-xs flex justify-between items-center transition border cursor-pointer ${
                           isDone
                             ? "bg-emerald-950/40 border-emerald-600/60 text-emerald-300"
                             : "bg-neutral-950 hover:bg-neutral-800 border-neutral-800 hover:border-amber-500/50 text-neutral-200"
@@ -1615,13 +1620,13 @@ export default function AosScoreTracker({ currentUser }) {
                   <div className="flex justify-center gap-1">
                     <button
                       onClick={() => updateResource(pKey, "cp", -1)}
-                      className="bg-neutral-800 px-2 py-0.5 rounded text-xs"
+                      className="bg-neutral-800 px-2 py-0.5 rounded text-xs cursor-pointer hover:bg-neutral-700"
                     >
                       -
                     </button>
                     <button
                       onClick={() => updateResource(pKey, "cp", 1)}
-                      className="bg-amber-600 text-neutral-950 px-2 py-0.5 rounded text-xs font-bold"
+                      className="bg-amber-600 text-neutral-950 px-2 py-0.5 rounded text-xs font-bold cursor-pointer hover:bg-amber-500"
                     >
                       +
                     </button>
@@ -1638,13 +1643,13 @@ export default function AosScoreTracker({ currentUser }) {
                   <div className="flex justify-center gap-1">
                     <button
                       onClick={() => updateResource(pKey, "furyLevel", -1)}
-                      className="bg-neutral-800 px-2 py-0.5 rounded text-xs"
+                      className="bg-neutral-800 px-2 py-0.5 rounded text-xs cursor-pointer hover:bg-neutral-700"
                     >
                       -
                     </button>
                     <button
                       onClick={() => updateResource(pKey, "furyLevel", 1)}
-                      className="bg-amber-600 text-neutral-950 px-2 py-0.5 rounded text-xs font-bold"
+                      className="bg-amber-600 text-neutral-950 px-2 py-0.5 rounded text-xs font-bold cursor-pointer hover:bg-amber-500"
                     >
                       +
                     </button>
@@ -1661,13 +1666,13 @@ export default function AosScoreTracker({ currentUser }) {
                   <div className="flex justify-center gap-1">
                     <button
                       onClick={() => updateResource(pKey, "rageDice", -1)}
-                      className="bg-neutral-800 px-2 py-0.5 rounded text-xs"
+                      className="bg-neutral-800 px-2 py-0.5 rounded text-xs cursor-pointer hover:bg-neutral-700"
                     >
                       -
                     </button>
                     <button
                       onClick={() => updateResource(pKey, "rageDice", 1)}
-                      className="bg-amber-600 text-neutral-950 px-2 py-0.5 rounded text-xs font-bold"
+                      className="bg-amber-600 text-neutral-950 px-2 py-0.5 rounded text-xs font-bold cursor-pointer hover:bg-amber-500"
                     >
                       +
                     </button>
@@ -1675,7 +1680,7 @@ export default function AosScoreTracker({ currentUser }) {
                 </div>
               </div>
 
-              {/* SEQUENZIELLE STUFEN-AUSWAHL DROPDOWN */}
+              {/* SEQUENZIELLE STUFEN-AUSWAHL */}
               <div className="space-y-2">
                 <label className="block text-xs uppercase font-bold text-neutral-400">
                   Battle Tactic Stufe Wählen (+5 VP)
@@ -1701,7 +1706,7 @@ export default function AosScoreTracker({ currentUser }) {
                 {p.currentSelectedStepKey && (
                   <button
                     onClick={() => completeStep(pKey)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded uppercase text-xs transition"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded uppercase text-xs transition cursor-pointer"
                   >
                     Erfüllt (+5 VP)
                   </button>
@@ -1775,12 +1780,12 @@ export default function AosScoreTracker({ currentUser }) {
         )}
       </div>
 
-      {/* SICHERER LÖSCH-BEREICH (AM ENDE DER SEITE) */}
+      {/* SICHERER LÖSCH-BEREICH */}
       <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4 text-center">
         {!showDeleteConfirm ? (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="text-neutral-500 hover:text-red-400 text-xs font-bold transition flex items-center gap-1.5 mx-auto"
+            className="text-neutral-500 hover:text-red-400 text-xs font-bold transition flex items-center gap-1.5 mx-auto cursor-pointer"
           >
             <Trash2 size={14} /> Aktuelles Spiel/Turnier abbrechen & verwerfen
           </button>
@@ -1792,13 +1797,13 @@ export default function AosScoreTracker({ currentUser }) {
             <div className="flex justify-center gap-3">
               <button
                 onClick={resetMatch}
-                className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition shadow-md"
+                className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition shadow-md cursor-pointer"
               >
                 Ja, verwerfen
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition"
+                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer"
               >
                 Abbrechen
               </button>

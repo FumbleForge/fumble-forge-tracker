@@ -36,11 +36,42 @@ export default function ClubMeta() {
     }
   };
 
+  // Hilfsfunktion: Sicheres Parsen der Details
+  const getMatchDetails = (m) => {
+    if (!m) return {};
+    if (typeof m.details === "string") {
+      try {
+        return JSON.parse(m.details);
+      } catch (e) {
+        return {};
+      }
+    }
+    return m.details || {};
+  };
+
+  // Hilfsfunktion: Bestimmt das Spielsystem eines Matches
+  const isMatchForSystem = (m, system) => {
+    const details = getMatchDetails(m);
+    const declaredSystem = details.game_system || m.game_system;
+
+    const is40k =
+      declaredSystem === "Warhammer 40k" ||
+      Boolean(details.mission) ||
+      Boolean(details.player1_disposition) ||
+      Boolean(details.player1_primary);
+
+    if (system === "Warhammer 40k") {
+      return is40k;
+    } else {
+      // Age of Sigmar (Default für alle AoS Matches & Alt-Einträge)
+      return !is40k;
+    }
+  };
+
   // --- SYSTEM-ABHÄNGIGE FRAKTIONS-ERFASSUNG ---
   const factionCounts = {};
   profiles.forEach((p) => {
-    // Wähle je nach System die korrekte Spalte aus Supabase
-    const rawArmies = selectedSystem === "Age of Sigmar" ? p.aos_armies : p.wh40k_armies;
+    const rawArmies = selectedSystem === "Age of Sigmar" ? (p.aos_armies || p.armies) : p.wh40k_armies;
     
     if (rawArmies) {
       const userArmies = rawArmies.split(",").map((a) => a.trim());
@@ -54,10 +85,13 @@ export default function ClubMeta() {
 
   const sortedFactions = Object.entries(factionCounts).sort((a, b) => b[1] - a[1]);
 
+  // --- SYSTEM-GEFILTERTE MATCHES ---
+  const filteredMatches = matches.filter((m) => isMatchForSystem(m, selectedSystem));
+
   // --- MATCH-STATISTIKEN & WIN-RATES ---
   let totalGamesCount = 0;
   let totalDrawsCount = 0;
-  const battleplanCounts = {};
+  const scenarioCounts = {};
   const factionStats = {}; 
   const matchupMatrix = {}; 
 
@@ -87,17 +121,19 @@ export default function ClubMeta() {
     if (p2Won) matchupMatrix[f2][f1].wins++;
   };
 
-  matches.forEach((m) => {
-    const isTournamentComplete = m.details?.match_mode === "tournament_complete";
+  filteredMatches.forEach((m) => {
+    const details = getMatchDetails(m);
+    const isTournamentComplete = details.match_mode === "tournament_complete";
     
-    if (isTournamentComplete && m.details?.tournament_rounds) {
-      m.details.tournament_rounds.forEach((round) => {
+    if (isTournamentComplete && Array.isArray(details.tournament_rounds)) {
+      details.tournament_rounds.forEach((round) => {
         totalGamesCount++;
         if (round.winner === "Unentschieden" || round.p1Vp === round.p2Vp) {
           totalDrawsCount++;
         }
-        if (round.battleplan) {
-          battleplanCounts[round.battleplan] = (battleplanCounts[round.battleplan] || 0) + 1;
+        const scenario = round.battleplan || round.mission || "Unbekannt";
+        if (scenario) {
+          scenarioCounts[scenario] = (scenarioCounts[scenario] || 0) + 1;
         }
         recordMatchup(round.p1Faction, round.p2Faction, round.winner, round.p1Name, round.p2Name);
       });
@@ -106,13 +142,13 @@ export default function ClubMeta() {
       if (m.winner_name === "Unentschieden") {
         totalDrawsCount++;
       }
-      const bp = m.details?.battleplan;
-      if (bp) {
-        battleplanCounts[bp] = (battleplanCounts[bp] || 0) + 1;
+      const scenario = details.battleplan || details.mission || "Standard Match";
+      if (scenario) {
+        scenarioCounts[scenario] = (scenarioCounts[scenario] || 0) + 1;
       }
       recordMatchup(
-        m.details?.player1_faction,
-        m.details?.player2_faction,
+        details.player1_faction,
+        details.player2_faction,
         m.winner_name,
         m.player1_name,
         m.player2_name
@@ -120,7 +156,7 @@ export default function ClubMeta() {
     }
   });
 
-  const sortedBattleplans = Object.entries(battleplanCounts).sort((a, b) => b[1] - a[1]);
+  const sortedScenarios = Object.entries(scenarioCounts).sort((a, b) => b[1] - a[1]);
 
   const sortedFactionWinRates = Object.entries(factionStats)
     .map(([faction, stats]) => ({
@@ -149,7 +185,7 @@ export default function ClubMeta() {
         <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl p-1 shrink-0">
           <button
             onClick={() => setSelectedSystem("Age of Sigmar")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               selectedSystem === "Age of Sigmar"
                 ? "bg-amber-600 text-neutral-950"
                 : "text-neutral-400 hover:text-neutral-200"
@@ -159,7 +195,7 @@ export default function ClubMeta() {
           </button>
           <button
             onClick={() => setSelectedSystem("Warhammer 40k")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               selectedSystem === "Warhammer 40k"
                 ? "bg-amber-600 text-neutral-950"
                 : "text-neutral-400 hover:text-neutral-200"
@@ -234,7 +270,7 @@ export default function ClubMeta() {
               ) : (
                 <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                   {sortedFactions.map(([faction, count], idx) => {
-                    const maxCount = sortedFactions[0][1];
+                    const maxCount = sortedFactions[0][1] || 1;
                     const percentage = Math.round((count / maxCount) * 100);
 
                     return (
@@ -340,19 +376,19 @@ export default function ClubMeta() {
             )}
           </div>
 
-          {/* BELIEBTESTE BATTLEPLANS */}
+          {/* BELIEBTESTE BATTLEPLANS / MISSIONEN */}
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4 shadow-lg">
             <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
-              <Activity size={16} /> Beliebteste Battleplans & Missionen
+              <Activity size={16} /> Beliebteste Szenarien & Missionen
             </h3>
 
-            {sortedBattleplans.length === 0 ? (
+            {sortedScenarios.length === 0 ? (
               <div className="text-xs text-neutral-500 italic py-6 text-center">
-                Noch keine Battleplans in Partien erfasst.
+                Noch keine Szenarien in Partien erfasst.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {sortedBattleplans.map(([plan, count], idx) => (
+                {sortedScenarios.map(([plan, count], idx) => (
                   <div key={idx} className="bg-neutral-950 border border-neutral-800/80 p-3 rounded-xl flex justify-between items-center text-xs">
                     <span className="font-bold text-neutral-200 truncate pr-2">{plan}</span>
                     <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-mono font-bold shrink-0">

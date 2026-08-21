@@ -6,7 +6,6 @@ export default function DashboardView({ user, setActiveTab }) {
   const [myStats, setMyStats] = useState({ games: 0, wins: 0, winRate: 0, streak: 0, streakType: null });
   const [recentClubMatches, setRecentClubMatches] = useState([]);
   
-  // ZENTRALE EVENT-LISTE: Hier kannst du jederzeit Events anpassen oder neue hinzufügen!
   const clubEvents = [
     { 
       id: "raccoon-rumble", 
@@ -20,7 +19,6 @@ export default function DashboardView({ user, setActiveTab }) {
     }
   ];
 
-  // Dynamischer initialer State basierend auf der Event-Liste
   const [eventAttendees, setEventAttendees] = useState(
     clubEvents.reduce((acc, ev) => ({ ...acc, [ev.id]: [] }), {})
   );
@@ -34,7 +32,6 @@ export default function DashboardView({ user, setActiveTab }) {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 1. Alle Matches laden für den Club-Feed & eigene Stats
       const { data: matches, error: matchError } = await supabase
         .from("matches")
         .select("*")
@@ -42,7 +39,6 @@ export default function DashboardView({ user, setActiveTab }) {
 
       if (matchError) throw matchError;
 
-      // 2. Alle Profile für die Spielernamen laden
       const { data: profiles, error: profileError } = await supabase
         .from("profiles")
         .select("*");
@@ -55,7 +51,6 @@ export default function DashboardView({ user, setActiveTab }) {
       });
 
       if (matches) {
-        // Club Live-Feed vorbereiten
         const feedItems = matches.slice(0, 5).map((m) => {
           const playerName = profileMap[m.user_id] || "Club-Mitglied";
           const isTournament = m.details?.match_mode === "tournament_complete";
@@ -71,7 +66,6 @@ export default function DashboardView({ user, setActiveTab }) {
         });
         setRecentClubMatches(feedItems);
 
-        // Eigene Stats berechnen
         let games = 0;
         let wins = 0;
         let currentStreak = 0;
@@ -86,15 +80,14 @@ export default function DashboardView({ user, setActiveTab }) {
           if (!isUserMatch) return;
 
           const isTournament = m.details?.match_mode === "tournament_complete";
-          const username = user.username || user.name || "";
 
           if (isTournament && m.details?.tournament_rounds) {
             m.details.tournament_rounds.forEach((round) => {
               games++;
-              const winner = round.winner || "";
-              const p1Name = round.p1Name || "";
-              const isTie = winner === "Unentschieden" || round.p1Vp === round.p2Vp;
-              const isUserWinner = (p1Name && winner.includes(p1Name)) || winner.includes("Spieler 1") || (username && winner.toLowerCase().includes(username.toLowerCase()));
+              const p1Vp = Number(round.p1Vp) || 0;
+              const p2Vp = Number(round.p2Vp) || 0;
+              const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
+              const isUserWinner = p1Vp > p2Vp;
 
               if (isTie) {
                 currentStreak = 0;
@@ -110,9 +103,10 @@ export default function DashboardView({ user, setActiveTab }) {
             });
           } else {
             games++;
-            const winner = m.winner_name || "";
-            const isTie = winner === "Unentschieden";
-            const isUserWinner = winner.includes(username) || winner.includes("Spieler 1");
+            const p1Vp = Number(m.player1_vp) || 0;
+            const p2Vp = Number(m.player2_vp) || 0;
+            const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
+            const isUserWinner = p1Vp > p2Vp;
 
             if (isTie) {
               currentStreak = 0;
@@ -132,7 +126,6 @@ export default function DashboardView({ user, setActiveTab }) {
         setMyStats({ games, wins, winRate, streak: currentStreak, streakType });
       }
 
-      // 3. Event-Teilnehmer aus Supabase laden
       const { data: attendees, error: attError } = await supabase
         .from("event_attendees")
         .select("*");
@@ -157,14 +150,12 @@ export default function DashboardView({ user, setActiveTab }) {
     }
   };
 
-  // Funktion zum Teilnehmen oder Absagen
   const handleRsvp = async (eventId) => {
     const attendeesList = eventAttendees[eventId] || [];
     const isAlreadyAttending = attendeesList.some((a) => a.userId === user.id);
 
     try {
       if (isAlreadyAttending) {
-        // Absagen (Löschen aus Supabase)
         const { error } = await supabase
           .from("event_attendees")
           .delete()
@@ -178,7 +169,6 @@ export default function DashboardView({ user, setActiveTab }) {
           });
         }
       } else {
-        // Teilnehmen (Einfügen in Supabase)
         const { error } = await supabase
           .from("event_attendees")
           .insert([{ event_id: eventId, user_id: user.id }]);
@@ -214,7 +204,7 @@ export default function DashboardView({ user, setActiveTab }) {
         </div>
         <button
           onClick={() => setActiveTab("score")}
-          className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase flex items-center gap-2 transition shadow-lg shrink-0"
+          className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase flex items-center gap-2 transition shadow-lg shrink-0 cursor-pointer"
         >
           <Swords size={16} /> Partie erfassen <ArrowRight size={14} />
         </button>
@@ -294,7 +284,6 @@ export default function DashboardView({ user, setActiveTab }) {
 
         {/* SPALTE 3: Events & Quick Links */}
         <div className="space-y-6">
-          {/* Turnier & Event Ticker */}
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
             <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
               <Calendar size={16} /> Events & Termine
@@ -314,7 +303,6 @@ export default function DashboardView({ user, setActiveTab }) {
                       </div>
                     </div>
 
-                    {/* Teilnehmerliste */}
                     <div className="pt-1 border-t border-neutral-900">
                       <div className="text-[10px] text-neutral-500 font-bold mb-1">Dabei ({attendeesList.length}):</div>
                       <div className="flex flex-wrap gap-1">
@@ -330,10 +318,9 @@ export default function DashboardView({ user, setActiveTab }) {
                       </div>
                     </div>
 
-                    {/* RSVP Button */}
                     <button
                       onClick={() => handleRsvp(event.id)}
-                      className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
+                      className={`w-full mt-2 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
                         attending
                           ? "bg-red-950/60 text-red-400 border border-red-800/50 hover:bg-red-900/60"
                           : "bg-amber-600 text-neutral-950 hover:bg-amber-500"
@@ -356,7 +343,6 @@ export default function DashboardView({ user, setActiveTab }) {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
             <h3 className="text-sm font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
               <Trophy size={16} className="text-amber-500" /> Schnellzugriff
@@ -364,13 +350,13 @@ export default function DashboardView({ user, setActiveTab }) {
             <div className="space-y-2 text-xs">
               <button
                 onClick={() => setActiveTab("hof")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800"
+                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
               >
                 <span>🏆 Hall of Fame</span> <ArrowRight size={14} className="text-neutral-500" />
               </button>
               <button
                 onClick={() => setActiveTab("members")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800"
+                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
               >
                 <span>👥 Club-Mitglieder</span> <ArrowRight size={14} className="text-neutral-500" />
               </button>
