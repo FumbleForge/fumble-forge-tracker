@@ -274,7 +274,7 @@ export default function App() {
       )}
 
       {/* TOP HEADER BAR */}
-      <header className={`w-full bg-neutral-900 border-b border-neutral-800 px-4 py-3 md:px-8 md:py-4 flex items-center justify-between z-30 shadow-md ${updateAvailable ? 'mt-12' : ''}`}>
+      <header className={`sticky w-full bg-neutral-900 border-b border-neutral-800 px-4 py-3 md:px-8 md:py-4 flex items-center justify-between z-30 shadow-md ${updateAvailable ? 'top-12' : 'top-0'}`}>
         <div 
           onClick={() => setActiveTab("dashboard")} 
           className="flex items-center gap-3 cursor-pointer group"

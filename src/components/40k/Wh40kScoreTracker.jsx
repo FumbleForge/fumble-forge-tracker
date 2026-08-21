@@ -596,12 +596,6 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Touch Gestures for Swiping (Left = Next, Right = Back)
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
-  const [touchEndY, setTouchEndY] = useState(null);
-
   // CP Counters
   const [p1CpGained, setP1CpGained] = useState(() => loadSavedState('p1CpGained', 0));
   const [p1CpSpent, setP1CpSpent] = useState(() => loadSavedState('p1CpSpent', 0));
@@ -1077,121 +1071,8 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
     return `${getDispositionName(matchup.disposition)} vs ${getDispositionName(matchup.opponent_disposition)}`;
   };
 
-  const onTouchStart = (e) => {
-    const tagName = e.target.tagName.toLowerCase();
-    if (
-      ["input", "select", "option", "button", "textarea"].includes(tagName) ||
-      e.target.closest("button") ||
-      e.target.closest("select") ||
-      e.target.closest("svg")
-    ) {
-      return;
-    }
-    setTouchEndX(null);
-    setTouchEndY(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-    setTouchStartY(e.targetTouches[0].clientY);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-    setTouchEndY(e.targetTouches[0].clientY);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
-    const distanceX = touchStartX - touchEndX;
-    const distanceY = touchStartY - touchEndY;
-    const isHorizontalSwipe = Math.abs(distanceX) > Math.abs(distanceY);
-    const minSwipeDistance = 50;
-    if (isHorizontalSwipe && Math.abs(distanceX) > minSwipeDistance) {
-      if (distanceX > 0) {
-        // Swipe Left -> Go Forward / Next
-        handleSwipeNext();
-      } else {
-        // Swipe Right -> Go Backward / Prev
-        handleSwipePrev();
-      }
-    }
-  };
-
-  const handleSwipeNext = () => {
-    if (step === 'setup') {
-      if (!player1Name || !player2Name) {
-        alert("Bitte trage die Namen beider Spieler ein!");
-        return;
-      }
-      const uniqueMatchup = uniqueMatchups.find(m => 
-        (m.disposition === player1Disposition && m.opponent_disposition === player2Disposition) ||
-        (m.disposition === player2Disposition && m.opponent_disposition === player1Disposition)
-      ) || uniqueMatchups[0];
-      setSelectedMatchupId(uniqueMatchup?.id || '');
-      setStep('mission_selection');
-    } else if (step === 'mission_selection') {
-      const av = getPlayer1AvailableMissions();
-      if (av.length > 0 && !player1Primary) setPlayer1Primary(av[0].name);
-      setStep('player1_primary');
-    } else if (step === 'player1_primary') {
-      const av = getPlayer2AvailableMissions();
-      if (av.length > 0 && !player2Primary) setPlayer2Primary(av[0].name);
-      setStep('player2_primary');
-    } else if (step === 'player2_primary') {
-      setStep('deployment');
-    } else if (step === 'deployment') {
-      setStep('mission_rules');
-    } else if (step === 'mission_rules') {
-      setStep('player1_secondaries');
-    } else if (step === 'player1_secondaries') {
-      if (player1SecondaryMode === 'fixed' && player1FixedSecondaries.length !== 2) {
-        alert("Bitte wähle genau 2 Fixed Secondary Missions aus!");
-        return;
-      }
-      setStep('player2_secondaries');
-    } else if (step === 'player2_secondaries') {
-      setStep('live_tracker');
-    } else if (step === 'live_tracker') {
-      if (currentRound < 5) {
-        setCurrentRound(currentRound + 1);
-      } else {
-        setStep('summary');
-      }
-    }
-  };
-
-  const handleSwipePrev = () => {
-    if (step === 'mission_selection') {
-      setStep('setup');
-    } else if (step === 'player1_primary') {
-      setStep('mission_selection');
-    } else if (step === 'player2_primary') {
-      setStep('player1_primary');
-    } else if (step === 'deployment') {
-      setStep('player2_primary');
-    } else if (step === 'mission_rules') {
-      setStep('deployment');
-    } else if (step === 'player1_secondaries') {
-      setStep('mission_rules');
-    } else if (step === 'player2_secondaries') {
-      setStep('player1_secondaries');
-    } else if (step === 'live_tracker') {
-      if (currentRound > 1) {
-        setCurrentRound(currentRound - 1);
-      } else {
-        setStep('player2_secondaries');
-      }
-    } else if (step === 'summary') {
-      setStep('live_tracker');
-    }
-  };
-
-  const swipeHandlers = {
-    onTouchStart,
-    onTouchMove,
-    onTouchEnd,
-  };
-
   return (
-    <div {...swipeHandlers} className="max-w-3xl mx-auto bg-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-8 text-neutral-100 font-sans shadow-2xl relative">
+    <div className="max-w-3xl mx-auto bg-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-8 text-neutral-100 font-sans shadow-2xl relative">
       {onClose && (
         <button
           onClick={onClose}

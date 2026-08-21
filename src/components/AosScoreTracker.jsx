@@ -471,91 +471,6 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   // State für die Sicherheitsabfrage zum Abbrechen/Löschen des Spiels
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Touch Gestures for Swiping (Left = Next, Right = Back)
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
-  const [touchEndY, setTouchEndY] = useState(null);
-
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e) => {
-    const tagName = e.target.tagName.toLowerCase();
-    if (
-      ["input", "select", "option", "button", "textarea"].includes(tagName) ||
-      e.target.closest("button") ||
-      e.target.closest("select") ||
-      e.target.closest("svg")
-    ) {
-      return;
-    }
-    setTouchEndX(null);
-    setTouchEndY(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-    setTouchStartY(e.targetTouches[0].clientY);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-    setTouchEndY(e.targetTouches[0].clientY);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
-    const distanceX = touchStartX - touchEndX;
-    const distanceY = touchStartY - touchEndY;
-    const isHorizontalSwipe = Math.abs(distanceX) > Math.abs(distanceY);
-    if (isHorizontalSwipe && Math.abs(distanceX) > minSwipeDistance) {
-      if (distanceX > 0) {
-        // Swipe Left -> Go Forward / Next
-        handleSwipeNext();
-      } else {
-        // Swipe Right -> Go Backward / Prev
-        handleSwipePrev();
-      }
-    }
-  };
-
-  const handleSwipeNext = () => {
-    if (setupStep === "mode_select") {
-      setSetupStep("roster");
-    } else if (setupStep === "roster") {
-      setSetupStep("terrain");
-    } else if (setupStep === "terrain") {
-      setSetupStep("playing");
-    } else if (setupStep === "playing") {
-      if (currentRound >= 5) {
-        setSetupStep("summary");
-      } else {
-        setShowRoundModal(true);
-      }
-    } else if (setupStep === "summary") {
-      handleProceedAfterSummary();
-    }
-  };
-
-  const handleSwipePrev = () => {
-    if (setupStep === "roster") {
-      setSetupStep("mode_select");
-    } else if (setupStep === "terrain") {
-      setSetupStep("roster");
-    } else if (setupStep === "playing") {
-      if (currentRound > 1) {
-        handlePreviousRound();
-      } else {
-        setSetupStep("terrain");
-      }
-    } else if (setupStep === "summary") {
-      setSetupStep("playing");
-    }
-  };
-
-  const swipeHandlers = {
-    onTouchStart,
-    onTouchMove,
-    onTouchEnd,
-  };
-
   const [players, setPlayers] = useState(() => loadSavedState("players", {
     player1: {
       name: defaultPlayer1Name,
@@ -1018,7 +933,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   // SCHRITT 0: MODUS & SETUP AUSWAHL
   if (setupStep === "mode_select") {
     return (
-      <div {...swipeHandlers} className="max-w-xl mx-auto space-y-6 font-sans py-12 relative">
+      <div className="max-w-xl mx-auto space-y-6 font-sans py-12 relative">
         {onClose && (
           <button
             onClick={onClose}
@@ -1124,7 +1039,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
 
   if (setupStep === "roster") {
     return (
-      <div {...swipeHandlers} className="max-w-4xl mx-auto space-y-6 font-sans relative">
+      <div className="max-w-4xl mx-auto space-y-6 font-sans relative">
         {onClose && (
           <button
             onClick={onClose}
@@ -1301,7 +1216,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
     );
 
     return (
-      <div {...swipeHandlers} className="max-w-xl mx-auto space-y-6 font-sans py-8 relative">
+      <div className="max-w-xl mx-auto space-y-6 font-sans py-8 relative">
         {onClose && (
           <button
             onClick={onClose}
@@ -1387,7 +1302,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
     const isLastTournamentMatch = matchMode === "tournament" && currentTournamentMatchIndex >= totalTournamentRounds;
 
     return (
-      <div {...swipeHandlers} className="max-w-4xl mx-auto space-y-6 font-sans py-6 relative">
+      <div className="max-w-4xl mx-auto space-y-6 font-sans py-6 relative">
         {onClose && (
           <button
             onClick={onClose}
@@ -1510,7 +1425,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   );
 
   return (
-    <div {...swipeHandlers} className="max-w-5xl mx-auto space-y-6 font-sans relative">
+    <div className="max-w-5xl mx-auto space-y-6 font-sans relative">
       {onClose && (
         <button
           onClick={onClose}
