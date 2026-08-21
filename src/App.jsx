@@ -13,6 +13,7 @@ import {
   Globe,
   Crosshair, // Icon für 40k (optional, passt perfekt)
   Calendar,
+  Menu,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import LoginView from "./components/LoginView";
@@ -38,6 +39,18 @@ export default function App() {
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest(".menu-dropdown-container")) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, [menuOpen]);
 
   useEffect(() => {
     const checkForUpdates = async () => {
@@ -303,6 +316,107 @@ export default function App() {
           )}
 
           <div className="flex items-center gap-3 border-l border-neutral-800 pl-4">
+            {/* Quick Access Menu Dropdown */}
+            <div className="relative menu-dropdown-container">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className={`p-2 transition rounded-lg hover:bg-neutral-800 flex items-center justify-center ${
+                  menuOpen ? "text-amber-500 bg-neutral-850" : "text-neutral-400 hover:text-neutral-200"
+                }`}
+                title="Schnellzugriff"
+              >
+                <Menu size={20} />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 pb-2 mb-2 border-b border-neutral-800 text-[10px] uppercase font-bold text-neutral-500 tracking-wider">
+                    Schnellzugriff
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setActiveTab("events");
+                      setMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                      activeTab === "events" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
+                    }`}
+                  >
+                    <Calendar size={14} className="text-amber-500" />
+                    <span>Turniere und Events</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("hof");
+                      setMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                      activeTab === "hof" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
+                    }`}
+                  >
+                    <Trophy size={14} className="text-amber-500" />
+                    <span>Hall of Fame</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("meta");
+                      setMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                      activeTab === "meta" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
+                    }`}
+                  >
+                    <BarChart3 size={14} className="text-amber-500" />
+                    <span>Club-Meta</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("members");
+                      setMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                      activeTab === "members" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
+                    }`}
+                  >
+                    <Users size={14} className="text-amber-500" />
+                    <span>Club-Mitglieder</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("profile");
+                      setMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 ${
+                      activeTab === "profile" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
+                    }`}
+                  >
+                    <User size={14} className="text-amber-500" />
+                    <span>Profil</span>
+                  </button>
+
+                  {isAdmin && (
+                    <button
+                      onClick={() => {
+                        setActiveTab("admin");
+                        setMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs font-bold transition flex items-center gap-2 hover:bg-neutral-800 border-t border-neutral-800/50 mt-1 pt-2 ${
+                        activeTab === "admin" ? "text-amber-500" : "text-neutral-300 hover:text-neutral-100"
+                      }`}
+                    >
+                      <ShieldCheck size={14} className="text-amber-500" />
+                      <span>Admin-Panel</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => setActiveTab("profile")}
               className={`flex items-center gap-2 text-xs md:text-sm font-bold transition ${
@@ -313,7 +427,15 @@ export default function App() {
                 {user.username || user.name}
               </span>
               <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700 overflow-hidden">
-                <User size={16} className="text-neutral-400" />
+                {user.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User size={16} className="text-neutral-400" />
+                )}
               </div>
             </button>
 
