@@ -28,14 +28,97 @@ const BADGE_ICONS = {
   face_of_the_club: { icon: User, title: "Gesicht des Clubs" },
 };
 
-export default function MemberList() {
+export default function MemberList({ currentUser }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTooltip, setActiveTooltip] = useState(null);
 
+  const isAdmin = currentUser?.role === "admin" || currentUser?.email === "namebereitsvergeben@gmail.com";
+
   useEffect(() => {
     fetchMembersAndEvaluateBadges();
   }, []);
+
+  const handleRevokeBadge = async (memberId, badgeId) => {
+    try {
+      const member = members.find((m) => m.id === memberId);
+      if (!member) return;
+
+      const parseArrayField = (field) => {
+        if (Array.isArray(field)) return field;
+        if (typeof field === "string") {
+          try {
+            const parsed = JSON.parse(field);
+            if (Array.isArray(parsed)) return parsed;
+          } catch (e) {
+            return [];
+          }
+        }
+        return [];
+      };
+
+      const custom = parseArrayField(member.custom_badges);
+      const unlocked = parseArrayField(member.unlocked_badges);
+
+      const updatedCustom = [...custom.filter((b) => b !== badgeId), `revoked:${badgeId}`];
+      const updatedUnlocked = unlocked.filter((b) => b !== badgeId);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          custom_badges: updatedCustom,
+          unlocked_badges: updatedUnlocked,
+          updated_at: new Date()
+        })
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      await fetchMembersAndEvaluateBadges();
+      setActiveTooltip(null);
+    } catch (err) {
+      console.error("Fehler beim Entziehen des Abzeichens:", err);
+    }
+  };
+
+  const handleRestoreBadge = async (memberId, badgeId) => {
+    try {
+      const member = members.find((m) => m.id === memberId);
+      if (!member) return;
+
+      const parseArrayField = (field) => {
+        if (Array.isArray(field)) return field;
+        if (typeof field === "string") {
+          try {
+            const parsed = JSON.parse(field);
+            if (Array.isArray(parsed)) return parsed;
+          } catch (e) {
+            return [];
+          }
+        }
+        return [];
+      };
+
+      const custom = parseArrayField(member.custom_badges);
+
+      const updatedCustom = custom.filter((b) => b !== `revoked:${badgeId}`);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          custom_badges: updatedCustom,
+          updated_at: new Date()
+        })
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      await fetchMembersAndEvaluateBadges();
+      setActiveTooltip(null);
+    } catch (err) {
+      console.error("Fehler beim Wiederherstellen des Abzeichens:", err);
+    }
+  };
 
   const fetchMembersAndEvaluateBadges = async () => {
     try {
@@ -137,8 +220,15 @@ export default function MemberList() {
             calculatedBadges.push("face_of_the_club");
           }
 
+          const revokedBadgeIds = custom
+            .filter((b) => typeof b === "string" && b.startsWith("revoked:"))
+            .map((b) => b.replace("revoked:", ""));
+
+          const filteredCalculated = calculatedBadges.filter((id) => !revokedBadgeIds.includes(id));
           const existingUnlocked = Array.isArray(member.unlocked_badges) ? member.unlocked_badges : [];
-          const mergedBadges = Array.from(new Set([...existingUnlocked, ...calculatedBadges]));
+          const filteredExisting = existingUnlocked.filter((id) => !revokedBadgeIds.includes(id));
+
+          const mergedBadges = Array.from(new Set([...filteredExisting, ...filteredCalculated]));
 
           if (mergedBadges.length !== existingUnlocked.length) {
             await supabase
@@ -197,7 +287,13 @@ export default function MemberList() {
 
             const unlocked = parseArrayField(member.unlocked_badges);
             const custom = parseArrayField(member.custom_badges);
-            const memberBadges = Array.from(new Set([...unlocked, ...custom]));
+            const revokedBadgeIds = custom
+              .filter((b) => typeof b === "string" && b.startsWith("revoked:"))
+              .map((b) => b.replace("revoked:", ""));
+
+            const filteredUnlocked = unlocked.filter((id) => !revokedBadgeIds.includes(id));
+            const filteredCustom = custom.filter((id) => typeof id === "string" && !id.startsWith("revoked:"));
+            const memberBadges = Array.from(new Set([...filteredUnlocked, ...filteredCustom]));
 
             return (
               <div
@@ -227,7 +323,7 @@ export default function MemberList() {
                     </div>
                   </div>
 
-                  {memberBadges.length > 0 && (
+                  {(memberBadges.length > 0 || (isAdmin && revokedBadgeIds.length > 0)) && (
                     <div className="flex items-center gap-1 flex-wrap justify-end max-w-[140px]">
                       {memberBadges.map((badgeId) => {
                         const badgeInfo = BADGE_ICONS[badgeId];
@@ -259,9 +355,75 @@ export default function MemberList() {
                                   setActiveTooltip(null);
                                 }}
                               >
-                                <div className="flex items-center gap-2">
-                                  <IconComp size={14} className="text-amber-400 shrink-0" />
-                                  <span>{title}</span>
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <IconComp size={14} className="text-amber-400 shrink-0" />
+                                    <span>{title}</span>
+                                  </div>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm(`Möchtest du dieses Abzeichen (${title}) für dieses Mitglied wirklich entziehen/löschen?`)) {
+                                          await handleRevokeBadge(member.id, badgeId);
+                                        }
+                                      }}
+                                      className="mt-1 bg-red-950 text-red-400 border border-red-800 hover:bg-red-900 px-2 py-0.5 rounded font-bold text-[9px] cursor-pointer transition text-center"
+                                    >
+                                      Entziehen
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {isAdmin && revokedBadgeIds.map((badgeId) => {
+                        const badgeInfo = BADGE_ICONS[badgeId];
+                        if (!badgeInfo) return null;
+                        const IconComp = badgeInfo.icon;
+                        const title = badgeInfo.title;
+                        const tooltipKey = `${member.id}-${badgeId}-revoked`;
+
+                        return (
+                          <div
+                            key={badgeId}
+                            className="relative group cursor-pointer opacity-30"
+                            onMouseEnter={() => setActiveTooltip(tooltipKey)}
+                            onMouseLeave={() => setActiveTooltip(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTooltip(activeTooltip === tooltipKey ? null : tooltipKey);
+                            }}
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-neutral-950 border border-red-500/40 text-red-400 flex items-center justify-center shadow-sm shrink-0 hover:border-red-400 transition">
+                              <IconComp size={14} />
+                            </div>
+
+                            {activeTooltip === tooltipKey && (
+                              <div
+                                className="fixed bottom-4 left-4 right-4 z-50 mb-0 w-auto p-4 bg-neutral-950 border-2 border-red-500/80 text-red-300 text-xs font-bold rounded-2xl shadow-2xl sm:absolute sm:bottom-full sm:right-0 sm:mb-1.5 sm:px-2.5 sm:py-1 sm:border sm:border-red-500/60 sm:text-[10px] sm:rounded-md sm:shadow-xl sm:whitespace-nowrap sm:w-auto sm:transform-none cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveTooltip(null);
+                                }}
+                              >
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <IconComp size={14} className="text-red-400 shrink-0" />
+                                    <span>{title} (Entzogen)</span>
+                                  </div>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      await handleRestoreBadge(member.id, badgeId);
+                                    }}
+                                    className="mt-1 bg-emerald-950 text-emerald-400 border border-emerald-800 hover:bg-emerald-900 px-2 py-0.5 rounded font-bold text-[9px] cursor-pointer transition text-center"
+                                  >
+                                    Wiederherstellen
+                                  </button>
                                 </div>
                               </div>
                             )}

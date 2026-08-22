@@ -214,17 +214,23 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
           calculatedBadges.push("face_of_the_club");
         }
 
-        const existingUnlocked = parseArrayField(myProfile.unlocked_badges);
-        const mergedBadges = Array.from(new Set([...existingUnlocked, ...calculatedBadges]));
+        const revokedBadgeIds = custom
+          .filter((b) => typeof b === "string" && b.startsWith("revoked:"))
+          .map((b) => b.replace("revoked:", ""));
 
-        if (mergedBadges.length !== existingUnlocked.length) {
+        const filteredCalculated = calculatedBadges.filter((id) => !revokedBadgeIds.includes(id));
+        const existingUnlocked = parseArrayField(myProfile.unlocked_badges).filter((id) => !revokedBadgeIds.includes(id));
+        const mergedBadges = Array.from(new Set([...existingUnlocked, ...filteredCalculated]));
+
+        if (mergedBadges.length !== parseArrayField(myProfile.unlocked_badges).length) {
           await supabase
             .from("profiles")
             .update({ unlocked_badges: mergedBadges })
             .eq("id", user.id);
         }
 
-        setMyBadges(Array.from(new Set([...mergedBadges, ...custom])));
+        const filteredCustom = custom.filter((id) => typeof id === "string" && !id.startsWith("revoked:"));
+        setMyBadges(Array.from(new Set([...mergedBadges, ...filteredCustom])));
       }
 
       if (matches) {

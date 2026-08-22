@@ -1,5 +1,5 @@
-import React from "react";
-import { ShieldCheck, Check, X, Trash2, UserCheck, Clock } from "lucide-react";
+import React, { useState } from "react";
+import { ShieldCheck, Check, X, Trash2, UserCheck, Clock, AlertTriangle } from "lucide-react";
 
 export default function AdminPanel({
   users = [],
@@ -8,6 +8,8 @@ export default function AdminPanel({
   onRejectUser,
   onDeleteUser,
 }) {
+  const [userToDelete, setUserToDelete] = useState(null);
+
   // Flexibler gemacht: Prüft E-Mail ODER Admin-Rolle aus der Datenbank
   const isMasterAdmin = 
     currentUser?.email === 'namebereitsvergeben@gmail.com' || 
@@ -125,7 +127,7 @@ export default function AdminPanel({
                   {/* Admins dürfen sich nicht selbst löschen */}
                   {u.role !== "admin" && currentUser?.id !== u.id && (
                     <button
-                      onClick={() => onDeleteUser(u.id)}
+                      onClick={() => setUserToDelete(u)}
                       className="text-neutral-500 hover:text-red-400 p-2 transition"
                       title="Mitglied löschen"
                     >
@@ -138,6 +140,43 @@ export default function AdminPanel({
           )}
         </div>
       </div>
+
+      {/* Bestätigungs-Modal für das Löschen eines Mitglieds */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 font-sans">
+          <div className="bg-neutral-900 border border-red-600/40 p-6 rounded-2xl max-w-md w-full space-y-6 shadow-2xl text-neutral-100">
+            <div className="flex items-start gap-3">
+              <div className="bg-red-500/20 border border-red-500/40 p-2 rounded-lg text-red-500 shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-neutral-100">Mitglied unwiderruflich löschen?</h4>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  Bist du sicher, dass du das Mitglied <strong className="text-neutral-200">{getUserDisplayName(userToDelete)}</strong> ({userToDelete.email}) löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteUser(userToDelete.id);
+                  setUserToDelete(null);
+                }}
+                className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition flex items-center gap-1.5"
+              >
+                <Trash2 size={14} /> Löschen bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

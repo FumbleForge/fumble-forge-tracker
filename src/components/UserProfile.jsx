@@ -185,6 +185,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
   const [customBadges, setCustomBadges] = useState([]);
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
   const [loginDays, setLoginDays] = useState([]);
+  const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
   
   const [showAllBadgesModal, setShowAllBadgesModal] = useState(false);
   const isAdmin = user?.role === "admin";
@@ -260,19 +261,27 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
         }
         setLoginDays(days);
       }
+      setHasLoadedUserData(true);
     } catch (err) {
       console.error("Fehler beim Laden der Benutzerdaten:", err.message);
     }
   };
 
   useEffect(() => {
-    if (!user?.id || BADGE_DEFINITIONS.length === 0) return;
+    if (!user?.id || !hasLoadedUserData || BADGE_DEFINITIONS.length === 0) return;
+
+    const revokedBadgeIds = customBadges
+      .filter((b) => typeof b === "string" && b.startsWith("revoked:"))
+      .map((b) => b.replace("revoked:", ""));
 
     const currentUnlocked = BADGE_DEFINITIONS.filter((badge) =>
       badge.check(matches, userEvents, username, user, customBadges, loginDays, avatarUrl)
-    ).map((b) => b.id);
+    )
+      .map((b) => b.id)
+      .filter((id) => !revokedBadgeIds.includes(id));
 
-    const merged = Array.from(new Set([...unlockedBadgeIds, ...currentUnlocked]));
+    const filteredExisting = unlockedBadgeIds.filter((id) => !revokedBadgeIds.includes(id));
+    const merged = Array.from(new Set([...filteredExisting, ...currentUnlocked]));
 
     if (merged.length !== unlockedBadgeIds.length) {
       setUnlockedBadgeIds(merged);
@@ -281,7 +290,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
         .upsert({ id: user.id, unlocked_badges: merged, updated_at: new Date() })
         .then();
     }
-  }, [matches, userEvents, username, customBadges, loginDays, avatarUrl]);
+  }, [matches, userEvents, username, customBadges, loginDays, avatarUrl, hasLoadedUserData]);
 
   const toggleAdminBadge = async (badgeId) => {
     if (!isAdmin) return;
@@ -424,8 +433,12 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
     return { isTie, isWin };
   };
 
+  const revokedBadgeIds = customBadges
+    .filter((b) => typeof b === "string" && b.startsWith("revoked:"))
+    .map((b) => b.replace("revoked:", ""));
+
   const unlockedBadges = BADGE_DEFINITIONS.filter((badge) =>
-    unlockedBadgeIds.includes(badge.id)
+    unlockedBadgeIds.includes(badge.id) && !revokedBadgeIds.includes(badge.id)
   );
 
   return (

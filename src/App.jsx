@@ -469,7 +469,7 @@ export default function App() {
 
         {activeTab === "meta" && <ClubMeta />}
 
-        {activeTab === "members" && <MemberList />}
+        {activeTab === "members" && <MemberList currentUser={user} />}
 
         {activeTab === "profile" && (
           <UserProfile user={user} onUpdateProfile={handleUpdateProfile} onOpenLegal={() => setShowLegalModal(true)} />
