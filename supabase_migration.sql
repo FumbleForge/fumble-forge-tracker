@@ -82,3 +82,22 @@ BEGIN
         END IF;
     END IF;
 END $$;
+
+-- 6. Row Level Security (RLS) for matches table
+ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS matches_select_policy ON matches;
+CREATE POLICY matches_select_policy ON matches
+    FOR SELECT USING (auth.uid() = user_id OR auth.uid() = opponent_id);
+
+DROP POLICY IF EXISTS matches_insert_policy ON matches;
+CREATE POLICY matches_insert_policy ON matches
+    FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.uid() = opponent_id);
+
+DROP POLICY IF EXISTS matches_update_policy ON matches;
+CREATE POLICY matches_update_policy ON matches
+    FOR UPDATE USING (auth.uid() = user_id OR auth.uid() = opponent_id);
+
+DROP POLICY IF EXISTS matches_delete_policy ON matches;
+CREATE POLICY matches_delete_policy ON matches
+    FOR DELETE USING (auth.uid() = user_id OR auth.uid() = opponent_id);
