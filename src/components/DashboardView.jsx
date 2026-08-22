@@ -125,9 +125,106 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
           }
           return [];
         };
-        const unlocked = parseArrayField(myProfile.unlocked_badges);
         const custom = parseArrayField(myProfile.custom_badges);
-        setMyBadges(Array.from(new Set([...unlocked, ...custom])));
+        const loginDays = parseArrayField(myProfile.login_days);
+        
+        // Fetch my events
+        const { data: myEvents } = await supabase
+          .from("event_attendees")
+          .select("*")
+          .eq("user_id", user.id);
+
+        const myMatches = matches?.filter((m) => m.user_id === user.id) || [];
+
+        // Evaluate calculated badges
+        const calculatedBadges = [];
+        if (myMatches.length >= 1) calculatedBadges.push("blood_and_honor");
+        if (myMatches.length >= 5) calculatedBadges.push("club_veteran");
+
+        let currentStreak = 0;
+        let hasWinningStreak = false;
+
+        for (const m of myMatches) {
+          const isTournament = m.details?.match_mode === "tournament_complete";
+          if (isTournament && m.details?.tournament_rounds) {
+            for (const round of m.details.tournament_rounds) {
+              const p1Vp = Number(round.p1Vp) || 0;
+              const p2Vp = Number(round.p2Vp) || 0;
+              const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
+              const isUserWinner = p1Vp > p2Vp;
+
+              if (isTie) {
+                currentStreak = 0;
+              } else if (isUserWinner) {
+                currentStreak++;
+                if (currentStreak >= 3) hasWinningStreak = true;
+              } else {
+                currentStreak = 0;
+              }
+            }
+          } else {
+            const p1Vp = Number(m.player1_vp) || 0;
+            const p2Vp = Number(m.player2_vp) || 0;
+            const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
+            const isUserWinner = p1Vp > p2Vp;
+
+            if (isTie) {
+              currentStreak = 0;
+            } else if (isUserWinner) {
+              currentStreak++;
+              if (currentStreak >= 3) hasWinningStreak = true;
+            } else {
+              currentStreak = 0;
+            }
+          }
+        }
+
+        if (hasWinningStreak) calculatedBadges.push("winning_streak");
+
+        const hasWonTournament = myMatches.some((m) => {
+          const isTournament = m.details?.match_mode === "tournament_complete";
+          const p1Vp = Number(m.player1_vp) || 0;
+          const p2Vp = Number(m.player2_vp) || 0;
+          return isTournament && p1Vp > p2Vp;
+        });
+        if (hasWonTournament) calculatedBadges.push("tournament_winner");
+
+        const hasDraw = myMatches.some((m) => {
+          const isTournament = m.details?.match_mode === "tournament_complete";
+          if (isTournament && m.details?.tournament_rounds) {
+            return m.details.tournament_rounds.some(
+              (r) => r.winner === "Unentschieden" || Number(r.p1Vp) === Number(r.p2Vp)
+            );
+          }
+          return m.winner_name === "Unentschieden" || Number(m.player1_vp) === Number(m.player2_vp);
+        });
+        if (hasDraw) calculatedBadges.push("draw_master");
+
+        if (custom.includes("machinist")) calculatedBadges.push("machinist");
+        if (custom.includes("master_of_magnets")) calculatedBadges.push("master_of_magnets");
+
+        if (myEvents && myEvents.length > 0) {
+          calculatedBadges.push("on_tour");
+          calculatedBadges.push("early_bird");
+        }
+
+        if (loginDays.length >= 5) calculatedBadges.push("stammtisch");
+
+        if (myProfile.avatar_url) {
+          calculatedBadges.push("face_of_the_club");
+        }
+
+        const existingUnlocked = parseArrayField(myProfile.unlocked_badges);
+        const mergedBadges = Array.from(new Set([...existingUnlocked, ...calculatedBadges]));
+
+        if (mergedBadges.length !== existingUnlocked.length) {
+          await supabase
+            .from("profiles")
+            .update({ unlocked_badges: mergedBadges })
+            .eq("id", user.id);
+        }
+
+        setMyBadges(Array.from(new Set([...mergedBadges, ...custom])));
       }
 
       if (matches) {
