@@ -168,7 +168,7 @@ const BADGE_DEFINITIONS = [
   },
 ];
 
-export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
+export default function UserProfile({ user, onUpdateProfile, onOpenLegal, activeChallenges }) {
   const [username, setUsername] = useState(
     user?.username || user?.user_metadata?.username || ""
   );
@@ -465,17 +465,32 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
       >
         <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-neutral-800">
           <div className="relative group">
-            <div className="w-24 h-24 rounded-full bg-neutral-950 border-2 border-amber-600/50 flex items-center justify-center overflow-hidden">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={40} className="text-neutral-600" />
-              )}
-            </div>
+            {(() => {
+              const acceptedChallenge = activeChallenges?.find(
+                (c) => (c.challenger_id === user?.id || c.opponent_id === user?.id) && c.status === "accepted"
+              );
+              const profileFrameClass = acceptedChallenge
+                ? acceptedChallenge.system === "aos"
+                  ? "frame-challenge-aos"
+                  : "frame-challenge-40k"
+                : "";
+
+              return (
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center shrink-0 ${profileFrameClass || "bg-neutral-950 border-2 border-amber-600/50 overflow-hidden"}`}>
+                  <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-neutral-950">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User size={40} className="text-neutral-600" />
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
             <label className="absolute bottom-0 right-0 bg-amber-600 hover:bg-amber-500 text-neutral-950 p-2 rounded-full cursor-pointer transition shadow-lg">
               <Camera size={14} />
               <input

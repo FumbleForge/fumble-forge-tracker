@@ -354,6 +354,13 @@ export default function MemberList({ currentUser }) {
             const filteredCustom = custom.filter((id) => typeof id === "string" && !id.startsWith("revoked:"));
             const memberBadges = Array.from(new Set([...filteredUnlocked, ...filteredCustom]));
 
+            const acceptedChallenge = getAcceptedChallenge(member.id);
+            const memberFrameClass = acceptedChallenge
+              ? acceptedChallenge.system === "aos"
+                ? "frame-challenge-aos"
+                : "frame-challenge-40k"
+              : "";
+
             return (
               <div
                 key={member.id}
@@ -361,16 +368,18 @@ export default function MemberList({ currentUser }) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-neutral-950 border-2 border-amber-600/40 flex items-center justify-center overflow-hidden shrink-0">
-                      {member.avatar_url ? (
-                        <img
-                          src={member.avatar_url}
-                          alt={member.username || "Mitglied"}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Users size={24} className="text-neutral-600" />
-                      )}
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 ${memberFrameClass || "bg-neutral-950 border-2 border-amber-600/40 overflow-hidden"}`}>
+                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-neutral-950">
+                        {member.avatar_url ? (
+                          <img
+                            src={member.avatar_url}
+                            alt={member.username || "Mitglied"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Users size={24} className="text-neutral-600" />
+                        )}
+                      </div>
                     </div>
                     <div>
                       <h3 className="text-base font-black text-neutral-100">

@@ -443,32 +443,37 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             <Swords size={16} className="text-amber-500" /> Geplante Herausforderungen ({plannedMatches.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {plannedMatches.map((match) => (
-              <div key={match.id} className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex flex-col justify-between gap-3 text-xs">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-extrabold text-neutral-200 text-sm">
-                      {match.system === "aos" ? "Age of Sigmar (AoS)" : "Warhammer 40k"}
-                    </span>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                      Herausforderung
-                    </span>
+            {plannedMatches.map((match) => {
+              const rectFrameClass = match.system === "aos" ? "frame-challenge-aos-rect" : "frame-challenge-40k-rect";
+              return (
+                <div key={match.id} className={`${rectFrameClass} h-full`}>
+                  <div className="bg-neutral-950 p-4 rounded-[10px] flex flex-col justify-between h-full gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-extrabold text-neutral-200 text-sm">
+                          {match.system === "aos" ? "Age of Sigmar (AoS)" : "Warhammer 40k"}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Herausforderung
+                        </span>
+                      </div>
+                      <div className="text-neutral-400 font-bold">
+                        {match.player1_name} vs {match.player2_name}
+                      </div>
+                      <p className="text-[10px] text-neutral-500 mt-1 italic">
+                        Angenommen • Bereit zum Starten
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleStartPlannedMatch(match)}
+                      className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Swords size={14} /> Partie starten ➔
+                    </button>
                   </div>
-                  <div className="text-neutral-400 font-bold">
-                    {match.player1_name} vs {match.player2_name}
-                  </div>
-                  <p className="text-[10px] text-neutral-500 mt-1 italic">
-                    Angenommen • Bereit zum Starten
-                  </p>
                 </div>
-                <button
-                  onClick={() => handleStartPlannedMatch(match)}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Swords size={14} /> Partie starten ➔
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Trophy, Award, Flame, Swords, Medal, Target } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
-export default function HallOfFame() {
+export default function HallOfFame({ activeChallenges }) {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState("wins"); // "wins", "streak", "vp"
@@ -220,6 +220,15 @@ export default function HallOfFame() {
           <tbody className="divide-y divide-neutral-800/60 text-sm">
             {sortedLeaderboard.map((player, idx) => {
               const rank = idx + 1;
+              const acceptedChallenge = activeChallenges?.find(
+                (c) => (c.challenger_id === player.id || c.opponent_id === player.id) && c.status === "accepted"
+              );
+              const playerFrameClass = acceptedChallenge
+                ? acceptedChallenge.system === "aos"
+                  ? "frame-challenge-aos"
+                  : "frame-challenge-40k"
+                : "";
+
               return (
                 <tr 
                   key={player.id}
@@ -246,12 +255,14 @@ export default function HallOfFame() {
                   </td>
 
                   <td className="p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
-                      {player.avatar ? (
-                        <img src={player.avatar} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Award size={18} className="text-neutral-600" />
-                      )}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${playerFrameClass || "bg-neutral-950 border border-neutral-800 overflow-hidden"}`}>
+                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-neutral-950">
+                        {player.avatar ? (
+                          <img src={player.avatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Award size={18} className="text-neutral-600" />
+                        )}
+                      </div>
                     </div>
                     <div>
                       <div className="text-neutral-100 font-bold">{player.name}</div>
@@ -297,6 +308,15 @@ export default function HallOfFame() {
       <div className="block md:hidden space-y-3">
         {sortedLeaderboard.map((player, idx) => {
           const rank = idx + 1;
+          const acceptedChallenge = activeChallenges?.find(
+            (c) => (c.challenger_id === player.id || c.opponent_id === player.id) && c.status === "accepted"
+          );
+          const playerFrameClass = acceptedChallenge
+            ? acceptedChallenge.system === "aos"
+              ? "frame-challenge-aos"
+              : "frame-challenge-40k"
+            : "";
+
           return (
             <div 
               key={player.id}
@@ -310,12 +330,14 @@ export default function HallOfFame() {
                     {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
-                      {player.avatar ? (
-                        <img src={player.avatar} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Award size={16} className="text-neutral-600" />
-                      )}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${playerFrameClass || "bg-neutral-950 border border-neutral-800 overflow-hidden"}`}>
+                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-neutral-950">
+                        {player.avatar ? (
+                          <img src={player.avatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Award size={16} className="text-neutral-600" />
+                        )}
+                      </div>
                     </div>
                     <div>
                       <div className="text-neutral-100 font-bold text-sm">{player.name}</div>

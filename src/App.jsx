@@ -510,14 +510,19 @@ export default function App() {
         {/* NEU: Rendert den 40k Tracker, wenn aktiv */}
         {activeTab === "score_40k" && <Wh40kScoreTracker currentUser={user} onClose={() => setActiveTab("dashboard")} />}
 
-        {activeTab === "hof" && <HallOfFame />}
+        {activeTab === "hof" && <HallOfFame activeChallenges={activeChallenges} />}
 
         {activeTab === "meta" && <ClubMeta />}
 
         {activeTab === "members" && <MemberList currentUser={user} />}
 
         {activeTab === "profile" && (
-          <UserProfile user={user} onUpdateProfile={handleUpdateProfile} onOpenLegal={() => setShowLegalModal(true)} />
+          <UserProfile 
+            user={user} 
+            onUpdateProfile={handleUpdateProfile} 
+            onOpenLegal={() => setShowLegalModal(true)} 
+            activeChallenges={activeChallenges}
+          />
         )}
 
         {activeTab === "admin" && isAdmin && (

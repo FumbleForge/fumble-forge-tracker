@@ -66,3 +66,41 @@
 .frame-challenge-40k > * {
   background-color: #0a0a0a;
 }
+
+/* Rectangular versions for challenge cards / borders in DashboardView */
+.frame-challenge-aos-rect {
+  position: relative;
+  padding: 3px;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.7), 0 0 20px rgba(59, 130, 246, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.frame-challenge-aos-rect::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(#eab308, #3b82f6, #eab308, #3b82f6, #eab308);
+  animation: rotate-conic 3s linear infinite;
+  z-index: 0;
+}
+
+.frame-challenge-aos-rect > * {
+  position: relative;
+  z-index: 10;
+}
+
+.frame-challenge-40k-rect {
+  position: relative;
+  padding: 3px;
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  animation: pulse-laser 2s ease-in-out infinite;
+  display: flex;
+  flex-direction: column;
+}
