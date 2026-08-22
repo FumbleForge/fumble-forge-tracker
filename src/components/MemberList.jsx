@@ -242,14 +242,27 @@ export default function MemberList() {
                             className="relative group cursor-pointer"
                             onMouseEnter={() => setActiveTooltip(tooltipKey)}
                             onMouseLeave={() => setActiveTooltip(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTooltip(activeTooltip === tooltipKey ? null : tooltipKey);
+                            }}
                           >
                             <div className="w-7 h-7 rounded-lg bg-neutral-950 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm shrink-0 hover:border-amber-400 transition">
                               <IconComp size={14} />
                             </div>
 
                             {activeTooltip === tooltipKey && (
-                              <div className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1 bg-neutral-950 border border-amber-500/60 text-amber-300 text-[10px] font-bold rounded-md shadow-xl whitespace-nowrap z-50 pointer-events-none">
-                                {title}
+                              <div
+                                className="fixed bottom-4 left-4 right-4 z-50 mb-0 w-auto p-4 bg-neutral-950 border-2 border-amber-500/80 text-amber-300 text-xs font-bold rounded-2xl shadow-2xl sm:absolute sm:bottom-full sm:right-0 sm:mb-1.5 sm:px-2.5 sm:py-1 sm:border sm:border-amber-500/60 sm:text-[10px] sm:rounded-md sm:shadow-xl sm:whitespace-nowrap sm:w-auto sm:transform-none cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveTooltip(null);
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <IconComp size={14} className="text-amber-400 shrink-0" />
+                                  <span>{title}</span>
+                                </div>
                               </div>
                             )}
                           </div>

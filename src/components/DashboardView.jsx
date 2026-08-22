@@ -349,7 +349,13 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
                   </div>
 
                   {activeTooltip === tooltipKey && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 p-3 bg-neutral-950 border border-amber-500/60 text-neutral-100 rounded-xl shadow-2xl w-56 z-50 text-left">
+                    <div
+                      className="fixed bottom-4 left-4 right-4 z-50 mb-0 w-auto p-4 bg-neutral-950 border-2 border-amber-500/80 text-neutral-100 rounded-2xl shadow-2xl sm:absolute sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 sm:mb-2.5 sm:p-3 sm:w-56 sm:border sm:border-amber-500/60 sm:rounded-xl sm:shadow-2xl text-left cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTooltip(null);
+                      }}
+                    >
                       <div className="text-xs font-black text-amber-400 flex items-center gap-1.5 mb-1">
                         <IconComp size={12} /> {title}
                       </div>

@@ -2059,32 +2059,32 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       </div>
 
       {/* RUNDEN NAVIGATION (UNTEN) */}
-      <div className="flex items-center justify-between pt-4 border-t border-neutral-800 mt-6">
+      <div className="flex items-center justify-between pt-4 border-t border-neutral-800 mt-6 gap-2">
         <button
           onClick={handlePreviousRound}
           disabled={currentRound === 1}
-          className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-30 rounded-xl text-xs font-bold text-neutral-300 flex items-center gap-1.5 transition cursor-pointer border border-neutral-700"
+          className="px-3 sm:px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-30 rounded-xl text-xs font-bold text-neutral-300 flex items-center gap-1 sm:gap-1.5 transition cursor-pointer border border-neutral-700 shrink-0"
         >
-          <ArrowLeft size={16} /> Vorherige Runde
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">Vorherige Runde</span><span className="sm:hidden">Vorherige</span>
         </button>
 
-        <span className="text-sm font-black text-amber-500 uppercase tracking-widest font-mono">
+        <span className="text-xs sm:text-sm font-black text-amber-500 uppercase tracking-wider sm:tracking-widest font-mono text-center">
           Runde {currentRound} / 5
         </span>
 
         {currentRound < 5 ? (
           <button
             onClick={() => setShowRoundModal(true)}
-            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+            className="px-3.5 sm:px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase flex items-center gap-1 sm:gap-1.5 transition shadow-lg cursor-pointer shrink-0"
           >
-            Nächste Runde <ArrowRight size={16} />
+            <span className="hidden sm:inline">Nächste Runde</span><span className="sm:hidden">Nächste</span> <ArrowRight size={16} />
           </button>
         ) : (
           <button
             onClick={() => setSetupStep("summary")}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+            className="px-3.5 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase flex items-center gap-1 sm:gap-1.5 transition shadow-lg cursor-pointer shrink-0"
           >
-            Spiel Beenden <Trophy size={16} />
+            <span className="hidden sm:inline">Spiel Beenden</span><span className="sm:hidden">Beenden</span> <Trophy size={16} />
           </button>
         )}
       </div>

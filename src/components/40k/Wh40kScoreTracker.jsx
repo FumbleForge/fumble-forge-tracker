@@ -1352,24 +1352,24 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       
       {/* Top Header */}
       {step !== 'summary' && (
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-4 mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-800 pb-4 mb-6 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {step === 'live_tracker' && (
-              <span className="text-xl font-black text-amber-500 font-mono">
+              <span className="text-xl sm:text-2xl font-black text-amber-500 font-mono shrink-0">
                 {p1Stats?.grandTotalVp || 0} - {p2Stats?.grandTotalVp || 0}
               </span>
             )}
-            <div>
-              <h2 className="text-xl font-black text-neutral-100 uppercase tracking-wider">
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-lg md:text-xl font-black text-neutral-100 uppercase tracking-wider truncate">
                 {player1Name} vs {player2Name}
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-[10px] sm:text-xs text-neutral-400">
                 {step !== 'live_tracker' ? 'Chapter Approved 2026 Setup' : `Battle Round ${currentRound} of 5`}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto shrink-0">
             {step === 'live_tracker' && (
               <button
                 onClick={() => setShowLiveStatsModal(true)}
@@ -1380,7 +1380,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
               </button>
             )}
 
-            <span className="text-xs bg-amber-600/20 text-amber-400 border border-amber-600/40 px-3 py-1 rounded-lg font-bold">
+            <span className="text-xs bg-amber-600/20 text-amber-400 border border-amber-600/40 px-3 py-1 rounded-lg font-bold ml-auto sm:ml-0">
               {step === 'setup' && 'Step 1 / Setup'}
               {step === 'mission_selection' && 'Step 2 / Mission'}
               {step === 'player1_primary' && 'Step 3 / Your Primary'}
@@ -2082,32 +2082,32 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
           </div>
 
           {/* RUNDEN NAVIGATION (UNTEN) */}
-          <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
+          <div className="flex items-center justify-between pt-4 border-t border-neutral-800 gap-2">
             <button
               onClick={() => setCurrentRound(Math.max(1, currentRound - 1))}
               disabled={currentRound === 1}
-              className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-30 rounded-xl text-xs font-bold text-neutral-300 flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3 sm:px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-30 rounded-xl text-xs font-bold text-neutral-300 flex items-center gap-1 sm:gap-1.5 transition cursor-pointer shrink-0"
             >
-              <ArrowLeft size={16} /> Previous Round
+              <ArrowLeft size={16} /> <span className="hidden sm:inline">Previous Round</span><span className="sm:hidden">Previous</span>
             </button>
 
-            <span className="text-sm font-black text-amber-500 uppercase tracking-widest font-mono">
+            <span className="text-xs sm:text-sm font-black text-amber-500 uppercase tracking-wider sm:tracking-widest font-mono text-center">
               Round {currentRound} / 5
             </span>
 
             {currentRound < 5 ? (
               <button
                 onClick={() => setCurrentRound(currentRound + 1)}
-                className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+                className="px-3.5 sm:px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase flex items-center gap-1 sm:gap-1.5 transition shadow-lg cursor-pointer shrink-0"
               >
-                Round {currentRound + 1} <ArrowRight size={16} />
+                <span className="hidden sm:inline">Round {currentRound + 1}</span><span className="sm:hidden">Round {currentRound + 1}</span> <ArrowRight size={16} />
               </button>
             ) : (
               <button
                 onClick={() => setStep('summary')}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+                className="px-3.5 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase flex items-center gap-1 sm:gap-1.5 transition shadow-lg cursor-pointer shrink-0"
               >
-                Finish Game <Trophy size={16} />
+                <span className="hidden sm:inline">Finish Game</span><span className="sm:hidden">Finish</span> <Trophy size={16} />
               </button>
             )}
           </div>
