@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Swords,
   Plus,
@@ -9,16 +9,16 @@ import {
   Check,
   AlertCircle,
   ArrowRight,
-  Layers,
   MapPin,
   Trophy,
   RotateCcw,
-  Award,
   Trash2,
   X,
   Eye,
+  Download,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
+import html2canvas from "html2canvas";
 
 // DIE 6 BATTLE TACTIC CARDS (GHB 3.0)
 const GHB_30_CARDS = [
@@ -438,6 +438,26 @@ const FACTION_CATALOG = Object.values(FACTION_GROUPS).reduce(
 export default function AosScoreTracker({ currentUser, onClose }) {
   const defaultPlayer1Name = currentUser?.username || currentUser?.name || "Dein Name";
   const defaultPlayer2Name = "Gegner";
+  const scorecardRef = useRef(null);
+
+  const handleDownloadGraphic = async () => {
+    if (!scorecardRef.current) return;
+    try {
+      const canvas = await html2canvas(scorecardRef.current, {
+        backgroundColor: "#0a0a0a",
+        scale: 2,
+        logging: false,
+        useCORS: true,
+      });
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `scorecard-aos-${players.player1.name}-vs-${players.player2.name}.png`;
+      link.click();
+    } catch (err) {
+      console.error("Fehler beim Herunterladen der Grafik:", err);
+    }
+  };
 
   const loadSavedState = (key, fallback) => {
     try {
@@ -798,7 +818,11 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       if (error) throw error;
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 4000);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        resetMatch();
+        if (onClose) onClose();
+      }, 1000);
     } catch (err) {
       setErrorMsg(err.message || "Fehler beim Speichern des Matches.");
     } finally {
@@ -876,6 +900,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       setSaveSuccess(true);
       setTimeout(() => {
         resetMatch();
+        if (onClose) onClose();
       }, 1500);
     } catch (err) {
       console.error("Fehler beim Speichern des Turniers:", err);
@@ -919,6 +944,202 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       roundPrimaryVp,
       roundSecondaryVp,
     };
+  };
+
+  const getAosCardScoreInRound = (playerKey, cardId, r) => {
+    const cardObj = GHB_30_CARDS.find((c) => c.id === cardId);
+    if (!cardObj) return 0;
+    
+    const entry = turnHistory.find(h => 
+      h.round === r && 
+      h.playerKey === playerKey && 
+      h.action && 
+      h.action.includes("Battle Tactic erfüllt:") && 
+      h.action.includes(cardObj.name)
+    );
+    
+    return entry ? 5 : 0;
+  };
+
+  const getFirstPlayerOfRound = (r) => {
+    if (r === 1) {
+      const firstAction = turnHistory.find(h => h.round === 1);
+      if (firstAction) return firstAction.playerKey || 'player1';
+      return 'player1';
+    }
+    
+    const choiceLog = turnHistory.find(h => h.action && h.action.includes(`Wählt Zug 1 in Runde ${r}`));
+    if (choiceLog) {
+      return choiceLog.playerKey;
+    }
+    
+    const histSnap = roundHistory.find(h => h.round === r);
+    if (histSnap) return histSnap.activeTurnPlayer;
+    
+    return r === currentRound ? activeTurnPlayer : '';
+  };
+
+  const renderAosTabletopScorecard = () => {
+    const isTie = p1Stats.grandTotalVp === p2Stats.grandTotalVp;
+    const activeBp = TERRAIN_BATTLEPLANS.find((b) => b.id === selectedBattleplanId);
+
+    return (
+      <div ref={scorecardRef} className="bg-neutral-950 border border-neutral-800 rounded-3xl p-5 md:p-6 text-left shadow-2xl relative select-none w-full max-w-xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="space-y-4">
+          <div className="flex justify-between text-[11px] text-neutral-500 font-mono font-bold uppercase tracking-wider">
+            <span>AoS 4. Edition</span>
+            <span>Liga</span>
+          </div>
+
+          <div className="grid grid-cols-3 items-center gap-2">
+            {/* Player 1 Details */}
+            <div className="text-left space-y-0.5">
+              <h4 className="text-lg font-black text-neutral-100 truncate">{players.player1.name}</h4>
+              <p className="text-[11px] text-neutral-400 font-medium truncate">{players.player1.faction}</p>
+            </div>
+
+            {/* Score */}
+            <div className="text-center space-y-1">
+              <div className="text-4xl md:text-5xl font-black text-neutral-100 tracking-wider font-mono">
+                {p1Stats.grandTotalVp} - {p2Stats.grandTotalVp}
+              </div>
+              <div className={`text-[11px] font-black tracking-widest uppercase ${
+                isTie ? 'text-amber-500' : 'text-emerald-500'
+              }`}>
+                {isTie ? 'Unentschieden' : 'VICTORY'}
+              </div>
+            </div>
+
+            {/* Player 2 Details */}
+            <div className="text-right space-y-0.5">
+              <h4 className="text-lg font-black text-neutral-100 truncate">{players.player2.name}</h4>
+              <p className="text-[11px] text-neutral-400 font-medium truncate">{players.player2.faction}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Player sections */}
+        {['player1', 'player2'].map((pKey) => {
+          const p = players[pKey];
+          const pStats = pKey === 'player1' ? p1Stats : p2Stats;
+          const secondaries = p.chosenCardIds;
+
+          return (
+            <div key={pKey} className="space-y-3 pt-4 border-t border-neutral-800/80">
+              <h3 className="text-base font-black text-amber-500 flex items-center justify-between">
+                <span>{p.name}</span>
+                <span className="text-xs text-neutral-400 font-medium font-mono">Total: {pStats.grandTotalVp} VP</span>
+              </h3>
+
+              <div className="space-y-1.5">
+                {/* Went first row */}
+                <div className="flex items-center justify-between py-1 border-b border-neutral-900 px-1">
+                  <span className="text-xs font-bold text-neutral-300">Went first</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((r) => {
+                        const isWentFirst = getFirstPlayerOfRound(r) === pKey;
+                        return (
+                          <div 
+                            key={r} 
+                            className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold transition border ${
+                              isWentFirst 
+                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                                : 'bg-neutral-950 border-neutral-800 text-neutral-600'
+                            }`}
+                          >
+                            {isWentFirst && <Check size={14} strokeWidth={3} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <span className="w-12 text-right text-xs font-mono font-bold text-neutral-500">
+                      -
+                    </span>
+                  </div>
+                </div>
+
+                {/* Primary (Objective Control) row */}
+                <div className="flex items-center justify-between py-1 border-b border-neutral-900 px-1">
+                  <span className="text-xs font-bold text-neutral-300">Objective Control</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((r) => {
+                        const score = pStats.roundPrimaryVp[r];
+                        return (
+                          <div 
+                            key={r} 
+                            className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold border ${
+                              score > 0 
+                                ? 'bg-amber-500/15 border-amber-500/30 text-neutral-200' 
+                                : 'bg-neutral-950 border-neutral-800 text-neutral-600'
+                            }`}
+                          >
+                            {score > 0 ? score : '-'}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <span className="w-12 text-right text-xs font-mono font-bold text-neutral-400">
+                      {pStats.finalPrimaryVp}/∞
+                    </span>
+                  </div>
+                </div>
+
+                {/* Secondaries row(s) */}
+                {secondaries.map((cardId) => {
+                  const cardInfo = GHB_30_CARDS.find((c) => c.id === cardId);
+                  if (!cardInfo) return null;
+                  let totalSec = 0;
+                  return (
+                    <div key={cardId} className="flex items-center justify-between py-1 px-1 border-b border-neutral-900/40 last:border-0">
+                      <span className="text-xs text-neutral-300 font-medium truncate max-w-[130px]" title={cardInfo.name}>
+                        {cardInfo.name}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((r) => {
+                            const score = getAosCardScoreInRound(pKey, cardId, r);
+                            totalSec += score;
+                            return (
+                              <div 
+                                key={r} 
+                                className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold border ${
+                                  score > 0 
+                                    ? 'bg-amber-500/10 border-amber-500/20 text-neutral-300' 
+                                    : 'bg-neutral-950 border-neutral-800 text-neutral-600'
+                                }`}
+                              >
+                                {score > 0 ? score : '-'}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <span className="w-12 text-right text-xs font-mono font-bold text-neutral-400">
+                          {totalSec}/15
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Footer info */}
+        <div className="pt-4 border-t border-neutral-900 flex justify-between items-center text-[10px] text-neutral-500 font-medium">
+          <div className="space-y-0.5">
+            <div>Age of Sigmar • Battleplan: {activeBp?.name}</div>
+            <div>Gespielte Runden: {currentRound} / 5</div>
+          </div>
+          <div className="text-right font-black uppercase text-neutral-600 tracking-wider">
+            Fumble Forge App
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const p1Stats = calculateAosPlayerStats("player1");
@@ -1330,17 +1551,6 @@ export default function AosScoreTracker({ currentUser, onClose }) {
 
   // SCHRITT 4: ERGEBNIS & MATCH SUMMARY SCREEN (NACH JEDEM SPIEL)
   if (setupStep === "summary") {
-    const activeBp = TERRAIN_BATTLEPLANS.find(
-      (b) => b.id === selectedBattleplanId
-    );
-
-    const p1 = players.player1;
-    const p2 = players.player2;
-
-    const isTie = p1.vp === p2.vp;
-    const winnerName = p1.vp > p2.vp ? p1.name : p2.name;
-    const winnerFaction = p1.vp > p2.vp ? p1.faction : p2.faction;
-
     const isLastTournamentMatch = matchMode === "tournament" && currentTournamentMatchIndex >= totalTournamentRounds;
 
     return (
@@ -1354,77 +1564,15 @@ export default function AosScoreTracker({ currentUser, onClose }) {
             <X size={20} />
           </button>
         )}
-        <div className="bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-amber-500/50 rounded-2xl p-6 text-center space-y-5 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-amber-500 shadow-[0_0_15px_#f59e0b]"></div>
+        {renderAosTabletopScorecard()}
 
-          <Trophy size={48} className="mx-auto text-amber-400 animate-bounce" />
-
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              Age of Sigmar • Match Complete
-            </span>
-            <h1 className="text-3xl font-black text-amber-400 uppercase tracking-wider mt-1">
-              {isTie ? "Unentschieden!" : `${winnerName} Siegt!`}
-            </h1>
-            {!isTie && (
-              <p className="text-xs font-bold text-amber-500/80">
-                {winnerFaction}
-              </p>
-            )}
-          </div>
-
-          {/* Scoreboard Übersichtstabelle */}
-          <div className="bg-neutral-950 rounded-xl border border-neutral-800 divide-y divide-neutral-800/80 text-xs text-left max-w-lg mx-auto">
-            <div className="grid grid-cols-3 p-3 font-bold text-neutral-400 uppercase text-[10px]">
-              <span>Kategorie</span>
-              <span className="text-center text-sky-400 font-bold">{p1.name}</span>
-              <span className="text-center text-red-400 font-bold">{p2.name}</span>
-            </div>
-            <div className="grid grid-cols-3 p-3 items-center">
-              <span className="font-medium text-neutral-300">Primary (Objectives)</span>
-              <span className="text-center font-mono font-bold text-white">{p1Stats.finalPrimaryVp}</span>
-              <span className="text-center font-mono font-bold text-white">{p2Stats.finalPrimaryVp}</span>
-            </div>
-            <div className="grid grid-cols-3 p-3 items-center">
-              <span className="font-medium text-neutral-300">Secondary (Battle Tactics)</span>
-              <span className="text-center font-mono font-bold text-white">{p1Stats.finalSecondaryVp}</span>
-              <span className="text-center font-mono font-bold text-white">{p2Stats.finalSecondaryVp}</span>
-            </div>
-            <div className="grid grid-cols-3 p-3 items-center bg-neutral-900/80 font-bold border-t-2 border-amber-500/40">
-              <span className="text-amber-500 uppercase">GESAMT</span>
-              <span className="text-center font-mono text-lg font-black text-amber-400">{p1Stats.grandTotalVp} VP</span>
-              <span className="text-center font-mono text-lg font-black text-amber-400">{p2Stats.grandTotalVp} VP</span>
-            </div>
-          </div>
-
-          {/* Runden-Tabelle */}
-          <div className="space-y-2 text-left max-w-lg mx-auto">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block">Scoring by Battle Round (Primary / Secondary)</span>
-            <div className="bg-neutral-950 border border-neutral-800 rounded-xl divide-y divide-neutral-800/80 text-xs font-mono">
-              {[1, 2, 3, 4, 5].map(r => {
-                const p1RoundTotal = (p1Stats.roundPrimaryVp[r] || 0) + (p1Stats.roundSecondaryVp[r] || 0);
-                const p2RoundTotal = (p2Stats.roundPrimaryVp[r] || 0) + (p2Stats.roundSecondaryVp[r] || 0);
-
-                return (
-                  <div key={r} className="p-2.5 flex justify-between items-center">
-                    <span className="text-neutral-500">Battle Round {r}</span>
-                    <div className="flex gap-4">
-                      <span className="text-sky-400 font-bold">{p1RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p1Stats.roundPrimaryVp[r] || 0}P/{p1Stats.roundSecondaryVp[r] || 0}S)</span></span>
-                      <span className="text-neutral-600">vs</span>
-                      <span className="text-red-400 font-bold">{p2RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p2Stats.roundPrimaryVp[r] || 0}P/{p2Stats.roundSecondaryVp[r] || 0}S)</span></span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Matchup Details Footer */}
-          <div className="text-xs text-neutral-400 flex justify-center gap-4 flex-wrap pt-2 border-t border-neutral-800">
-            <span>Battleplan: <strong className="text-amber-400">{activeBp?.name}</strong></span>
-            <span>•</span>
-            <span>Gespielte Runden: <strong className="text-amber-400">{currentRound} / 5</strong></span>
-          </div>
+        <div className="max-w-xl mx-auto">
+          <button
+            onClick={handleDownloadGraphic}
+            className="w-full bg-neutral-800 hover:bg-neutral-700 text-white font-bold py-3 px-4 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
+          >
+            <Download size={18} /> Grafik Herunterladen
+          </button>
         </div>
 
         {matchMode === "tournament" && tournamentResultsSummary.length > 0 && (
@@ -1912,36 +2060,6 @@ export default function AosScoreTracker({ currentUser, onClose }) {
         })}
       </div>
 
-      {/* TURN HISTORIE */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
-        <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-          <Layers size={16} className="text-amber-500" /> Turn Protokoll &
-          Historie
-        </h3>
-
-        {turnHistory.length === 0 ? (
-          <div className="text-xs text-neutral-500 italic">
-            Noch keine Ereignisse in dieser Schlacht aufgezeichnet.
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {turnHistory.map((log, idx) => (
-              <div
-                key={idx}
-                className="bg-neutral-950 border border-neutral-800/80 p-2.5 rounded-lg text-xs flex justify-between items-center"
-              >
-                <span className="text-amber-500 font-bold">
-                  Runde {log.round}
-                </span>
-                <span className="text-neutral-300 font-medium">
-                  {log.player}
-                </span>
-                <span className="text-neutral-400">{log.action}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* SICHERER LÖSCH-BEREICH */}
       <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4 text-center">
@@ -1983,69 +2101,17 @@ export default function AosScoreTracker({ currentUser, onClose }) {
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
-            className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl cursor-default"
+            className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-2 space-y-4 shadow-2xl cursor-default"
           >
-            <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
-              <h3 className="text-base font-black text-neutral-100 uppercase tracking-wider flex items-center gap-2">
-                <Trophy size={18} className="text-amber-500" /> Match Scoreboard
-              </h3>
-              <button onClick={() => setShowLiveStatsModal(false)} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
-                <X size={20} />
+            {renderAosTabletopScorecard()}
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setShowLiveStatsModal(false)}
+                className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
+              >
+                Schließen
               </button>
             </div>
-
-            <div className="bg-neutral-950 rounded-xl border border-neutral-800 divide-y divide-neutral-800/80 text-xs">
-              <div className="grid grid-cols-3 p-3 font-bold text-neutral-400 uppercase text-[10px]">
-                <span>Kategorie</span>
-                <span className="text-center text-sky-400 font-bold">{players.player1.name}</span>
-                <span className="text-center text-red-400 font-bold">{players.player2.name}</span>
-              </div>
-              <div className="grid grid-cols-3 p-3 items-center">
-                <span className="font-medium text-neutral-300">Primary (Objectives)</span>
-                <span className="text-center font-mono font-bold text-white">{p1Stats.finalPrimaryVp}</span>
-                <span className="text-center font-mono font-bold text-white">{p2Stats.finalPrimaryVp}</span>
-              </div>
-              <div className="grid grid-cols-3 p-3 items-center">
-                <span className="font-medium text-neutral-300">Secondary (Battle Tactics)</span>
-                <span className="text-center font-mono font-bold text-white">{p1Stats.finalSecondaryVp}</span>
-                <span className="text-center font-mono font-bold text-white">{p2Stats.finalSecondaryVp}</span>
-              </div>
-              <div className="grid grid-cols-3 p-3 items-center bg-neutral-900/80 font-bold border-t-2 border-amber-500/40">
-                <span className="text-amber-500 uppercase">GESAMT</span>
-                <span className="text-center font-mono text-base font-black text-amber-400">{p1Stats.grandTotalVp} VP</span>
-                <span className="text-center font-mono text-base font-black text-amber-400">{p2Stats.grandTotalVp} VP</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-neutral-400 uppercase">Scoring by Round (Primary / Secondary)</span>
-              <div className="bg-neutral-950 border border-neutral-800 rounded-xl divide-y divide-neutral-800/80 text-xs font-mono text-left">
-                {[1, 2, 3, 4, 5].map(r => {
-                  const p1RoundTotal = (p1Stats.roundPrimaryVp[r] || 0) + (p1Stats.roundSecondaryVp[r] || 0);
-                  const p2RoundTotal = (p2Stats.roundPrimaryVp[r] || 0) + (p2Stats.roundSecondaryVp[r] || 0);
-
-                  return (
-                    <div key={r} className={`p-2.5 flex justify-between items-center ${currentRound === r ? 'bg-amber-500/10' : ''}`}>
-                      <span className={`${currentRound === r ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>
-                        Battle Round {r} {currentRound === r ? '●' : ''}
-                      </span>
-                      <div className="flex gap-4">
-                        <span className="text-sky-400 font-bold">{p1RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p1Stats.roundPrimaryVp[r] || 0}P/{p1Stats.roundSecondaryVp[r] || 0}S)</span></span>
-                        <span className="text-neutral-600">vs</span>
-                        <span className="text-red-400 font-bold">{p2RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p2Stats.roundPrimaryVp[r] || 0}P/{p2Stats.roundSecondaryVp[r] || 0}S)</span></span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowLiveStatsModal(false)}
-              className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
-            >
-              Schließen
-            </button>
           </div>
         </div>
       )}

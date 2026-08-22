@@ -121,9 +121,12 @@ export default function StatsDashboard({ matches, username }) {
           <div className="text-[10px] text-neutral-500 uppercase flex items-center gap-1">
             <Trophy size={12} className="text-emerald-500" /> Wins / Losses / Draws
           </div>
-          <div className="text-xl font-black text-emerald-400 mt-1">
-            {wins} <span className="text-neutral-600">/</span> {losses}{" "}
-            <span className="text-neutral-600">/</span> {draws}
+          <div className="text-xl font-black mt-1">
+            <span className="text-emerald-500">{wins}</span>{" "}
+            <span className="text-neutral-600">/</span>{" "}
+            <span className="text-red-500">{losses}</span>{" "}
+            <span className="text-neutral-600">/</span>{" "}
+            <span className="text-amber-500">{draws}</span>
           </div>
         </div>
 

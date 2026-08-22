@@ -142,6 +142,11 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             title: isTournament ? m.details.match_title : `${m.player1_name || playerName} vs ${m.player2_name || "Gegner"}`,
             winner: isTournament ? "Turnier beendet" : m.winner_name,
             isTournament,
+            player1_name: m.player1_name || playerName,
+            player2_name: m.player2_name || "Gegner",
+            player1_vp: m.player1_vp,
+            player2_vp: m.player2_vp,
+            winner_name: m.winner_name,
           };
         });
         setRecentClubMatches(feedItems);
@@ -382,26 +387,48 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {recentClubMatches.map((m) => (
-                <div key={m.id} className="bg-neutral-950 border border-neutral-800/60 p-3 rounded-xl flex items-center justify-between text-xs">
-                  <div className="space-y-1">
-                    <div className="font-bold text-neutral-200 flex items-center gap-2">
-                      <span className="text-amber-500 font-mono text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                        {m.playerName}
+              {recentClubMatches.map((m) => {
+                const isTie = m.winner === "Unentschieden" || m.winner_name === "Unentschieden";
+                const badgeColor = isTie
+                  ? "text-orange-400 bg-orange-950/40 border border-orange-800/40"
+                  : "text-emerald-400 bg-emerald-950/40 border border-emerald-800/40";
+
+                return (
+                  <div key={m.id} className="bg-neutral-950 border border-neutral-800/60 p-3 rounded-xl flex items-center justify-between text-xs">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-amber-500 font-mono text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          {m.playerName}
+                        </span>
+                        
+                        {m.isTournament ? (
+                          <span className="font-bold text-neutral-200">{m.title}</span>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-neutral-200 leading-tight">{m.player1_name}</span>
+                              <span className="text-amber-500 font-mono text-[11px] font-bold leading-none">{m.player1_vp ?? 0} VP</span>
+                            </div>
+                            <span className="text-neutral-500 font-bold">vs</span>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-neutral-200 leading-tight">{m.player2_name}</span>
+                              <span className="text-amber-500 font-mono text-[11px] font-bold leading-none">{m.player2_vp ?? 0} VP</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-neutral-500 font-mono">
+                        {new Date(m.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className={`text-[11px] font-bold px-2 py-1 rounded border ${badgeColor}`}>
+                        🏆 {m.winner}
                       </span>
-                      {m.title}
-                    </div>
-                    <div className="text-[10px] text-neutral-500 font-mono">
-                      {new Date(m.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/40 px-2 py-1 rounded border border-emerald-800/40">
-                      🏆 {m.winner}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

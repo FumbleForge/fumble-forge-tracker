@@ -787,10 +787,22 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal }) {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-xs text-neutral-300">
-                        <span className="font-bold">{m.player1_name}</span> vs{" "}
-                        <span className="font-bold">{m.player2_name}</span> |
-                        Sieger: {m.winner_name}
+                      <div className="text-xs text-neutral-300 flex flex-col gap-2">
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-neutral-200">{m.player1_name}</span>
+                            <span className="text-amber-500 font-mono text-[11px] font-bold">{m.player1_vp ?? 0} VP</span>
+                          </div>
+                          <span className="text-neutral-500 font-bold">vs</span>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-neutral-200">{m.player2_name}</span>
+                            <span className="text-amber-500 font-mono text-[11px] font-bold">{m.player2_vp ?? 0} VP</span>
+                          </div>
+                        </div>
+                        <div className="pt-1 border-t border-neutral-900 flex items-center gap-1">
+                          <span className="text-emerald-500 font-bold">Sieger</span>:{" "}
+                          <span className="text-amber-500 font-bold">{m.winner_name}</span>
+                        </div>
                       </div>
                     )}
 
