@@ -1059,17 +1059,17 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
 
           <div className="grid grid-cols-3 items-center gap-2">
             {/* Player 1 Details */}
-            <div className="text-left space-y-0.5">
-              <h4 className="text-lg font-black text-neutral-100 truncate">{player1Name}</h4>
-              <p className="text-[11px] text-neutral-400 font-medium truncate">{player1Faction}</p>
+            <div className="text-left space-y-0.5 min-w-0">
+              <h4 className="text-sm sm:text-base md:text-lg font-black text-neutral-100 truncate">{player1Name}</h4>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">{player1Faction}</p>
             </div>
 
             {/* Score */}
-            <div className="text-center space-y-1">
-              <div className="text-4xl md:text-5xl font-black text-neutral-100 tracking-wider font-mono">
+            <div className="text-center space-y-1 min-w-0">
+              <div className="text-xl sm:text-3xl md:text-5xl font-black text-neutral-100 tracking-wider font-mono">
                 {p1Stats.grandTotalVp} - {p2Stats.grandTotalVp}
               </div>
-              <div className={`text-[11px] font-black tracking-widest uppercase ${
+              <div className={`text-[9px] sm:text-[11px] font-black tracking-widest uppercase truncate ${
                 isTie ? 'text-amber-500' : 'text-emerald-500'
               }`}>
                 {isTie ? 'Unentschieden' : 'VICTORY'}
@@ -1077,9 +1077,9 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
             </div>
 
             {/* Player 2 Details */}
-            <div className="text-right space-y-0.5">
-              <h4 className="text-lg font-black text-neutral-100 truncate">{player2Name}</h4>
-              <p className="text-[11px] text-neutral-400 font-medium truncate">{player2Faction}</p>
+            <div className="text-right space-y-0.5 min-w-0">
+              <h4 className="text-sm sm:text-base md:text-lg font-black text-neutral-100 truncate">{player2Name}</h4>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">{player2Faction}</p>
             </div>
           </div>
         </div>

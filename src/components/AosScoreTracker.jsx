@@ -9,6 +9,7 @@ import {
   Check,
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   MapPin,
   Trophy,
   RotateCcw,
@@ -1021,17 +1022,17 @@ export default function AosScoreTracker({ currentUser, onClose }) {
 
           <div className="grid grid-cols-3 items-center gap-2">
             {/* Player 1 Details */}
-            <div className="text-left space-y-0.5">
-              <h4 className="text-lg font-black text-neutral-100 truncate">{players.player1.name}</h4>
-              <p className="text-[11px] text-neutral-400 font-medium truncate">{players.player1.faction}</p>
+            <div className="text-left space-y-0.5 min-w-0">
+              <h4 className="text-sm sm:text-base md:text-lg font-black text-neutral-100 truncate">{players.player1.name}</h4>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">{players.player1.faction}</p>
             </div>
 
             {/* Score */}
-            <div className="text-center space-y-1">
-              <div className="text-4xl md:text-5xl font-black text-neutral-100 tracking-wider font-mono">
+            <div className="text-center space-y-1 min-w-0">
+              <div className="text-xl sm:text-3xl md:text-5xl font-black text-neutral-100 tracking-wider font-mono">
                 {p1Stats.grandTotalVp} - {p2Stats.grandTotalVp}
               </div>
-              <div className={`text-[11px] font-black tracking-widest uppercase ${
+              <div className={`text-[9px] sm:text-[11px] font-black tracking-widest uppercase truncate ${
                 isTie ? 'text-amber-500' : 'text-emerald-500'
               }`}>
                 {isTie ? 'Unentschieden' : 'VICTORY'}
@@ -1039,9 +1040,9 @@ export default function AosScoreTracker({ currentUser, onClose }) {
             </div>
 
             {/* Player 2 Details */}
-            <div className="text-right space-y-0.5">
-              <h4 className="text-lg font-black text-neutral-100 truncate">{players.player2.name}</h4>
-              <p className="text-[11px] text-neutral-400 font-medium truncate">{players.player2.faction}</p>
+            <div className="text-right space-y-0.5 min-w-0">
+              <h4 className="text-sm sm:text-base md:text-lg font-black text-neutral-100 truncate">{players.player2.name}</h4>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">{players.player2.faction}</p>
             </div>
           </div>
         </div>
@@ -1695,36 +1696,6 @@ export default function AosScoreTracker({ currentUser, onClose }) {
           >
             <Eye size={20} />
           </button>
-          <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 px-5 py-2 rounded-xl">
-            {currentRound > 1 && (
-              <button
-                onClick={handlePreviousRound}
-                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold px-2.5 py-1 rounded text-xs transition flex items-center gap-1 cursor-pointer border border-neutral-700"
-                title="Vorherige Runde"
-              >
-                <RotateCcw size={12} /> Zurück
-              </button>
-            )}
-            <span className="text-xs uppercase font-bold text-neutral-400">
-              Runde
-            </span>
-            <span className="text-2xl font-black text-amber-500">
-              {currentRound} / 5
-            </span>
-            <button
-              onClick={() => {
-                if (currentRound >= 5) {
-                  setSetupStep("summary");
-                } else {
-                  setShowRoundModal(true);
-                }
-              }}
-              className="bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1 cursor-pointer"
-            >
-              {currentRound >= 5 ? "Spiel Beenden" : "Nächste Runde"}{" "}
-              <ArrowRight size={14} />
-            </button>
-          </div>
         </div>
       </header>
 
@@ -2087,6 +2058,36 @@ export default function AosScoreTracker({ currentUser, onClose }) {
         })}
       </div>
 
+      {/* RUNDEN NAVIGATION (UNTEN) */}
+      <div className="flex items-center justify-between pt-4 border-t border-neutral-800 mt-6">
+        <button
+          onClick={handlePreviousRound}
+          disabled={currentRound === 1}
+          className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-30 rounded-xl text-xs font-bold text-neutral-300 flex items-center gap-1.5 transition cursor-pointer border border-neutral-700"
+        >
+          <ArrowLeft size={16} /> Vorherige Runde
+        </button>
+
+        <span className="text-sm font-black text-amber-500 uppercase tracking-widest font-mono">
+          Runde {currentRound} / 5
+        </span>
+
+        {currentRound < 5 ? (
+          <button
+            onClick={() => setShowRoundModal(true)}
+            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-neutral-950 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+          >
+            Nächste Runde <ArrowRight size={16} />
+          </button>
+        ) : (
+          <button
+            onClick={() => setSetupStep("summary")}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+          >
+            Spiel Beenden <Trophy size={16} />
+          </button>
+        )}
+      </div>
 
       {/* SICHERER LÖSCH-BEREICH */}
       <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4 text-center">
