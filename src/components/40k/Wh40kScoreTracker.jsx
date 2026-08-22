@@ -559,11 +559,37 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
         logging: false,
         useCORS: true,
       });
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = image;
-      link.download = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
-      link.click();
+      
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `scorecard-40k-${player1Name}-vs-${player2Name}.png`, { type: "image/png" });
+        
+        if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: "Warhammer 40k Match Scorecard",
+              text: `${player1Name} vs ${player2Name}`,
+            });
+            return;
+          } catch (shareErr) {
+            console.error("Web Share failed, showing modal instead:", shareErr);
+          }
+        }
+        
+        const image = canvas.toDataURL("image/png");
+        
+        if (isMobile) {
+          setShareImageUrl(image);
+        } else {
+          const link = document.createElement("a");
+          link.href = image;
+          link.download = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
+          link.click();
+        }
+      }, "image/png");
     } catch (err) {
       console.error("Fehler beim Herunterladen der Grafik:", err);
     }
@@ -617,6 +643,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
   const [savingMatch, setSavingMatch] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [shareImageUrl, setShareImageUrl] = useState(null);
 
   // CP Counters
   const [p1CpGained, setP1CpGained] = useState(() => loadSavedState('p1CpGained', 0));
@@ -2228,6 +2255,47 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP: IMAGE SAVE MODAL FOR MOBILE */}
+      {shareImageUrl && (
+        <div
+          onClick={() => setShareImageUrl(null)}
+          className="fixed inset-0 bg-neutral-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 z-55 cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl cursor-default text-center"
+          >
+            <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
+              <h3 className="text-sm font-black text-amber-500 uppercase tracking-wider">
+                Bild speichern / teilen
+              </h3>
+              <button onClick={() => setShareImageUrl(null)} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <p className="text-[11px] text-neutral-300 leading-normal font-medium">
+              📱 <strong>Handy / Tablet</strong>: Halte das Bild gedrückt, um es in deinen Fotos zu sichern oder direkt zu teilen.
+            </p>
+            
+            <div className="border border-neutral-800 rounded-xl overflow-hidden bg-neutral-950 p-2 max-h-[60vh] overflow-y-auto">
+              <img
+                src={shareImageUrl}
+                alt="Warhammer 40k Match Scorecard"
+                className="w-full h-auto object-contain rounded-lg"
+              />
+            </div>
+            
+            <button
+              onClick={() => setShareImageUrl(null)}
+              className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
+            >
+              Schließen
+            </button>
           </div>
         </div>
       )}
