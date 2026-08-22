@@ -1228,7 +1228,8 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
     setSavingMatch(true);
     try {
       const winner = p1Stats.grandTotalVp > p2Stats.grandTotalVp ? player1Name : p2Stats.grandTotalVp > p1Stats.grandTotalVp ? player2Name : "Unentschieden";
-      const { error } = await supabase.from('matches').insert([{
+      
+      const matchData = {
         user_id: currentUser.id,
         player1_name: player1Name,
         player2_name: player2Name,
@@ -1246,7 +1247,39 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
           deployment_pattern: currentDeploymentPattern?.name,
           terrain_layout: currentTerrainLayout?.name
         }
-      }]);
+      };
+
+      const plannedMatchId = localStorage.getItem("fumble_forge_40k_plannedMatchId");
+      let error;
+
+      if (plannedMatchId) {
+        const { error: updateErr } = await supabase
+          .from("matches")
+          .update({
+            player1_vp: p1Stats.grandTotalVp,
+            player2_vp: p2Stats.grandTotalVp,
+            rounds_played: 5,
+            winner_name: winner,
+            status: "completed",
+            details: {
+              ...matchData.details,
+              is_challenge: true
+            }
+          })
+          .eq("id", plannedMatchId);
+        error = updateErr;
+
+        const plannedChallengeId = localStorage.getItem("fumble_forge_40k_plannedChallengeId");
+        if (plannedChallengeId) {
+          await supabase
+            .from("challenges")
+            .update({ status: "completed" })
+            .eq("id", plannedChallengeId);
+        }
+      } else {
+        const { error: insertErr } = await supabase.from('matches').insert([matchData]);
+        error = insertErr;
+      }
 
       if (error) throw error;
       setSaveSuccess(true);
