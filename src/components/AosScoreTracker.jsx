@@ -841,7 +841,37 @@ export default function AosScoreTracker({ currentUser, onClose }) {
         },
       };
 
-      const { error } = await supabase.from("matches").insert([matchData]);
+      const plannedMatchId = localStorage.getItem("fumble_forge_aos_plannedMatchId");
+      let error;
+
+      if (plannedMatchId) {
+        const { error: updateErr } = await supabase
+          .from("matches")
+          .update({
+            player1_vp: players.player1.vp,
+            player2_vp: players.player2.vp,
+            rounds_played: currentRound,
+            winner_name: winner,
+            status: "completed",
+            details: {
+              ...matchData.details,
+              is_challenge: true
+            }
+          })
+          .eq("id", plannedMatchId);
+        error = updateErr;
+
+        const plannedChallengeId = localStorage.getItem("fumble_forge_aos_plannedChallengeId");
+        if (plannedChallengeId) {
+          await supabase
+            .from("challenges")
+            .update({ status: "completed" })
+            .eq("id", plannedChallengeId);
+        }
+      } else {
+        const { error: insertErr } = await supabase.from("matches").insert([matchData]);
+        error = insertErr;
+      }
 
       if (error) throw error;
 
@@ -1187,6 +1217,8 @@ export default function AosScoreTracker({ currentUser, onClose }) {
     localStorage.removeItem("fumble_forge_aos_turnHistory");
     localStorage.removeItem("fumble_forge_aos_players");
     localStorage.removeItem("fumble_forge_aos_roundHistory");
+    localStorage.removeItem("fumble_forge_aos_plannedMatchId");
+    localStorage.removeItem("fumble_forge_aos_plannedChallengeId");
 
     setSetupStep("mode_select");
     setCurrentRound(1);

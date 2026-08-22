@@ -1304,7 +1304,8 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       'step', 'matchDate', 'player1Name', 'player1List', 'player1Faction', 'player1Disposition', 'player1BattleReady', 'player1Primary', 'player1SecondaryMode', 'player1FixedSecondaries',
       'player2Name', 'player2List', 'player2Faction', 'player2Disposition', 'player2BattleReady', 'player2Primary', 'player2SecondaryMode', 'player2FixedSecondaries',
       'selectedMatchupId', 'selectedDeploymentPatternId', 'selectedTerrainLayoutId', 'selectedMissionRule', 'currentRound',
-      'p1CpGained', 'p1CpSpent', 'p2CpGained', 'p2CpSpent', 'p1ScoredPrimaries', 'p2ScoredPrimaries', 'p1ScoredSecondaries', 'p2ScoredSecondaries', 'p1TacticalHand', 'p2TacticalHand', 'p1WentFirst'
+      'p1CpGained', 'p1CpSpent', 'p2CpGained', 'p2CpSpent', 'p1ScoredPrimaries', 'p2ScoredPrimaries', 'p1ScoredSecondaries', 'p2ScoredSecondaries', 'p1TacticalHand', 'p2TacticalHand', 'p1WentFirst',
+      'plannedMatchId', 'plannedChallengeId'
     ];
     keys.forEach(k => localStorage.removeItem(`fumble_forge_40k_${k}`));
     setP1WentFirst(true);

@@ -32,12 +32,65 @@ export default function MemberList({ currentUser }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTooltip, setActiveTooltip] = useState(null);
+  const [activeChallenges, setActiveChallenges] = useState([]);
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.email === "namebereitsvergeben@gmail.com";
 
   useEffect(() => {
     fetchMembersAndEvaluateBadges();
   }, []);
+
+  const hasAnyActiveChallenge = (userId) => {
+    return activeChallenges.some(
+      (c) => (c.challenger_id === userId || c.opponent_id === userId) && (c.status === "pending" || c.status === "accepted")
+    );
+  };
+
+  const getAcceptedChallenge = (userId) => {
+    return activeChallenges.find(
+      (c) => (c.challenger_id === userId || c.opponent_id === userId) && c.status === "accepted"
+    );
+  };
+
+  const handleChallenge = async (opponentId, system) => {
+    if (!currentUser) return;
+    try {
+      const { data: existingCheck, error: checkErr } = await supabase
+        .from("challenges")
+        .select("*")
+        .in("status", ["pending", "accepted"]);
+      
+      if (checkErr) throw checkErr;
+
+      const someoneHasActive = (existingCheck || []).some(
+        (c) => c.challenger_id === currentUser.id || c.opponent_id === currentUser.id || c.challenger_id === opponentId || c.opponent_id === opponentId
+      );
+
+      if (someoneHasActive) {
+        alert("Entweder du oder dein Gegner ist bereits in einer aktiven Herausforderung!");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("challenges")
+        .insert([
+          {
+            challenger_id: currentUser.id,
+            opponent_id: opponentId,
+            system,
+            status: "pending"
+          }
+        ]);
+
+      if (error) throw error;
+
+      alert("Herausforderung erfolgreich gesendet!");
+      fetchMembersAndEvaluateBadges();
+    } catch (err) {
+      console.error("Fehler beim Erstellen der Herausforderung:", err);
+      alert("Fehler beim Erstellen der Herausforderung: " + err.message);
+    }
+  };
 
   const handleRevokeBadge = async (memberId, badgeId) => {
     try {
@@ -123,6 +176,12 @@ export default function MemberList({ currentUser }) {
   const fetchMembersAndEvaluateBadges = async () => {
     try {
       setLoading(true);
+
+      const { data: challengesData } = await supabase
+        .from("challenges")
+        .select("*")
+        .in("status", ["pending", "accepted"]);
+      setActiveChallenges(challengesData || []);
 
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
@@ -454,6 +513,30 @@ export default function MemberList({ currentUser }) {
                         : "Keine angegeben"}
                     </span>
                   </div>
+
+                  {currentUser && member.id !== currentUser.id && (
+                    <div className="pt-3 border-t border-neutral-800/80 flex gap-2">
+                      <button
+                        disabled={hasAnyActiveChallenge(currentUser.id) || hasAnyActiveChallenge(member.id)}
+                        onClick={() => handleChallenge(member.id, "aos")}
+                        className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 disabled:opacity-40 disabled:cursor-not-allowed border border-amber-500/30 hover:border-amber-500/50 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                      >
+                        Herausfordern (AoS)
+                      </button>
+                      <button
+                        disabled={hasAnyActiveChallenge(currentUser.id) || hasAnyActiveChallenge(member.id)}
+                        onClick={() => handleChallenge(member.id, "40k")}
+                        className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed border border-emerald-500/30 hover:border-emerald-500/50 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                      >
+                        Herausfordern (40k)
+                      </button>
+                    </div>
+                  )}
+                  {currentUser && (hasAnyActiveChallenge(currentUser.id) || hasAnyActiveChallenge(member.id)) && member.id !== currentUser.id && (
+                    <p className="text-[10px] text-neutral-500 italic text-center mt-1">
+                      Bereits in einer aktiven Herausforderung
+                    </p>
+                  )}
                 </div>
               </div>
             );

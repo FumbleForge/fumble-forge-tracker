@@ -1,1 +1,68 @@
 @import "tailwindcss";
+
+/* Keyframes for Rotating Conic Gradient (AoS Aura/Glow) */
+@keyframes rotate-conic {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Keyframes for 40k Grimdark Laser Pulsation */
+@keyframes pulse-laser {
+  0%, 100% {
+    box-shadow: 0 0 6px #22c55e, 0 0 14px #ef4444, inset 0 0 6px #22c55e;
+    border-color: #22c55e;
+  }
+  50% {
+    box-shadow: 0 0 12px #ef4444, 0 0 24px #22c55e, inset 0 0 12px #ef4444;
+    border-color: #ef4444;
+  }
+}
+
+/* AoS-Challenge (frame-challenge-aos): Gold-Azyr-blauer Flammen/Aura-Glow rotating conic-gradient */
+.frame-challenge-aos {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 3px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.7), 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.frame-challenge-aos::before {
+  content: "";
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  background: conic-gradient(#eab308, #3b82f6, #eab308, #3b82f6, #eab308);
+  animation: rotate-conic 3s linear infinite;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.frame-challenge-aos > * {
+  position: relative;
+  z-index: 10;
+  background-color: #0a0a0a;
+}
+
+/* 40k-Challenge (frame-challenge-40k): Mecha-grüner/neon-roter, pulsierender Grimdark-Laser-Rahmen */
+.frame-challenge-40k {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 3px;
+  border: 2px solid #22c55e;
+  animation: pulse-laser 2s ease-in-out infinite;
+}
+
+.frame-challenge-40k > * {
+  background-color: #0a0a0a;
+}

@@ -28,6 +28,7 @@ import DashboardView from "./components/DashboardView";
 import EventsView from "./components/EventsView";
 import ClubMeta from "./components/ClubMeta";
 import LegalModal from "./components/LegalModal";
+import ChallengeModal from "./components/ChallengeModal";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -35,6 +36,35 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [activeChallenges, setActiveChallenges] = useState([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchChallenges = async () => {
+      const { data } = await supabase
+        .from("challenges")
+        .select("*")
+        .eq("status", "accepted")
+        .or(`challenger_id.eq.${user.id},opponent_id.eq.${user.id}`);
+      setActiveChallenges(data || []);
+    };
+    fetchChallenges();
+
+    const channel = supabase
+      .channel("app-challenges-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "challenges" },
+        () => {
+          fetchChallenges();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
   
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -417,27 +447,42 @@ export default function App() {
               )}
             </div>
 
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={`flex items-center gap-2 text-xs md:text-sm font-bold transition ${
-                activeTab === "profile" ? "text-amber-500" : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              <span className="hidden xs:inline-block truncate max-w-[120px]">
-                {user.username || user.name}
-              </span>
-              <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700 overflow-hidden">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User size={16} className="text-neutral-400" />
-                )}
-              </div>
-            </button>
+            {(() => {
+              const acceptedChallenge = activeChallenges.find(
+                (c) => c.challenger_id === user?.id || c.opponent_id === user?.id
+              );
+              const headerFrameClass = acceptedChallenge
+                ? acceptedChallenge.system === "aos"
+                  ? "frame-challenge-aos"
+                  : "frame-challenge-40k"
+                : "";
+
+              return (
+                <button
+                  onClick={() => setActiveTab("profile")}
+                  className={`flex items-center gap-2 text-xs md:text-sm font-bold transition ${
+                    activeTab === "profile" ? "text-amber-500" : "text-neutral-400 hover:text-neutral-200"
+                  }`}
+                >
+                  <span className="hidden xs:inline-block truncate max-w-[120px]">
+                    {user.username || user.name}
+                  </span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${headerFrameClass || "bg-neutral-800 border border-neutral-700 overflow-hidden"}`}>
+                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-neutral-800">
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={16} className="text-neutral-400" />
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             <button
               onClick={handleLogout}
@@ -488,6 +533,15 @@ export default function App() {
 
       {showLegalModal && (
         <LegalModal onClose={() => setShowLegalModal(false)} />
+      )}
+
+      {user && (
+        <ChallengeModal 
+          currentUser={user} 
+          onChallengeStatusChanged={() => {
+            // Optionale Actions
+          }} 
+        />
       )}
     </div>
   );

@@ -39,6 +39,7 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
   const [active40kGame, setActive40kGame] = useState(null);
   const [myBadges, setMyBadges] = useState([]);
   const [activeTooltip, setActiveTooltip] = useState(null);
+  const [plannedMatches, setPlannedMatches] = useState([]);
 
   useEffect(() => {
     // Check AoS game
@@ -234,7 +235,15 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
       }
 
       if (matches) {
-        const feedItems = matches.slice(0, 5).map((m) => {
+        // Filter out planned matches for local lists
+        const myPlanned = matches.filter(
+          (m) => m.status === "planned" && (m.user_id === user.id || m.opponent_id === user.id)
+        );
+        setPlannedMatches(myPlanned);
+
+        const completedMatches = matches.filter((m) => m.status !== "planned");
+
+        const feedItems = completedMatches.slice(0, 5).map((m) => {
           const playerName = profileMap[m.user_id] || "Club-Mitglied";
           const isTournament = m.details?.match_mode === "tournament_complete";
           
@@ -259,7 +268,7 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
         let currentStreak = 0;
         let streakType = null;
 
-        const sortedMatches = [...matches].sort(
+        const sortedMatches = [...completedMatches].sort(
           (a, b) => new Date(a.created_at) - new Date(b.created_at)
         );
 
@@ -318,6 +327,42 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
       console.error("Fehler beim Laden des Dashboards:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStartPlannedMatch = (match) => {
+    if (match.system === "aos") {
+      const aosKeys = [
+        "setupStep", "matchMode", "matchTitle", "totalRounds", "matchIndex", 
+        "tournamentSummary", "battleplanId", "currentRound", "activeTurnPlayer", 
+        "lastTurnPlayer", "turnHistory", "players", "roundHistory",
+        "plannedMatchId", "plannedChallengeId"
+      ];
+      aosKeys.forEach((k) => localStorage.removeItem(`fumble_forge_aos_${k}`));
+
+      localStorage.setItem("fumble_forge_aos_setupStep", JSON.stringify("roster"));
+      localStorage.setItem("fumble_forge_aos_matchTitle", JSON.stringify(`Herausforderung: ${match.player1_name} vs ${match.player2_name}`));
+      localStorage.setItem("fumble_forge_aos_plannedMatchId", match.id);
+      localStorage.setItem("fumble_forge_aos_plannedChallengeId", match.challenge_id);
+      
+      setActiveTab("score");
+    } else {
+      const whKeys = [
+        "step", "matchDate", "player1Name", "player1List", "player1Faction", "player1Disposition", "player1BattleReady", "player1Primary", "player1SecondaryMode", "player1FixedSecondaries",
+        "player2Name", "player2List", "player2Faction", "player2Disposition", "player2BattleReady", "player2Primary", "player2SecondaryMode", "player2FixedSecondaries",
+        "selectedMatchupId", "selectedDeploymentPatternId", "selectedTerrainLayoutId", "selectedMissionRule", "currentRound",
+        "p1CpGained", "p1CpSpent", "p2CpGained", "p2CpSpent", "p1ScoredPrimaries", "p2ScoredPrimaries", "p1ScoredSecondaries", "p2ScoredSecondaries", "p1TacticalHand", "p2TacticalHand", "p1WentFirst",
+        "plannedMatchId", "plannedChallengeId"
+      ];
+      whKeys.forEach((k) => localStorage.removeItem(`fumble_forge_40k_${k}`));
+
+      localStorage.setItem("fumble_forge_40k_step", JSON.stringify("setup"));
+      localStorage.setItem("fumble_forge_40k_player1Name", JSON.stringify(match.player1_name));
+      localStorage.setItem("fumble_forge_40k_player2Name", JSON.stringify(match.player2_name));
+      localStorage.setItem("fumble_forge_40k_plannedMatchId", match.id);
+      localStorage.setItem("fumble_forge_40k_plannedChallengeId", match.challenge_id);
+
+      setActiveTab("score_40k");
     }
   };
 
@@ -387,6 +432,43 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* GEPLANTE SPIELE / DIRECT CHALLENGES */}
+      {plannedMatches.length > 0 && (
+        <div className="bg-neutral-900 border border-amber-600/30 p-5 rounded-2xl space-y-4 shadow-xl">
+          <h3 className="text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+            <Swords size={16} className="text-amber-500" /> Geplante Herausforderungen ({plannedMatches.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {plannedMatches.map((match) => (
+              <div key={match.id} className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex flex-col justify-between gap-3 text-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-extrabold text-neutral-200 text-sm">
+                      {match.system === "aos" ? "Age of Sigmar (AoS)" : "Warhammer 40k"}
+                    </span>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      Herausforderung
+                    </span>
+                  </div>
+                  <div className="text-neutral-400 font-bold">
+                    {match.player1_name} vs {match.player2_name}
+                  </div>
+                  <p className="text-[10px] text-neutral-500 mt-1 italic">
+                    Angenommen • Bereit zum Starten
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleStartPlannedMatch(match)}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Swords size={14} /> Partie starten ➔
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
