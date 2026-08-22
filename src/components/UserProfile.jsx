@@ -201,7 +201,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
       const { data: matchData } = await supabase
         .from("matches")
         .select("*")
-        .eq("user_id", user.id)
+        .or(`user_id.eq.${user.id},opponent_id.eq.${user.id}`)
         .order("created_at", { ascending: false });
 
       if (matchData) {
@@ -739,7 +739,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
       <div className="space-y-4 pt-4 border-t border-neutral-800">
         <h3 className="text-sm font-bold text-neutral-300 uppercase tracking-wider flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Trophy size={16} className="text-amber-500" /> Gespeicherte Matches ({matches.length})
+            <Trophy size={16} className="text-amber-500" /> Gespeicherte Matches ({matches.length > 5 ? `Letzte 5 von ${matches.length}` : matches.length})
           </span>
         </h3>
 
@@ -749,7 +749,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
           </div>
         ) : (
           <div className="space-y-3">
-            {matches.map((m) => {
+            {matches.slice(0, 5).map((m) => {
               const rounds = m.details?.tournament_rounds || [];
               return (
                 <div
