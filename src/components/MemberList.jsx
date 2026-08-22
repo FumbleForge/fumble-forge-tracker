@@ -274,7 +274,9 @@ export default function MemberList() {
                       Armeen / Fraktionen:
                     </span>
                     <span className="text-neutral-300 font-medium">
-                      {member.armies || "Keine angegeben"}
+                      {member.armies 
+                        ? member.armies.split(",").map(a => a.trim() === "-" ? "Ogor Mawtribes" : a.trim()).join(", ") 
+                        : "Keine angegeben"}
                     </span>
                   </div>
                 </div>

@@ -16,6 +16,7 @@ import {
   Award,
   Trash2,
   X,
+  Eye,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -411,11 +412,10 @@ const FACTION_GROUPS = {
       "Zoggrok's Ironmongerz",
     ],
     "Ogor Mawtribes": [
-      "Beast Handlers", 
-      "Blackpowder Fanatics",
-      "Heralds of the Everwinter",
-      "Prophets of the Gulping God",
-      "The Roving Maw",
+      "Hunger-Filled Tribe", 
+      "Vanguard of the Mawpath",
+      "Hinterland Hunters",
+      "Maw-Cult Fanatics",
     ],
     "Sons of Behemat": [
       "Boss Tribe", 
@@ -470,6 +470,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
 
   // State für die Sicherheitsabfrage zum Abbrechen/Löschen des Spiels
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showLiveStatsModal, setShowLiveStatsModal] = useState(false);
 
   const [players, setPlayers] = useState(() => loadSavedState("players", {
     player1: {
@@ -881,6 +882,47 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       setSaving(false);
     }
   };
+
+  const calculateAosPlayerStats = (playerKey) => {
+    const p = players[playerKey];
+    const activeBp = TERRAIN_BATTLEPLANS.find((b) => b.id === selectedBattleplanId);
+
+    let finalPrimaryVp = 0;
+    const roundPrimaryVp = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    for (let r = 1; r <= 5; r++) {
+      const scoredRuleIds = p.scoredRulesByRound[r] || [];
+      let roundPri = 0;
+      scoredRuleIds.forEach((ruleId) => {
+        const rule = activeBp?.scoringRules.find((sr) => sr.id === ruleId);
+        if (rule) {
+          roundPri += rule.vp;
+        }
+      });
+      roundPrimaryVp[r] = roundPri;
+      finalPrimaryVp += roundPri;
+    }
+
+    let finalSecondaryVp = p.completedStepKeys.length * 5;
+
+    const roundSecondaryVp = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    turnHistory.forEach((h) => {
+      if (h.playerKey === playerKey && h.action && h.action.includes("Battle Tactic erfüllt")) {
+        roundSecondaryVp[h.round] = (roundSecondaryVp[h.round] || 0) + 5;
+      }
+    });
+
+    return {
+      finalPrimaryVp,
+      finalSecondaryVp,
+      grandTotalVp: p.vp,
+      roundPrimaryVp,
+      roundSecondaryVp,
+    };
+  };
+
+  const p1Stats = calculateAosPlayerStats("player1");
+  const p2Stats = calculateAosPlayerStats("player2");
 
   const resetMatch = () => {
     localStorage.removeItem("fumble_forge_aos_setupStep");
@@ -1312,16 +1354,16 @@ export default function AosScoreTracker({ currentUser, onClose }) {
             <X size={20} />
           </button>
         )}
-        <div className="bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-amber-500/50 rounded-2xl p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
+        <div className="bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-amber-500/50 rounded-2xl p-6 text-center space-y-5 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-amber-500 shadow-[0_0_15px_#f59e0b]"></div>
 
           <Trophy size={48} className="mx-auto text-amber-400 animate-bounce" />
 
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              {matchTitle} {matchMode === "tournament" ? `• Spiel ${currentTournamentMatchIndex} von ${totalTournamentRounds}` : ""} • Ergebnis
+              Age of Sigmar • Match Complete
             </span>
-            <h1 className="text-3xl font-black text-amber-400 uppercase tracking-wider">
+            <h1 className="text-3xl font-black text-amber-400 uppercase tracking-wider mt-1">
               {isTie ? "Unentschieden!" : `${winnerName} Siegt!`}
             </h1>
             {!isTie && (
@@ -1331,39 +1373,57 @@ export default function AosScoreTracker({ currentUser, onClose }) {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto bg-neutral-950/80 border border-neutral-800 p-4 rounded-xl">
-            <div className="border-r border-neutral-800 pr-2">
-              <div className="text-sm font-bold text-neutral-200">
-                {p1.name}
-              </div>
-              <div className="text-xs text-neutral-500">{p1.faction}</div>
-              <div className="text-4xl font-black text-amber-500 mt-1">
-                {p1.vp}{" "}
-                <span className="text-xs text-neutral-500 font-normal">VP</span>
-              </div>
+          {/* Scoreboard Übersichtstabelle */}
+          <div className="bg-neutral-950 rounded-xl border border-neutral-800 divide-y divide-neutral-800/80 text-xs text-left max-w-lg mx-auto">
+            <div className="grid grid-cols-3 p-3 font-bold text-neutral-400 uppercase text-[10px]">
+              <span>Kategorie</span>
+              <span className="text-center text-sky-400 font-bold">{p1.name}</span>
+              <span className="text-center text-red-400 font-bold">{p2.name}</span>
             </div>
-            <div className="pl-2">
-              <div className="text-sm font-bold text-neutral-200">
-                {p2.name}
-              </div>
-              <div className="text-xs text-neutral-500">{p2.faction}</div>
-              <div className="text-4xl font-black text-amber-500 mt-1">
-                {p2.vp}{" "}
-                <span className="text-xs text-neutral-500 font-normal">VP</span>
-              </div>
+            <div className="grid grid-cols-3 p-3 items-center">
+              <span className="font-medium text-neutral-300">Primary (Objectives)</span>
+              <span className="text-center font-mono font-bold text-white">{p1Stats.finalPrimaryVp}</span>
+              <span className="text-center font-mono font-bold text-white">{p2Stats.finalPrimaryVp}</span>
+            </div>
+            <div className="grid grid-cols-3 p-3 items-center">
+              <span className="font-medium text-neutral-300">Secondary (Battle Tactics)</span>
+              <span className="text-center font-mono font-bold text-white">{p1Stats.finalSecondaryVp}</span>
+              <span className="text-center font-mono font-bold text-white">{p2Stats.finalSecondaryVp}</span>
+            </div>
+            <div className="grid grid-cols-3 p-3 items-center bg-neutral-900/80 font-bold border-t-2 border-amber-500/40">
+              <span className="text-amber-500 uppercase">GESAMT</span>
+              <span className="text-center font-mono text-lg font-black text-amber-400">{p1Stats.grandTotalVp} VP</span>
+              <span className="text-center font-mono text-lg font-black text-amber-400">{p2Stats.grandTotalVp} VP</span>
             </div>
           </div>
 
-          <div className="text-xs text-neutral-400 flex justify-center gap-4">
-            <span>
-              Battleplan:{" "}
-              <strong className="text-amber-400">{activeBp?.name}</strong>
-            </span>
+          {/* Runden-Tabelle */}
+          <div className="space-y-2 text-left max-w-lg mx-auto">
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider block">Scoring by Battle Round (Primary / Secondary)</span>
+            <div className="bg-neutral-950 border border-neutral-800 rounded-xl divide-y divide-neutral-800/80 text-xs font-mono">
+              {[1, 2, 3, 4, 5].map(r => {
+                const p1RoundTotal = (p1Stats.roundPrimaryVp[r] || 0) + (p1Stats.roundSecondaryVp[r] || 0);
+                const p2RoundTotal = (p2Stats.roundPrimaryVp[r] || 0) + (p2Stats.roundSecondaryVp[r] || 0);
+
+                return (
+                  <div key={r} className="p-2.5 flex justify-between items-center">
+                    <span className="text-neutral-500">Battle Round {r}</span>
+                    <div className="flex gap-4">
+                      <span className="text-sky-400 font-bold">{p1RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p1Stats.roundPrimaryVp[r] || 0}P/{p1Stats.roundSecondaryVp[r] || 0}S)</span></span>
+                      <span className="text-neutral-600">vs</span>
+                      <span className="text-red-400 font-bold">{p2RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p2Stats.roundPrimaryVp[r] || 0}P/{p2Stats.roundSecondaryVp[r] || 0}S)</span></span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Matchup Details Footer */}
+          <div className="text-xs text-neutral-400 flex justify-center gap-4 flex-wrap pt-2 border-t border-neutral-800">
+            <span>Battleplan: <strong className="text-amber-400">{activeBp?.name}</strong></span>
             <span>•</span>
-            <span>
-              Gespielte Runden:{" "}
-              <strong className="text-amber-400">{currentRound} / 5</strong>
-            </span>
+            <span>Gespielte Runden: <strong className="text-amber-400">{currentRound} / 5</strong></span>
           </div>
         </div>
 
@@ -1450,6 +1510,16 @@ export default function AosScoreTracker({ currentUser, onClose }) {
         </div>
 
         <div className="flex items-center gap-3">
+          <span className="text-xl font-black text-amber-500 font-mono">
+            {p1Stats.grandTotalVp} - {p2Stats.grandTotalVp}
+          </span>
+          <button
+            onClick={() => setShowLiveStatsModal(true)}
+            className="p-2 rounded-lg bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-amber-400 hover:text-amber-300 transition cursor-pointer"
+            title="Live Scoreboard anzeigen"
+          >
+            <Eye size={20} />
+          </button>
           <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 px-5 py-2 rounded-xl">
             {currentRound > 1 && (
               <button
@@ -1904,6 +1974,81 @@ export default function AosScoreTracker({ currentUser, onClose }) {
           </div>
         )}
       </div>
+
+      {/* POPUP: LIVE SCORE STATS (AUGE-ICON 👁️) */}
+      {showLiveStatsModal && (
+        <div 
+          onClick={() => setShowLiveStatsModal(false)}
+          className="fixed inset-0 bg-neutral-950/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()} 
+            className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl cursor-default"
+          >
+            <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
+              <h3 className="text-base font-black text-neutral-100 uppercase tracking-wider flex items-center gap-2">
+                <Trophy size={18} className="text-amber-500" /> Match Scoreboard
+              </h3>
+              <button onClick={() => setShowLiveStatsModal(false)} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="bg-neutral-950 rounded-xl border border-neutral-800 divide-y divide-neutral-800/80 text-xs">
+              <div className="grid grid-cols-3 p-3 font-bold text-neutral-400 uppercase text-[10px]">
+                <span>Kategorie</span>
+                <span className="text-center text-sky-400 font-bold">{players.player1.name}</span>
+                <span className="text-center text-red-400 font-bold">{players.player2.name}</span>
+              </div>
+              <div className="grid grid-cols-3 p-3 items-center">
+                <span className="font-medium text-neutral-300">Primary (Objectives)</span>
+                <span className="text-center font-mono font-bold text-white">{p1Stats.finalPrimaryVp}</span>
+                <span className="text-center font-mono font-bold text-white">{p2Stats.finalPrimaryVp}</span>
+              </div>
+              <div className="grid grid-cols-3 p-3 items-center">
+                <span className="font-medium text-neutral-300">Secondary (Battle Tactics)</span>
+                <span className="text-center font-mono font-bold text-white">{p1Stats.finalSecondaryVp}</span>
+                <span className="text-center font-mono font-bold text-white">{p2Stats.finalSecondaryVp}</span>
+              </div>
+              <div className="grid grid-cols-3 p-3 items-center bg-neutral-900/80 font-bold border-t-2 border-amber-500/40">
+                <span className="text-amber-500 uppercase">GESAMT</span>
+                <span className="text-center font-mono text-base font-black text-amber-400">{p1Stats.grandTotalVp} VP</span>
+                <span className="text-center font-mono text-base font-black text-amber-400">{p2Stats.grandTotalVp} VP</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-neutral-400 uppercase">Scoring by Round (Primary / Secondary)</span>
+              <div className="bg-neutral-950 border border-neutral-800 rounded-xl divide-y divide-neutral-800/80 text-xs font-mono text-left">
+                {[1, 2, 3, 4, 5].map(r => {
+                  const p1RoundTotal = (p1Stats.roundPrimaryVp[r] || 0) + (p1Stats.roundSecondaryVp[r] || 0);
+                  const p2RoundTotal = (p2Stats.roundPrimaryVp[r] || 0) + (p2Stats.roundSecondaryVp[r] || 0);
+
+                  return (
+                    <div key={r} className={`p-2.5 flex justify-between items-center ${currentRound === r ? 'bg-amber-500/10' : ''}`}>
+                      <span className={`${currentRound === r ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>
+                        Battle Round {r} {currentRound === r ? '●' : ''}
+                      </span>
+                      <div className="flex gap-4">
+                        <span className="text-sky-400 font-bold">{p1RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p1Stats.roundPrimaryVp[r] || 0}P/{p1Stats.roundSecondaryVp[r] || 0}S)</span></span>
+                        <span className="text-neutral-600">vs</span>
+                        <span className="text-red-400 font-bold">{p2RoundTotal} VP <span className="text-[9px] text-neutral-500 font-normal">({p2Stats.roundPrimaryVp[r] || 0}P/{p2Stats.roundSecondaryVp[r] || 0}S)</span></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowLiveStatsModal(false)}
+              className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2024,8 +2024,8 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
               </div>
               <div className="grid grid-cols-3 p-3 items-center bg-neutral-900/80 font-bold border-t-2 border-amber-500/40">
                 <span className="text-amber-500 uppercase">GESAMT (Max 100)</span>
-                <span className="text-center font-mono text-base font-black text-amber-400">{p1Stats?.grandTotalVp || 0}</span>
-                <span className="text-center font-mono text-base font-black text-amber-400">{p2Stats?.grandTotalVp || 0}</span>
+                <span className="text-center font-mono text-base font-black text-amber-400">{p1Stats?.grandTotalVp || 0} VP</span>
+                <span className="text-center font-mono text-base font-black text-amber-400">{p2Stats?.grandTotalVp || 0} VP</span>
               </div>
             </div>
 

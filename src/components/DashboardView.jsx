@@ -1,6 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Swords, Flame, Users, ArrowRight, Calendar, BarChart3, User, ShieldCheck, Globe } from "lucide-react";
+import {
+  Swords,
+  Flame,
+  ArrowRight,
+  Globe,
+  Trophy,
+  Award,
+  Shield,
+  MapPin,
+  Wrench,
+  Magnet,
+  Calendar,
+  Clock,
+  User,
+  Users,
+} from "lucide-react";
 import { supabase } from "../supabaseClient";
+
+const BADGE_ICONS = {
+  blood_and_honor: { icon: Award, title: "Blut & Ehre", desc: "Trage dein allererstes Match im Score Tracker ein." },
+  club_veteran: { icon: Trophy, title: "Veteran des Clubs", desc: "Trage insgesamt 5 Matches über den Tracker ein." },
+  winning_streak: { icon: Flame, title: "Aufstieg der Legende", desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge." },
+  tournament_winner: { icon: Shield, title: "Der Hausmeister", desc: "Gewinne ein über den internen Turnier-Modus erstelltes Turnier." },
+  draw_master: { icon: MapPin, title: "Unbeugsam", desc: "Erziele ein Unentschieden in einem getrackten Match." },
+  machinist: { icon: Wrench, title: "Der Maschinist", desc: "Vom Admin verliehen: Aktive Bereitstellung von gedrucktem Club-Gelände." },
+  master_of_magnets: { icon: Magnet, title: "Master of Magnets", desc: "Vom Admin verliehen: Vorbildlich magnetisierte modulare Ruinen." },
+  on_tour: { icon: Calendar, title: "On Tour", desc: "Bestätige deine Teilnahme an einem externen Event (z.B. Raccoon Rumble)." },
+  stammtisch: { icon: Users, title: "Fumble Forged Stammtisch", desc: "Logge dich an 5 verschiedenen Tagen im Club-Portal ein." },
+  early_bird: { icon: Clock, title: "Frühe Vögel", desc: "Zusage zu einem Event direkt nach Ankündigung." },
+  face_of_the_club: { icon: User, title: "Gesicht des Clubs", desc: "Lade ein eigens Profilbild im Mitglieder-Profil hoch." },
+};
 
 export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
   const isAdmin = user?.role === "admin" || user?.email === "namebereitsvergeben@gmail.com";
@@ -8,6 +37,8 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
   const [recentClubMatches, setRecentClubMatches] = useState([]);
   const [activeAosGame, setActiveAosGame] = useState(null);
   const [active40kGame, setActive40kGame] = useState(null);
+  const [myBadges, setMyBadges] = useState([]);
+  const [activeTooltip, setActiveTooltip] = useState(null);
 
   useEffect(() => {
     // Check AoS game
@@ -79,6 +110,25 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
       profiles?.forEach((p) => {
         profileMap[p.id] = p.username || p.name || "Commander";
       });
+
+      const myProfile = profiles?.find((p) => p.id === user.id);
+      if (myProfile) {
+        const parseArrayField = (field) => {
+          if (Array.isArray(field)) return field;
+          if (typeof field === "string") {
+            try {
+              const parsed = JSON.parse(field);
+              if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+              return [];
+            }
+          }
+          return [];
+        };
+        const unlocked = parseArrayField(myProfile.unlocked_badges);
+        const custom = parseArrayField(myProfile.custom_badges);
+        setMyBadges(Array.from(new Set([...unlocked, ...custom])));
+      }
 
       if (matches) {
         const feedItems = matches.slice(0, 5).map((m) => {
@@ -262,6 +312,57 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
         </div>
       </div>
 
+      {/* VERDIENTE TROPHÄEN / BADGES */}
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-2xl space-y-3.5 shadow-xl">
+        <h3 className="text-xs font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+          <Trophy size={14} className="text-amber-500" /> Verdiente Trophäen & Abzeichen ({myBadges.length})
+        </h3>
+        {myBadges.length === 0 ? (
+          <p className="text-xs text-neutral-500 italic">
+            Noch keine Trophäen verdient. Trage deine ersten Spiele ein, lade ein Profilbild hoch oder nimm an Club-Events teil!
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2.5">
+            {myBadges.map((badgeId) => {
+              const badgeInfo = BADGE_ICONS[badgeId];
+              if (!badgeInfo) return null;
+              const IconComp = badgeInfo.icon;
+              const title = badgeInfo.title;
+              const desc = badgeInfo.desc;
+              const tooltipKey = `dashboard-${badgeId}`;
+
+              return (
+                <div
+                  key={badgeId}
+                  className="relative group cursor-pointer"
+                  onMouseEnter={() => setActiveTooltip(tooltipKey)}
+                  onMouseLeave={() => setActiveTooltip(null)}
+                  onClick={() => setActiveTooltip(activeTooltip === tooltipKey ? null : tooltipKey)}
+                >
+                  <div className="w-11 h-11 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center shadow-lg hover:bg-amber-500/20 hover:border-amber-400 transition transform hover:-translate-y-0.5">
+                    <IconComp size={20} />
+                  </div>
+
+                  {activeTooltip === tooltipKey && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 p-3 bg-neutral-950 border border-amber-500/60 text-neutral-100 rounded-xl shadow-2xl w-56 z-50 text-left">
+                      <div className="text-xs font-black text-amber-400 flex items-center gap-1.5 mb-1">
+                        <IconComp size={12} /> {title}
+                      </div>
+                      <p className="text-[10px] text-neutral-300 leading-normal font-medium">
+                        {desc}
+                      </p>
+                      <div className="text-[8px] uppercase tracking-wider font-bold text-emerald-400 mt-1.5">
+                        Freigeschaltet ✓
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* ZWEI SPALTEN: LIVE-FEED & EVENTS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
@@ -307,70 +408,6 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
 
         {/* SPALTE 3: Quick Links */}
         <div className="space-y-6">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
-            <h3 className="text-sm font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">
-              <Trophy size={16} className="text-amber-500" /> Schnellzugriff
-            </h3>
-            <div className="space-y-2 text-xs">
-              <button
-                onClick={() => setActiveTab("events")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar size={14} className="text-amber-500" /> Turniere und Events
-                </span>
-                <ArrowRight size={14} className="text-neutral-500" />
-              </button>
-              <button
-                onClick={() => setActiveTab("hof")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Trophy size={14} className="text-amber-500" /> Hall of Fame
-                </span>
-                <ArrowRight size={14} className="text-neutral-500" />
-              </button>
-              <button
-                onClick={() => setActiveTab("meta")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <BarChart3 size={14} className="text-amber-500" /> Club-Meta
-                </span>
-                <ArrowRight size={14} className="text-neutral-500" />
-              </button>
-              <button
-                onClick={() => setActiveTab("members")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Users size={14} className="text-amber-500" /> Club-Mitglieder
-                </span>
-                <ArrowRight size={14} className="text-neutral-500" />
-              </button>
-              <button
-                onClick={() => setActiveTab("profile")}
-                className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <User size={14} className="text-amber-500" /> Profil
-                </span>
-                <ArrowRight size={14} className="text-neutral-500" />
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("admin")}
-                  className="w-full text-left bg-neutral-950 hover:bg-neutral-800/60 p-2.5 rounded-xl text-neutral-300 font-bold transition flex items-center justify-between border border-neutral-800 cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <ShieldCheck size={14} className="text-amber-500" /> Admin-Panel
-                  </span>
-                  <ArrowRight size={14} className="text-neutral-500" />
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Fumble Forged Netzwerk */}
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
             <h3 className="text-sm font-extrabold text-neutral-300 uppercase tracking-wider flex items-center gap-2 border-b border-neutral-800 pb-3">

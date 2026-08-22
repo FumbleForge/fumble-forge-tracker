@@ -77,7 +77,8 @@ export default function ClubMeta() {
       const userArmies = rawArmies.split(",").map((a) => a.trim());
       userArmies.forEach((army) => {
         if (army) {
-          factionCounts[army] = (factionCounts[army] || 0) + 1;
+          const mappedArmy = (army === "-" && selectedSystem === "Age of Sigmar") ? "Ogor Mawtribes" : army;
+          factionCounts[mappedArmy] = (factionCounts[mappedArmy] || 0) + 1;
         }
       });
     }
@@ -96,13 +97,15 @@ export default function ClubMeta() {
   const matchupMatrix = {}; 
 
   const recordMatchup = (f1, f2, winnerName, p1Name, p2Name) => {
-    if (!f1 || !f2) return;
+    const mappedF1 = (f1 === "-" && selectedSystem === "Age of Sigmar") ? "Ogor Mawtribes" : f1;
+    const mappedF2 = (f2 === "-" && selectedSystem === "Age of Sigmar") ? "Ogor Mawtribes" : f2;
+    if (!mappedF1 || !mappedF2) return;
     
-    if (!factionStats[f1]) factionStats[f1] = { wins: 0, games: 0 };
-    if (!factionStats[f2]) factionStats[f2] = { wins: 0, games: 0 };
+    if (!factionStats[mappedF1]) factionStats[mappedF1] = { wins: 0, games: 0 };
+    if (!factionStats[mappedF2]) factionStats[mappedF2] = { wins: 0, games: 0 };
     
-    factionStats[f1].games++;
-    factionStats[f2].games++;
+    factionStats[mappedF1].games++;
+    factionStats[mappedF2].games++;
 
     const p1Won = winnerName && winnerName !== "Unentschieden" && (winnerName.includes(p1Name) || winnerName === p1Name);
     const p2Won = winnerName && winnerName !== "Unentschieden" && (winnerName.includes(p2Name) || winnerName === p2Name);
