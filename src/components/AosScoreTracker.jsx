@@ -508,6 +508,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   const [activeTurnPlayer, setActiveTurnPlayer] = useState(() => loadSavedState("activeTurnPlayer", "player1"));
   const [lastTurnPlayerInPrevRound, setLastTurnPlayerInPrevRound] = useState(() => loadSavedState("lastTurnPlayer", "player2"));
   const [showRoundModal, setShowRoundModal] = useState(false);
+  const [showFirstTurnModal, setShowFirstTurnModal] = useState(false);
   const [turnHistory, setTurnHistory] = useState(() => loadSavedState("turnHistory", []));
   const [roundHistory, setRoundHistory] = useState(() => loadSavedState("roundHistory", []));
 
@@ -1599,12 +1600,61 @@ export default function AosScoreTracker({ currentUser, onClose }) {
           </div>
 
           <button
-            onClick={() => setSetupStep("playing")}
+            onClick={() => setShowFirstTurnModal(true)}
             className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-extrabold py-3.5 rounded-xl uppercase text-sm tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-amber-950/30"
           >
             <Swords size={18} /> Schlacht Jetzt Starten!
           </button>
         </div>
+
+        {showFirstTurnModal && (
+          <div className="fixed inset-0 bg-neutral-950/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-neutral-900 border border-amber-600/50 rounded-2xl p-6 max-w-md w-full space-y-6 shadow-2xl">
+              <div className="text-center space-y-2">
+                <Swords className="mx-auto text-amber-500 animate-bounce" size={40} />
+                <h3 className="text-xl font-black text-amber-500 uppercase tracking-widest">
+                  Wer beginnt die Schlacht?
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  Wähle den Spieler aus, der den ersten Zug in Runde 1 hat.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => {
+                    setActiveTurnPlayer("player1");
+                    setLastTurnPlayerInPrevRound("player2");
+                    setShowFirstTurnModal(false);
+                    setSetupStep("playing");
+                  }}
+                  className="w-full p-4 bg-neutral-950 hover:bg-amber-600 hover:text-neutral-950 border border-neutral-800 hover:border-amber-500 rounded-xl font-black text-neutral-200 transition text-center uppercase tracking-wider text-sm cursor-pointer"
+                >
+                  {players.player1.name || "Spieler 1"}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setActiveTurnPlayer("player2");
+                    setLastTurnPlayerInPrevRound("player1");
+                    setShowFirstTurnModal(false);
+                    setSetupStep("playing");
+                  }}
+                  className="w-full p-4 bg-neutral-950 hover:bg-amber-600 hover:text-neutral-950 border border-neutral-800 hover:border-amber-500 rounded-xl font-black text-neutral-200 transition text-center uppercase tracking-wider text-sm cursor-pointer"
+                >
+                  {players.player2.name || "Spieler 2"}
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowFirstTurnModal(false)}
+                className="w-full text-center text-xs text-neutral-500 hover:text-neutral-400 underline uppercase tracking-widest font-bold transition cursor-pointer"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

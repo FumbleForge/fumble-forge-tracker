@@ -35,7 +35,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [activeChallenges, setActiveChallenges] = useState([]);
 
   useEffect(() => {
@@ -167,7 +167,6 @@ export default function App() {
         if (profile && profile.status === "approved") {
           setUser({ ...session.user, ...profile });
           await fetchAllProfiles();
-          setShowWelcome(true);
         }
       }
 
@@ -213,7 +212,7 @@ export default function App() {
     await supabase.auth.signOut();
     setUser(null);
     setUsers([]);
-    setShowWelcome(true);
+    setShowWelcome(false);
   };
 
   const handleUpdateProfile = (updatedData) => {
