@@ -46,7 +46,7 @@ const BADGE_DEFINITIONS = [
     desc: "Erreiche eine Siegesserie von 3 gewonnenen Spielen in Folge.",
     category: "Schlachtfelder",
     icon: Flame,
-    check: (matches) => {
+    check: (matches, events, username, user) => {
       let currentStreak = 0;
       for (const m of matches) {
         const isTournament = m.details?.match_mode === "tournament_complete";
@@ -55,7 +55,12 @@ const BADGE_DEFINITIONS = [
             const p1Vp = Number(round.p1Vp) || 0;
             const p2Vp = Number(round.p2Vp) || 0;
             const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
-            const isUserWinner = p1Vp > p2Vp;
+            
+            let isPlayer2 = false;
+            if (user?.id && m.opponent_id === user.id) {
+              isPlayer2 = true;
+            }
+            const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
             if (isTie) {
               currentStreak = 0;
@@ -70,7 +75,14 @@ const BADGE_DEFINITIONS = [
           const p1Vp = Number(m.player1_vp) || 0;
           const p2Vp = Number(m.player2_vp) || 0;
           const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
-          const isUserWinner = p1Vp > p2Vp;
+          
+          let isPlayer2 = false;
+          if (user?.id && m.opponent_id === user.id) {
+            isPlayer2 = true;
+          } else if (username && m.player2_name === username) {
+            isPlayer2 = true;
+          }
+          const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
           if (isTie) {
             currentStreak = 0;
@@ -733,7 +745,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
       )}
 
       {/* Commander Statistik Dashboard */}
-      <StatsDashboard matches={flattenedMatches} username={username} />
+      <StatsDashboard matches={flattenedMatches} username={username} userId={user?.id} />
 
       {/* GESPEICHERTE MATCHES */}
       <div className="space-y-4 pt-4 border-t border-neutral-800">

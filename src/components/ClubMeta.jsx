@@ -52,13 +52,16 @@ export default function ClubMeta() {
   // Hilfsfunktion: Bestimmt das Spielsystem eines Matches
   const isMatchForSystem = (m, system) => {
     const details = getMatchDetails(m);
-    const declaredSystem = details.game_system || m.game_system;
+    const declaredSystem = details.game_system || m.game_system || details.system || m.system;
 
     const is40k =
       declaredSystem === "Warhammer 40k" ||
+      declaredSystem === "40k" ||
+      m.system === "40k" ||
       Boolean(details.mission) ||
       Boolean(details.player1_disposition) ||
-      Boolean(details.player1_primary);
+      Boolean(details.player1_primary) ||
+      Boolean(details.p1_primary);
 
     if (system === "Warhammer 40k") {
       return is40k;
@@ -107,21 +110,27 @@ export default function ClubMeta() {
     factionStats[mappedF1].games++;
     factionStats[mappedF2].games++;
 
-    const p1Won = winnerName && winnerName !== "Unentschieden" && (winnerName.includes(p1Name) || winnerName === p1Name);
-    const p2Won = winnerName && winnerName !== "Unentschieden" && (winnerName.includes(p2Name) || winnerName === p2Name);
+    const p1Won = winnerName && winnerName !== "Unentschieden" && (
+      winnerName.toLowerCase().includes(p1Name.toLowerCase().trim()) || 
+      p1Name.toLowerCase().trim().includes(winnerName.toLowerCase().trim())
+    );
+    const p2Won = winnerName && winnerName !== "Unentschieden" && (
+      winnerName.toLowerCase().includes(p2Name.toLowerCase().trim()) || 
+      p2Name.toLowerCase().trim().includes(winnerName.toLowerCase().trim())
+    );
 
-    if (p1Won) factionStats[f1].wins++;
-    if (p2Won) factionStats[f2].wins++;
+    if (p1Won) factionStats[mappedF1].wins++;
+    if (p2Won) factionStats[mappedF2].wins++;
 
-    if (!matchupMatrix[f1]) matchupMatrix[f1] = {};
-    if (!matchupMatrix[f1][f2]) matchupMatrix[f1][f2] = { wins: 0, total: 0 };
-    matchupMatrix[f1][f2].total++;
-    if (p1Won) matchupMatrix[f1][f2].wins++;
+    if (!matchupMatrix[mappedF1]) matchupMatrix[mappedF1] = {};
+    if (!matchupMatrix[mappedF1][mappedF2]) matchupMatrix[mappedF1][mappedF2] = { wins: 0, total: 0 };
+    matchupMatrix[mappedF1][mappedF2].total++;
+    if (p1Won) matchupMatrix[mappedF1][mappedF2].wins++;
 
-    if (!matchupMatrix[f2]) matchupMatrix[f2] = {};
-    if (!matchupMatrix[f2][f1]) matchupMatrix[f2][f1] = { wins: 0, total: 0 };
-    matchupMatrix[f2][f1].total++;
-    if (p2Won) matchupMatrix[f2][f1].wins++;
+    if (!matchupMatrix[mappedF2]) matchupMatrix[mappedF2] = {};
+    if (!matchupMatrix[mappedF2][mappedF1]) matchupMatrix[mappedF2][mappedF1] = { wins: 0, total: 0 };
+    matchupMatrix[mappedF2][mappedF1].total++;
+    if (p2Won) matchupMatrix[mappedF2][mappedF1].wins++;
   };
 
   filteredMatches.forEach((m) => {
@@ -150,8 +159,8 @@ export default function ClubMeta() {
         scenarioCounts[scenario] = (scenarioCounts[scenario] || 0) + 1;
       }
       recordMatchup(
-        details.player1_faction,
-        details.player2_faction,
+        details.player1_faction || details.p1_faction,
+        details.player2_faction || details.p2_faction,
         m.winner_name,
         m.player1_name,
         m.player2_name

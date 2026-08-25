@@ -8,7 +8,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-export default function StatsDashboard({ matches, username }) {
+export default function StatsDashboard({ matches, username, userId }) {
   if (!matches || matches.length === 0) return null;
 
   const [timeFilter, setTimeFilter] = useState("all");
@@ -32,7 +32,15 @@ export default function StatsDashboard({ matches, username }) {
     const p1Vp = Number(m.player1_vp) || 0;
     const p2Vp = Number(m.player2_vp) || 0;
     const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
-    const isWin = p1Vp > p2Vp;
+
+    let isPlayer2 = false;
+    if (userId && m.opponent_id === userId) {
+      isPlayer2 = true;
+    } else if (username && m.player2_name === username) {
+      isPlayer2 = true;
+    }
+
+    const isWin = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
     return { isTie, isWin };
   };
@@ -82,7 +90,16 @@ export default function StatsDashboard({ matches, username }) {
 
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
   const avgVP = Math.round(
-    matches.reduce((acc, m) => acc + (Number(m.player1_vp) || 0), 0) / totalGames
+    matches.reduce((acc, m) => {
+      let isPlayer2 = false;
+      if (userId && m.opponent_id === userId) {
+        isPlayer2 = true;
+      } else if (username && m.player2_name === username) {
+        isPlayer2 = true;
+      }
+      const userVp = isPlayer2 ? (Number(m.player2_vp) || 0) : (Number(m.player1_vp) || 0);
+      return acc + userVp;
+    }, 0) / totalGames
   );
 
   const now = new Date();

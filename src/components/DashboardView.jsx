@@ -273,7 +273,7 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
         );
 
         sortedMatches.forEach((m) => {
-          const isUserMatch = m.user_id === user.id;
+          const isUserMatch = m.user_id === user.id || m.opponent_id === user.id;
           if (!isUserMatch) return;
 
           const isTournament = m.details?.match_mode === "tournament_complete";
@@ -284,7 +284,9 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
               const p1Vp = Number(round.p1Vp) || 0;
               const p2Vp = Number(round.p2Vp) || 0;
               const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
-              const isUserWinner = p1Vp > p2Vp;
+              
+              let isPlayer2 = m.opponent_id === user.id;
+              const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
               if (isTie) {
                 currentStreak = 0;
@@ -303,7 +305,9 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             const p1Vp = Number(m.player1_vp) || 0;
             const p2Vp = Number(m.player2_vp) || 0;
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
-            const isUserWinner = p1Vp > p2Vp;
+
+            let isPlayer2 = m.opponent_id === user.id;
+            const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
             if (isTie) {
               currentStreak = 0;

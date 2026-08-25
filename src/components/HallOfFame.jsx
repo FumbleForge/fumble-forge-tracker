@@ -87,33 +87,68 @@ export default function HallOfFame({ activeChallenges }) {
               }
             });
           } else {
-            statsMap[userId].gamesPlayed++;
             const p1Vp = Number(m.player1_vp) || 0;
             const p2Vp = Number(m.player2_vp) || 0;
-            statsMap[userId].totalVp += p1Vp;
-
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
-            const isUserWinner = p1Vp > p2Vp;
 
-            if (isTie) {
-              statsMap[userId].draws++;
-              statsMap[userId].currentStreak = 0;
-              statsMap[userId].streakType = null;
-            } else if (isUserWinner) {
-              statsMap[userId].wins++;
-              if (statsMap[userId].streakType === "win") {
-                statsMap[userId].currentStreak++;
+            // Update Player 1 (user_id)
+            if (statsMap[userId]) {
+              statsMap[userId].gamesPlayed++;
+              statsMap[userId].totalVp += p1Vp;
+
+              const isP1Winner = p1Vp > p2Vp;
+
+              if (isTie) {
+                statsMap[userId].draws++;
+                statsMap[userId].currentStreak = 0;
+                statsMap[userId].streakType = null;
+              } else if (isP1Winner) {
+                statsMap[userId].wins++;
+                if (statsMap[userId].streakType === "win") {
+                  statsMap[userId].currentStreak++;
+                } else {
+                  statsMap[userId].streakType = "win";
+                  statsMap[userId].currentStreak = 1;
+                }
               } else {
-                statsMap[userId].streakType = "win";
-                statsMap[userId].currentStreak = 1;
+                statsMap[userId].losses++;
+                if (statsMap[userId].streakType === "loss") {
+                  statsMap[userId].currentStreak++;
+                } else {
+                  statsMap[userId].streakType = "loss";
+                  statsMap[userId].currentStreak = 1;
+                }
               }
-            } else {
-              statsMap[userId].losses++;
-              if (statsMap[userId].streakType === "loss") {
-                statsMap[userId].currentStreak++;
+            }
+
+            // Update Player 2 (opponent_id) if registered user
+            const oppId = m.opponent_id;
+            if (oppId && statsMap[oppId]) {
+              statsMap[oppId].gamesPlayed++;
+              statsMap[oppId].totalVp += p2Vp;
+
+              const isP2Winner = p2Vp > p1Vp;
+
+              if (isTie) {
+                statsMap[oppId].draws++;
+                statsMap[oppId].currentStreak = 0;
+                statsMap[oppId].streakType = null;
+              } else if (isP2Winner) {
+                statsMap[oppId].wins++;
+                if (statsMap[oppId].streakType === "win") {
+                  statsMap[oppId].currentStreak++;
+                } else {
+                  statsMap[oppId].streakType = "win";
+                  statsMap[oppId].currentStreak = 1;
+                }
               } else {
-                statsMap[userId].streakType = "loss";
-                statsMap[userId].currentStreak = 1;
+                statsMap[oppId].losses++;
+                if (statsMap[oppId].streakType === "loss") {
+                  statsMap[oppId].currentStreak++;
+                } else {
+                  statsMap[oppId].streakType = "loss";
+                  statsMap[oppId].currentStreak = 1;
+                }
               }
             }
           }
