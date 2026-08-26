@@ -344,6 +344,32 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
       ];
       aosKeys.forEach((k) => localStorage.removeItem(`fumble_forge_aos_${k}`));
 
+      const initialPlayers = {
+        player1: {
+          name: match.player1_name,
+          faction: "Daughters of Khaine",
+          formation: "Slaughter Troupe",
+          vp: 0,
+          cp: 4,
+          completedStepKeys: [],
+          currentSelectedStepKey: "",
+          isUnderdog: false,
+          scoredRulesByRound: {},
+        },
+        player2: {
+          name: match.player2_name,
+          faction: "Kruleboyz",
+          formation: "Grinning Blades",
+          vp: 0,
+          cp: 4,
+          completedStepKeys: [],
+          currentSelectedStepKey: "",
+          isUnderdog: false,
+          scoredRulesByRound: {},
+        },
+      };
+
+      localStorage.setItem("fumble_forge_aos_players", JSON.stringify(initialPlayers));
       localStorage.setItem("fumble_forge_aos_setupStep", JSON.stringify("roster"));
       localStorage.setItem("fumble_forge_aos_matchTitle", JSON.stringify(`Herausforderung: ${match.player1_name} vs ${match.player2_name}`));
       localStorage.setItem("fumble_forge_aos_plannedMatchId", match.id);

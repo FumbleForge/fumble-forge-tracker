@@ -212,7 +212,7 @@ export default function App() {
     await supabase.auth.signOut();
     setUser(null);
     setUsers([]);
-    setShowWelcome(false);
+    setShowWelcome(true);
   };
 
   const handleUpdateProfile = (updatedData) => {
