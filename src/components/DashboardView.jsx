@@ -135,7 +135,8 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
           .select("*")
           .eq("user_id", user.id);
 
-        const myMatches = matches?.filter((m) => m.user_id === user.id) || [];
+        const myUsername = myProfile?.username || user?.username;
+        const myMatches = matches?.filter((m) => m.status !== "planned" && (m.user_id === user.id || m.opponent_id === user.id)) || [];
 
         // Evaluate calculated badges
         const calculatedBadges = [];
@@ -152,7 +153,9 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
               const p1Vp = Number(round.p1Vp) || 0;
               const p2Vp = Number(round.p2Vp) || 0;
               const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
-              const isUserWinner = p1Vp > p2Vp;
+              
+              let isPlayer2 = m.opponent_id === user.id;
+              const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
               if (isTie) {
                 currentStreak = 0;
@@ -167,7 +170,25 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             const p1Vp = Number(m.player1_vp) || 0;
             const p2Vp = Number(m.player2_vp) || 0;
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
-            const isUserWinner = p1Vp > p2Vp;
+
+            let isPlayer2 = false;
+            if (myUsername) {
+              const p1NameLower = m.player1_name?.toLowerCase().trim();
+              const myUsernameLower = myUsername.toLowerCase().trim();
+              if (p1NameLower === myUsernameLower) {
+                isPlayer2 = false;
+              } else if (m.player2_name?.toLowerCase().trim() === myUsernameLower) {
+                isPlayer2 = true;
+              } else if (m.opponent_id === user.id) {
+                isPlayer2 = true;
+              }
+            } else if (m.opponent_id === user.id) {
+              isPlayer2 = true;
+            }
+
+            const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && myUsername
+              ? m.winner_name.toLowerCase().trim() === myUsername.toLowerCase().trim()
+              : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
 
             if (isTie) {
               currentStreak = 0;
@@ -247,17 +268,36 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
           const playerName = profileMap[m.user_id] || "Club-Mitglied";
           const isTournament = m.details?.match_mode === "tournament_complete";
           
+          let p1Name = m.player1_name || playerName;
+          let p2Name = m.player2_name || "Gegner";
+          let p1Vp = m.player1_vp;
+          let p2Vp = m.player2_vp;
+
+          if (!isTournament && m.opponent_id && m.winner_name && m.winner_name !== "Unentschieden") {
+            const isWinnerP2 = m.winner_name.toLowerCase().trim() === p2Name.toLowerCase().trim();
+            const isWinnerP1 = m.winner_name.toLowerCase().trim() === p1Name.toLowerCase().trim();
+            if ((isWinnerP2 && p2Vp < p1Vp) || (isWinnerP1 && p1Vp < p2Vp)) {
+              const tempName = p1Name;
+              p1Name = p2Name;
+              p2Name = tempName;
+              
+              const tempVp = p1Vp;
+              p1Vp = p2Vp;
+              p2Vp = tempVp;
+            }
+          }
+
           return {
             id: m.id,
             playerName,
             createdAt: m.created_at,
-            title: isTournament ? m.details.match_title : `${m.player1_name || playerName} vs ${m.player2_name || "Gegner"}`,
+            title: isTournament ? m.details.match_title : `${p1Name} vs ${p2Name}`,
             winner: isTournament ? "Turnier beendet" : m.winner_name,
             isTournament,
-            player1_name: m.player1_name || playerName,
-            player2_name: m.player2_name || "Gegner",
-            player1_vp: m.player1_vp,
-            player2_vp: m.player2_vp,
+            player1_name: p1Name,
+            player2_name: p2Name,
+            player1_vp: p1Vp,
+            player2_vp: p2Vp,
             winner_name: m.winner_name,
           };
         });
@@ -306,8 +346,24 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             const p2Vp = Number(m.player2_vp) || 0;
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
 
-            let isPlayer2 = m.opponent_id === user.id;
-            const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
+            let isPlayer2 = false;
+            if (myUsername) {
+              const p1NameLower = m.player1_name?.toLowerCase().trim();
+              const myUsernameLower = myUsername.toLowerCase().trim();
+              if (p1NameLower === myUsernameLower) {
+                isPlayer2 = false;
+              } else if (m.player2_name?.toLowerCase().trim() === myUsernameLower) {
+                isPlayer2 = true;
+              } else if (m.opponent_id === user.id) {
+                isPlayer2 = true;
+              }
+            } else if (m.opponent_id === user.id) {
+              isPlayer2 = true;
+            }
+
+            const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && myUsername
+              ? m.winner_name.toLowerCase().trim() === myUsername.toLowerCase().trim()
+              : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
 
             if (isTie) {
               currentStreak = 0;
@@ -335,18 +391,20 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
   };
 
   const handleStartPlannedMatch = (match) => {
+    const isOpponent = match.opponent_id === user.id || match.player2_name?.toLowerCase().trim() === (user.username || user.name || "").toLowerCase().trim();
+
     if (match.system === "aos") {
       const aosKeys = [
         "setupStep", "matchMode", "matchTitle", "totalRounds", "matchIndex", 
         "tournamentSummary", "battleplanId", "currentRound", "activeTurnPlayer", 
         "lastTurnPlayer", "turnHistory", "players", "roundHistory",
-        "plannedMatchId", "plannedChallengeId"
+        "plannedMatchId", "plannedChallengeId", "plannedMatchIsOpponent", "opponentId"
       ];
       aosKeys.forEach((k) => localStorage.removeItem(`fumble_forge_aos_${k}`));
 
       const initialPlayers = {
         player1: {
-          name: match.player1_name,
+          name: isOpponent ? match.player2_name : match.player1_name,
           faction: "Daughters of Khaine",
           formation: "Slaughter Troupe",
           vp: 0,
@@ -357,7 +415,7 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
           scoredRulesByRound: {},
         },
         player2: {
-          name: match.player2_name,
+          name: isOpponent ? match.player1_name : match.player2_name,
           faction: "Kruleboyz",
           formation: "Grinning Blades",
           vp: 0,
@@ -374,6 +432,8 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
       localStorage.setItem("fumble_forge_aos_matchTitle", JSON.stringify(`Herausforderung: ${match.player1_name} vs ${match.player2_name}`));
       localStorage.setItem("fumble_forge_aos_plannedMatchId", match.id);
       localStorage.setItem("fumble_forge_aos_plannedChallengeId", match.challenge_id);
+      localStorage.setItem("fumble_forge_aos_plannedMatchIsOpponent", JSON.stringify(isOpponent));
+      localStorage.setItem("fumble_forge_aos_opponentId", match.opponent_id || "");
       
       setActiveTab("score");
     } else {
@@ -382,15 +442,17 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
         "player2Name", "player2List", "player2Faction", "player2Disposition", "player2BattleReady", "player2Primary", "player2SecondaryMode", "player2FixedSecondaries",
         "selectedMatchupId", "selectedDeploymentPatternId", "selectedTerrainLayoutId", "selectedMissionRule", "currentRound",
         "p1CpGained", "p1CpSpent", "p2CpGained", "p2CpSpent", "p1ScoredPrimaries", "p2ScoredPrimaries", "p1ScoredSecondaries", "p2ScoredSecondaries", "p1TacticalHand", "p2TacticalHand", "p1WentFirst",
-        "plannedMatchId", "plannedChallengeId"
+        "plannedMatchId", "plannedChallengeId", "plannedMatchIsOpponent", "opponentId"
       ];
       whKeys.forEach((k) => localStorage.removeItem(`fumble_forge_40k_${k}`));
 
       localStorage.setItem("fumble_forge_40k_step", JSON.stringify("setup"));
-      localStorage.setItem("fumble_forge_40k_player1Name", JSON.stringify(match.player1_name));
-      localStorage.setItem("fumble_forge_40k_player2Name", JSON.stringify(match.player2_name));
+      localStorage.setItem("fumble_forge_40k_player1Name", JSON.stringify(isOpponent ? match.player2_name : match.player1_name));
+      localStorage.setItem("fumble_forge_40k_player2Name", JSON.stringify(isOpponent ? match.player1_name : match.player2_name));
       localStorage.setItem("fumble_forge_40k_plannedMatchId", match.id);
       localStorage.setItem("fumble_forge_40k_plannedChallengeId", match.challenge_id);
+      localStorage.setItem("fumble_forge_40k_plannedMatchIsOpponent", JSON.stringify(isOpponent));
+      localStorage.setItem("fumble_forge_40k_opponentId", match.opponent_id || "");
 
       setActiveTab("score_40k");
     }

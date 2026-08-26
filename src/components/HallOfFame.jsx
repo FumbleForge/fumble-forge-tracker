@@ -46,7 +46,8 @@ export default function HallOfFame({ activeChallenges }) {
       });
 
       if (matches) {
-        const sortedMatches = [...matches].sort(
+        const completedMatches = matches.filter((m) => m.status !== "planned");
+        const sortedMatches = completedMatches.sort(
           (a, b) => new Date(a.created_at) - new Date(b.created_at)
         );
 
@@ -91,63 +92,77 @@ export default function HallOfFame({ activeChallenges }) {
             const p2Vp = Number(m.player2_vp) || 0;
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
 
-            // Update Player 1 (user_id)
-            if (statsMap[userId]) {
-              statsMap[userId].gamesPlayed++;
-              statsMap[userId].totalVp += p1Vp;
+            // Resolve Player 1 and Player 2 UUIDs based on names if opponent_id is present
+            let p1UserId = userId;
+            let p2UserId = m.opponent_id;
+
+            if (m.opponent_id) {
+              const p1NameLower = m.player1_name?.toLowerCase().trim();
+              const opponentName = statsMap[m.opponent_id]?.name?.toLowerCase().trim();
+
+              if (p1NameLower && opponentName && p1NameLower === opponentName) {
+                // Swapped!
+                p1UserId = m.opponent_id;
+                p2UserId = userId;
+              }
+            }
+
+            // Update Player 1 (p1UserId)
+            if (p1UserId && statsMap[p1UserId]) {
+              statsMap[p1UserId].gamesPlayed++;
+              statsMap[p1UserId].totalVp += p1Vp;
 
               const isP1Winner = p1Vp > p2Vp;
 
               if (isTie) {
-                statsMap[userId].draws++;
-                statsMap[userId].currentStreak = 0;
-                statsMap[userId].streakType = null;
+                statsMap[p1UserId].draws++;
+                statsMap[p1UserId].currentStreak = 0;
+                statsMap[p1UserId].streakType = null;
               } else if (isP1Winner) {
-                statsMap[userId].wins++;
-                if (statsMap[userId].streakType === "win") {
-                  statsMap[userId].currentStreak++;
+                statsMap[p1UserId].wins++;
+                if (statsMap[p1UserId].streakType === "win") {
+                  statsMap[p1UserId].currentStreak++;
                 } else {
-                  statsMap[userId].streakType = "win";
-                  statsMap[userId].currentStreak = 1;
+                  statsMap[p1UserId].streakType = "win";
+                  statsMap[p1UserId].currentStreak = 1;
                 }
               } else {
-                statsMap[userId].losses++;
-                if (statsMap[userId].streakType === "loss") {
-                  statsMap[userId].currentStreak++;
+                statsMap[p1UserId].losses++;
+                if (statsMap[p1UserId].streakType === "loss") {
+                  statsMap[p1UserId].currentStreak++;
                 } else {
-                  statsMap[userId].streakType = "loss";
-                  statsMap[userId].currentStreak = 1;
+                  statsMap[p1UserId].streakType = "loss";
+                  statsMap[p1UserId].currentStreak = 1;
                 }
               }
             }
 
-            // Update Player 2 (opponent_id) if registered user
-            const oppId = m.opponent_id;
-            if (oppId && statsMap[oppId]) {
-              statsMap[oppId].gamesPlayed++;
-              statsMap[oppId].totalVp += p2Vp;
+            // Update Player 2 (p2UserId) if registered user
+            if (p2UserId && statsMap[p2UserId]) {
+              statsMap[p2UserId].gamesPlayed++;
+              statsMap[p2UserId].totalVp += p2Vp;
 
               const isP2Winner = p2Vp > p1Vp;
 
               if (isTie) {
-                statsMap[oppId].draws++;
-                statsMap[oppId].currentStreak = 0;
-                statsMap[oppId].streakType = null;
+                statsMap[p2UserId].draws++;
+                statsMap[p2UserId].currentStreak = 0;
+                statsMap[p2UserId].streakType = null;
               } else if (isP2Winner) {
-                statsMap[oppId].wins++;
-                if (statsMap[oppId].streakType === "win") {
-                  statsMap[oppId].currentStreak++;
+                statsMap[p2UserId].wins++;
+                if (statsMap[p2UserId].streakType === "win") {
+                  statsMap[p2UserId].currentStreak++;
                 } else {
-                  statsMap[oppId].streakType = "win";
-                  statsMap[oppId].currentStreak = 1;
+                  statsMap[p2UserId].streakType = "win";
+                  statsMap[p2UserId].currentStreak = 1;
                 }
               } else {
-                statsMap[oppId].losses++;
-                if (statsMap[oppId].streakType === "loss") {
-                  statsMap[oppId].currentStreak++;
+                statsMap[p2UserId].losses++;
+                if (statsMap[p2UserId].streakType === "loss") {
+                  statsMap[p2UserId].currentStreak++;
                 } else {
-                  statsMap[oppId].streakType = "loss";
-                  statsMap[oppId].currentStreak = 1;
+                  statsMap[p2UserId].streakType = "loss";
+                  statsMap[p2UserId].currentStreak = 1;
                 }
               }
             }

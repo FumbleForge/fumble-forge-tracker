@@ -77,12 +77,22 @@ const BADGE_DEFINITIONS = [
           const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
           
           let isPlayer2 = false;
-          if (user?.id && m.opponent_id === user.id) {
-            isPlayer2 = true;
-          } else if (username && m.player2_name === username) {
+          if (username) {
+            const p1NameLower = m.player1_name?.toLowerCase().trim();
+            const usernameLower = username.toLowerCase().trim();
+            if (p1NameLower === usernameLower) {
+              isPlayer2 = false;
+            } else if (m.player2_name?.toLowerCase().trim() === usernameLower) {
+              isPlayer2 = true;
+            } else if (user?.id && m.opponent_id === user.id) {
+              isPlayer2 = true;
+            }
+          } else if (user?.id && m.opponent_id === user.id) {
             isPlayer2 = true;
           }
-          const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
+          const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && username
+            ? m.winner_name.toLowerCase().trim() === username.toLowerCase().trim()
+            : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
 
           if (isTie) {
             currentStreak = 0;
@@ -217,10 +227,11 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
         .order("created_at", { ascending: false });
 
       if (matchData) {
-        setMatches(matchData);
+        const completedMatches = matchData.filter((m) => m.status !== "planned");
+        setMatches(completedMatches);
 
         const processed = [];
-        matchData.forEach((m) => {
+        completedMatches.forEach((m) => {
           const isTournament = m.details?.match_mode === "tournament_complete";
           if (isTournament && m.details?.tournament_rounds) {
             m.details.tournament_rounds.forEach((round) => {
@@ -234,7 +245,32 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
               });
             });
           } else {
-            processed.push(m);
+            let p1Name = m.player1_name || username;
+            let p2Name = m.player2_name || "Gegner";
+            let p1Vp = m.player1_vp;
+            let p2Vp = m.player2_vp;
+
+            if (m.opponent_id && m.winner_name && m.winner_name !== "Unentschieden") {
+              const isWinnerP2 = m.winner_name.toLowerCase().trim() === p2Name.toLowerCase().trim();
+              const isWinnerP1 = m.winner_name.toLowerCase().trim() === p1Name.toLowerCase().trim();
+              if ((isWinnerP2 && p2Vp < p1Vp) || (isWinnerP1 && p1Vp < p2Vp)) {
+                const tempName = p1Name;
+                p1Name = p2Name;
+                p2Name = tempName;
+                
+                const tempVp = p1Vp;
+                p1Vp = p2Vp;
+                p2Vp = tempVp;
+              }
+            }
+
+            processed.push({
+              ...m,
+              player1_name: p1Name,
+              player2_name: p2Name,
+              player1_vp: p1Vp,
+              player2_vp: p2Vp,
+            });
           }
         });
         setFlattenedMatches(processed);

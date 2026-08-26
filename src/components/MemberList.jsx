@@ -196,7 +196,7 @@ export default function MemberList({ currentUser }) {
 
       const updatedMembers = await Promise.all(
         profilesData.map(async (member) => {
-          const userMatches = (allMatches || []).filter((m) => m.user_id === member.id);
+          const userMatches = (allMatches || []).filter((m) => m.status !== "planned" && (m.user_id === member.id || m.opponent_id === member.id));
           const userEvents = (allEvents || []).filter((e) => e.user_id === member.id);
           const custom = Array.isArray(member.custom_badges) ? member.custom_badges : [];
           const loginDays = Array.isArray(member.login_days) ? member.login_days : [];
@@ -216,7 +216,9 @@ export default function MemberList({ currentUser }) {
                 const p1Vp = Number(round.p1Vp) || 0;
                 const p2Vp = Number(round.p2Vp) || 0;
                 const isTie = round.winner === "Unentschieden" || p1Vp === p2Vp;
-                const isUserWinner = p1Vp > p2Vp;
+                
+                let isPlayer2 = m.opponent_id === member.id;
+                const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
                 if (isTie) {
                   currentStreak = 0;
@@ -231,7 +233,25 @@ export default function MemberList({ currentUser }) {
               const p1Vp = Number(m.player1_vp) || 0;
               const p2Vp = Number(m.player2_vp) || 0;
               const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
-              const isUserWinner = p1Vp > p2Vp;
+
+              let isPlayer2 = false;
+              if (member.username) {
+                const p1NameLower = m.player1_name?.toLowerCase().trim();
+                const usernameLower = member.username.toLowerCase().trim();
+                if (p1NameLower === usernameLower) {
+                  isPlayer2 = false;
+                } else if (m.player2_name?.toLowerCase().trim() === usernameLower) {
+                  isPlayer2 = true;
+                } else if (m.opponent_id === member.id) {
+                  isPlayer2 = true;
+                }
+              } else if (m.opponent_id === member.id) {
+                isPlayer2 = true;
+              }
+
+              const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && member.username
+                ? m.winner_name.toLowerCase().trim() === member.username.toLowerCase().trim()
+                : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
 
               if (isTie) {
                 currentStreak = 0;

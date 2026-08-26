@@ -822,35 +822,58 @@ export default function AosScoreTracker({ currentUser, onClose }) {
         : "Unentschieden";
 
     try {
+      const plannedMatchId = localStorage.getItem("fumble_forge_aos_plannedMatchId");
+      const isOpponent = JSON.parse(localStorage.getItem("fumble_forge_aos_plannedMatchIsOpponent") || "false");
+      const opponentIdFromLocal = localStorage.getItem("fumble_forge_aos_opponentId") || null;
+
+      let finalOpponentId = opponentIdFromLocal;
+      if (!plannedMatchId && players.player2.name && players.player2.name !== "Opponent" && players.player2.name !== "Gegner") {
+        try {
+          const { data: oppProfile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("username", players.player2.name)
+            .maybeSingle();
+          if (oppProfile) {
+            finalOpponentId = oppProfile.id;
+          }
+        } catch (err) {
+          console.error("Error fetching opponent profile:", err);
+        }
+      }
+
       const matchData = {
         user_id: currentUser.id,
-        player1_name: players.player1.name,
-        player2_name: players.player2.name,
-        player1_vp: players.player1.vp,
-        player2_vp: players.player2.vp,
+        opponent_id: finalOpponentId,
+        player1_name: isOpponent ? players.player2.name : players.player1.name,
+        player2_name: isOpponent ? players.player1.name : players.player2.name,
+        player1_vp: isOpponent ? players.player2.vp : players.player1.vp,
+        player2_vp: isOpponent ? players.player1.vp : players.player2.vp,
         rounds_played: currentRound,
         winner_name: winner,
+        system: "aos",
         details: {
           match_title: matchTitle,
           match_mode: matchMode,
-          player1_faction: players.player1.faction,
-          player2_faction: players.player2.faction,
-          player1_formation: players.player1.formation,
-          player2_formation: players.player2.formation,
+          player1_faction: isOpponent ? players.player2.faction : players.player1.faction,
+          player2_faction: isOpponent ? players.player1.faction : players.player2.faction,
+          player1_formation: isOpponent ? players.player2.formation : players.player1.formation,
+          player2_formation: isOpponent ? players.player1.formation : players.player2.formation,
           battleplan: activeBp?.name,
           history: turnHistory,
         },
       };
 
-      const plannedMatchId = localStorage.getItem("fumble_forge_aos_plannedMatchId");
       let error;
 
       if (plannedMatchId) {
         const { error: updateErr } = await supabase
           .from("matches")
           .update({
-            player1_vp: players.player1.vp,
-            player2_vp: players.player2.vp,
+            player1_name: matchData.player1_name,
+            player2_name: matchData.player2_name,
+            player1_vp: matchData.player1_vp,
+            player2_vp: matchData.player2_vp,
             rounds_played: currentRound,
             winner_name: winner,
             status: "completed",
@@ -1220,6 +1243,8 @@ export default function AosScoreTracker({ currentUser, onClose }) {
     localStorage.removeItem("fumble_forge_aos_roundHistory");
     localStorage.removeItem("fumble_forge_aos_plannedMatchId");
     localStorage.removeItem("fumble_forge_aos_plannedChallengeId");
+    localStorage.removeItem("fumble_forge_aos_plannedMatchIsOpponent");
+    localStorage.removeItem("fumble_forge_aos_opponentId");
 
     setSetupStep("mode_select");
     setCurrentRound(1);

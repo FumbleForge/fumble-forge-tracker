@@ -90,7 +90,7 @@ export default function ClubMeta() {
   const sortedFactions = Object.entries(factionCounts).sort((a, b) => b[1] - a[1]);
 
   // --- SYSTEM-GEFILTERTE MATCHES ---
-  const filteredMatches = matches.filter((m) => isMatchForSystem(m, selectedSystem));
+  const filteredMatches = matches.filter((m) => m.status !== "planned" && isMatchForSystem(m, selectedSystem));
 
   // --- MATCH-STATISTIKEN & WIN-RATES ---
   let totalGamesCount = 0;

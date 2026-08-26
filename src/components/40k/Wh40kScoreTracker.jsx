@@ -1229,35 +1229,58 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
     try {
       const winner = p1Stats.grandTotalVp > p2Stats.grandTotalVp ? player1Name : p2Stats.grandTotalVp > p1Stats.grandTotalVp ? player2Name : "Unentschieden";
       
+      const plannedMatchId = localStorage.getItem("fumble_forge_40k_plannedMatchId");
+      const isOpponent = JSON.parse(localStorage.getItem("fumble_forge_40k_plannedMatchIsOpponent") || "false");
+      const opponentIdFromLocal = localStorage.getItem("fumble_forge_40k_opponentId") || null;
+
+      let finalOpponentId = opponentIdFromLocal;
+      if (!plannedMatchId && player2Name && player2Name !== "Opponent" && player2Name !== "Gegner") {
+        try {
+          const { data: oppProfile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("username", player2Name)
+            .maybeSingle();
+          if (oppProfile) {
+            finalOpponentId = oppProfile.id;
+          }
+        } catch (err) {
+          console.error("Error fetching opponent profile:", err);
+        }
+      }
+
       const matchData = {
         user_id: currentUser.id,
-        player1_name: player1Name,
-        player2_name: player2Name,
-        player1_vp: p1Stats.grandTotalVp,
-        player2_vp: p2Stats.grandTotalVp,
+        opponent_id: finalOpponentId,
+        player1_name: isOpponent ? player2Name : player1Name,
+        player2_name: isOpponent ? player1Name : player2Name,
+        player1_vp: isOpponent ? p2Stats.grandTotalVp : p1Stats.grandTotalVp,
+        player2_vp: isOpponent ? p1Stats.grandTotalVp : p2Stats.grandTotalVp,
         rounds_played: 5,
         winner_name: winner,
+        system: "40k",
         details: {
           system: "Warhammer 40k",
           mission_rule: selectedMissionRule,
-          p1_faction: player1Faction,
-          p2_faction: player2Faction,
-          p1_primary: player1Primary,
-          p2_primary: player2Primary,
+          p1_faction: isOpponent ? player2Faction : player1Faction,
+          p2_faction: isOpponent ? player1Faction : player2Faction,
+          p1_primary: isOpponent ? player2Primary : player1Primary,
+          p2_primary: isOpponent ? player1Primary : player2Primary,
           deployment_pattern: currentDeploymentPattern?.name,
           terrain_layout: currentTerrainLayout?.name
         }
       };
 
-      const plannedMatchId = localStorage.getItem("fumble_forge_40k_plannedMatchId");
       let error;
 
       if (plannedMatchId) {
         const { error: updateErr } = await supabase
           .from("matches")
           .update({
-            player1_vp: p1Stats.grandTotalVp,
-            player2_vp: p2Stats.grandTotalVp,
+            player1_name: matchData.player1_name,
+            player2_name: matchData.player2_name,
+            player1_vp: matchData.player1_vp,
+            player2_vp: matchData.player2_vp,
             rounds_played: 5,
             winner_name: winner,
             status: "completed",
@@ -1338,7 +1361,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       'player2Name', 'player2List', 'player2Faction', 'player2Disposition', 'player2BattleReady', 'player2Primary', 'player2SecondaryMode', 'player2FixedSecondaries',
       'selectedMatchupId', 'selectedDeploymentPatternId', 'selectedTerrainLayoutId', 'selectedMissionRule', 'currentRound',
       'p1CpGained', 'p1CpSpent', 'p2CpGained', 'p2CpSpent', 'p1ScoredPrimaries', 'p2ScoredPrimaries', 'p1ScoredSecondaries', 'p2ScoredSecondaries', 'p1TacticalHand', 'p2TacticalHand', 'p1WentFirst',
-      'plannedMatchId', 'plannedChallengeId'
+      'plannedMatchId', 'plannedChallengeId', 'plannedMatchIsOpponent', 'opponentId'
     ];
     keys.forEach(k => localStorage.removeItem(`fumble_forge_40k_${k}`));
     setP1WentFirst(true);
