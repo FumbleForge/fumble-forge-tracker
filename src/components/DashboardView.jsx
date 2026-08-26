@@ -390,7 +390,20 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
     }
   };
 
-  const handleStartPlannedMatch = (match) => {
+  const handleStartPlannedMatch = async (match) => {
+    // Double check in Supabase if this match has already been completed!
+    const { data: latestMatch, error: checkErr } = await supabase
+      .from("matches")
+      .select("status")
+      .eq("id", match.id)
+      .single();
+
+    if (!checkErr && latestMatch && latestMatch.status === "completed") {
+      alert("Dieses geplante Spiel wurde bereits von deinem Gegner eingetragen und abgeschlossen!");
+      fetchData(); // refresh dashboard
+      return;
+    }
+
     const isOpponent = match.opponent_id === user.id || match.player2_name?.toLowerCase().trim() === (user.username || user.name || "").toLowerCase().trim();
 
     if (match.system === "aos") {

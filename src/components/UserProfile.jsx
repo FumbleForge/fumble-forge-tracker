@@ -19,6 +19,7 @@ import {
   Clock,
   X,
   Swords,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import StatsDashboard from "./StatsDashboard";
@@ -472,6 +473,56 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
     }
   };
 
+  const swapMatchScores = async (match) => {
+    if (window.confirm(`Möchtest du die Punktezuordnung für das Spiel "${match.player1_name} vs ${match.player2_name}" vertauschen? (Dadurch werden Punkte, Fraktionen und Gewinner im System korrigiert)`)) {
+      const p1Vp = Number(match.player1_vp) || 0;
+      const p2Vp = Number(match.player2_vp) || 0;
+      
+      const newP1Vp = p2Vp;
+      const newP2Vp = p1Vp;
+      
+      // Calculate new winner based on swapped scores
+      const newWinnerName = newP1Vp > newP2Vp 
+        ? match.player1_name 
+        : newP2Vp > newP1Vp 
+        ? match.player2_name 
+        : "Unentschieden";
+        
+      const details = match.details || {};
+      const newDetails = {
+        ...details,
+        // Swap factions
+        p1_faction: details.p2_faction || details.player2_faction || null,
+        p2_faction: details.p1_faction || details.player1_faction || null,
+        player1_faction: details.player2_faction || details.p2_faction || null,
+        player2_faction: details.player1_faction || details.p1_faction || null,
+        // Swap primaries
+        p1_primary: details.p2_primary || null,
+        p2_primary: details.p1_primary || null,
+        // Swap formations
+        player1_formation: details.player2_formation || null,
+        player2_formation: details.player1_formation || null,
+      };
+
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          player1_vp: newP1Vp,
+          player2_vp: newP2Vp,
+          winner_name: newWinnerName,
+          details: newDetails
+        })
+        .eq("id", match.id);
+
+      if (!error) {
+        alert("Punktezuordnung erfolgreich korrigiert!");
+        fetchUserData();
+      } else {
+        alert("Fehler beim Korrigieren des Matches: " + error.message);
+      }
+    }
+  };
+
   const evaluateRoundWin = (round) => {
     const p1Vp = Number(round.p1Vp) || 0;
     const p2Vp = Number(round.p2Vp) || 0;
@@ -894,13 +945,22 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => deleteMatch(m.id)}
-                    className="p-2 text-neutral-500 hover:text-red-500 transition self-start cursor-pointer"
-                    title="Match löschen"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex gap-1 self-start">
+                    <button
+                      onClick={() => swapMatchScores(m)}
+                      className="p-2 text-neutral-500 hover:text-amber-500 transition cursor-pointer"
+                      title="Punktezuordnung vertauschen / korrigieren"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                    <button
+                      onClick={() => deleteMatch(m.id)}
+                      className="p-2 text-neutral-500 hover:text-red-500 transition cursor-pointer"
+                      title="Match löschen"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               );
             })}

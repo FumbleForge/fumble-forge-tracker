@@ -867,6 +867,20 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       let error;
 
       if (plannedMatchId) {
+        // Double-check if the planned match has already been completed in the DB
+        const { data: latestMatch, error: checkErr } = await supabase
+          .from("matches")
+          .select("status")
+          .eq("id", plannedMatchId)
+          .single();
+
+        if (!checkErr && latestMatch && latestMatch.status === "completed") {
+          alert("Dieses geplante Spiel wurde bereits in der Zwischenzeit von deinem Gegner eingetragen und abgeschlossen! Das erneute Speichern wurde verhindert, um Duplikate zu vermeiden.");
+          resetMatch();
+          if (onClose) onClose();
+          return;
+        }
+
         const { error: updateErr } = await supabase
           .from("matches")
           .update({
