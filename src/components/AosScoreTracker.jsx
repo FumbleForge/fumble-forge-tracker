@@ -20,7 +20,20 @@ import {
   Share2,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import { toBlob } from "html-to-image";
+import { toPng } from "html-to-image";
+
+// Hilfsfunktion: Konvertiert eine Data URL (Base64) in ein Blob (extrem schnell & speicherschonend via Typed Arrays)
+const dataURLtoBlob = (dataurl) => {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
 
 // DIE 6 BATTLE TACTIC CARDS (GHB 3.0)
 const GHB_30_CARDS = [
@@ -458,7 +471,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
 
       // 2. Warm up Safari/WebKit's rendering engine (fixes the blank/delayed rendering bug)
       try {
-        await toBlob(scorecardRef.current, { 
+        await toPng(scorecardRef.current, { 
           pixelRatio: 1,
           fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
         });
@@ -470,17 +483,18 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // 4. Render the actual high-quality image
-      const blob = await toBlob(scorecardRef.current, {
+      const dataUrl = await toPng(scorecardRef.current, {
         backgroundColor: "#0a0a0a",
         pixelRatio: renderScale,
         cacheBust: true,
         fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
       });
 
-      if (!blob) {
-        throw new Error("Blob generation failed");
+      if (!dataUrl) {
+        throw new Error("Image generation failed");
       }
       
+      const blob = dataURLtoBlob(dataUrl);
       const filename = `scorecard-aos-${players.player1.name}-vs-${players.player2.name}.png`;
       const file = new File([blob], filename, { type: "image/png" });
       const imageUrl = URL.createObjectURL(blob);
