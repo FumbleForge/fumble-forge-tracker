@@ -453,7 +453,20 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       // Use scale 1.5 on mobile/tablet to avoid high memory/crash issues on iOS
       const renderScale = isMobileOrTablet ? 1.5 : 2;
 
-      // Render the scorecard directly using html-to-image
+      // 1. Wait a brief moment for the DOM and loading states to settle
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 2. Warm up Safari/WebKit's rendering engine (fixes the blank/delayed rendering bug)
+      try {
+        await toBlob(scorecardRef.current, { pixelRatio: 1 });
+      } catch (e) {
+        // ignore warmup errors
+      }
+
+      // 3. Wait a tiny bit more
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 4. Render the actual high-quality image
       const blob = await toBlob(scorecardRef.current, {
         backgroundColor: "#0a0a0a",
         pixelRatio: renderScale,
