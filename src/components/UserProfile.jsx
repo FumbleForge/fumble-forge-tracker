@@ -211,6 +211,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
   const [userEvents, setUserEvents] = useState([]);
   const [customBadges, setCustomBadges] = useState([]);
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
+  const [selectedBadge, setSelectedBadge] = useState(user?.selected_badge || "");
   const [loginDays, setLoginDays] = useState([]);
   const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
   
@@ -299,6 +300,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
       if (profileData) {
         if (profileData.custom_badges) setCustomBadges(profileData.custom_badges);
         if (profileData.unlocked_badges) setUnlockedBadgeIds(profileData.unlocked_badges);
+        if (profileData.selected_badge !== undefined) setSelectedBadge(profileData.selected_badge || "");
         if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
         if (profileData.aos_armies) setAosArmies(profileData.aos_armies);
         else if (profileData.armies) setAosArmies(profileData.armies);
@@ -449,6 +451,7 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
         avatar_url: avatarUrl,
         custom_badges: customBadges,
         unlocked_badges: unlockedBadgeIds,
+        selected_badge: selectedBadge,
         updated_at: new Date(),
       };
 
@@ -606,10 +609,17 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
             </label>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-neutral-200">
-              {username || "Mitglied"}
-            </h3>
-            <p className="text-xs text-neutral-500">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-bold text-neutral-200">
+                {username || "Mitglied"}
+              </h3>
+              {selectedBadge && BADGE_DEFINITIONS.find((b) => b.id === selectedBadge) && (
+                <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10.5px] font-black uppercase tracking-wider shadow-sm">
+                  🏆 {BADGE_DEFINITIONS.find((b) => b.id === selectedBadge).title}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-neutral-500 mt-0.5">
               {isAdmin ? "Administrator" : "Fumble Forged Mitglied"}
             </p>
           </div>
@@ -703,6 +713,45 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
           </button>
         </div>
 
+        {unlockedBadges.length > 0 && (
+          <div className="bg-neutral-950 border border-neutral-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-neutral-200 flex items-center gap-1">
+                <Trophy size={14} className="text-amber-500" /> Lieblingstrophäe präsentieren
+              </div>
+              <div className="text-[11px] text-neutral-400">
+                Wähle eine deiner freigeschalteten Trophäen aus, um sie neben deinem Namen in der Hall of Fame, der Mitgliederliste und deinem Profil zu präsentieren.
+              </div>
+            </div>
+            <select
+              value={selectedBadge}
+              onChange={async (e) => {
+                const val = e.target.value;
+                setSelectedBadge(val);
+                try {
+                  const { error } = await supabase
+                    .from("profiles")
+                    .update({ selected_badge: val || null })
+                    .eq("id", user.id);
+                  if (error) throw error;
+                  onUpdateProfile({ ...user, selected_badge: val || null });
+                } catch (err) {
+                  console.error("Fehler beim Speichern der Lieblingstrophäe:", err);
+                  alert("Fehler beim Speichern der Lieblingstrophäe: " + err.message);
+                }
+              }}
+              className="bg-neutral-900 border border-neutral-800 text-neutral-200 text-xs rounded-lg p-2.5 focus:border-amber-500 focus:outline-none min-w-[200px] cursor-pointer"
+            >
+              <option value="">Keine ausgewählt (Standard)</option>
+              {unlockedBadges.map((badge) => (
+                <option key={badge.id} value={badge.id}>
+                  🏆 {badge.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {unlockedBadges.length === 0 ? (
           <div className="text-xs text-neutral-500 italic py-4 text-center">
             Noch keine Abzeichen freigeschaltet. Trage dein erstes Match ein!
@@ -711,12 +760,19 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {unlockedBadges.map((badge) => {
               const IconComponent = badge.icon;
+              const isSelected = selectedBadge === badge.id;
               return (
                 <div
                   key={badge.id}
-                  className="bg-neutral-950 border border-amber-500/40 p-3.5 rounded-xl flex items-start gap-3 shadow-lg shadow-amber-950/20"
+                  className={`bg-neutral-950 border p-3.5 rounded-xl flex items-start gap-3 shadow-lg transition ${
+                    isSelected ? "border-amber-500/80 shadow-amber-950/25" : "border-amber-500/40 shadow-amber-950/20"
+                  }`}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-400 flex items-center justify-center shrink-0">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                    isSelected
+                      ? "bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse"
+                      : "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                  }`}>
                     <IconComponent size={20} />
                   </div>
                   <div className="space-y-0.5">
@@ -724,9 +780,15 @@ export default function UserProfile({ user, onUpdateProfile, onOpenLegal, active
                       <span className="text-xs font-bold text-neutral-100">
                         {badge.title}
                       </span>
-                      <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.2 rounded">
-                        Freigeschaltet
-                      </span>
+                      {isSelected ? (
+                        <span className="text-[9px] uppercase font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/60 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          ★ Präsentiert
+                        </span>
+                      ) : (
+                        <span className="text-[9px] uppercase font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 px-1.5 py-0.5 rounded">
+                          Freigeschaltet
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-neutral-400 leading-snug">
                       {badge.desc}

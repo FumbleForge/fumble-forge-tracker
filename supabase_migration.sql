@@ -101,3 +101,6 @@ CREATE POLICY matches_update_policy ON matches
 DROP POLICY IF EXISTS matches_delete_policy ON matches;
 CREATE POLICY matches_delete_policy ON matches
     FOR DELETE USING (auth.uid() = user_id OR auth.uid() = opponent_id);
+
+-- 7. Add selected_badge column to profiles table to showcase favorite earned trophy
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS selected_badge TEXT;

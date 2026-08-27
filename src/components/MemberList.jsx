@@ -411,6 +411,11 @@ export default function MemberList({ currentUser }) {
                       <p className="text-xs text-amber-500 font-bold flex items-center gap-1 mt-0.5">
                         <Shield size={12} /> {member.club || "Fumble Forged"}
                       </p>
+                      {member.selected_badge && BADGE_ICONS[member.selected_badge] && (
+                        <div className="text-[10px] text-amber-400 font-black uppercase tracking-wider flex items-center gap-1 mt-1.5 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full w-fit shadow-sm">
+                          🏆 {BADGE_ICONS[member.selected_badge].title}
+                        </div>
+                      )}
                     </div>
                   </div>
 

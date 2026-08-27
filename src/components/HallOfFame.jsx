@@ -2,6 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Trophy, Award, Flame, Swords, Medal, Target } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
+const BADGE_NAMES = {
+  blood_and_honor: "Blut & Ehre",
+  club_veteran: "Veteran des Clubs",
+  winning_streak: "Aufstieg der Legende",
+  tournament_winner: "Der Hausmeister",
+  draw_master: "Unbeugsam",
+  machinist: "Der Maschinist",
+  master_of_magnets: "Master of Magnets",
+  on_tour: "On Tour",
+  stammtisch: "Fumble Forged Stammtisch",
+  early_bird: "Frühe Vögel",
+  face_of_the_club: "Gesicht des Clubs",
+};
+
 export default function HallOfFame({ activeChallenges }) {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +49,7 @@ export default function HallOfFame({ activeChallenges }) {
           name: name,
           club: p.club || "Fumble Forge",
           avatar: p.avatar_url,
+          selected_badge: p.selected_badge,
           gamesPlayed: 0,
           wins: 0,
           losses: 0,
@@ -315,7 +330,14 @@ export default function HallOfFame({ activeChallenges }) {
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-100 font-bold">{player.name}</div>
+                      <div className="text-neutral-100 font-bold flex items-center gap-1.5 flex-wrap">
+                        <span>{player.name}</span>
+                        {player.selected_badge && BADGE_NAMES[player.selected_badge] && (
+                          <span className="inline-flex items-center gap-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm">
+                            🏆 {BADGE_NAMES[player.selected_badge]}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-neutral-500">{player.club}</div>
                     </div>
                   </td>
@@ -390,7 +412,14 @@ export default function HallOfFame({ activeChallenges }) {
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-100 font-bold text-sm">{player.name}</div>
+                      <div className="text-neutral-100 font-bold text-sm flex items-center gap-1.5 flex-wrap">
+                        <span>{player.name}</span>
+                        {player.selected_badge && BADGE_NAMES[player.selected_badge] && (
+                          <span className="inline-flex items-center gap-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider shadow-sm">
+                            🏆 {BADGE_NAMES[player.selected_badge]}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-neutral-500">{player.club}</div>
                     </div>
                   </div>
