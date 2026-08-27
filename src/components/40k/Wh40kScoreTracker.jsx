@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Map, Dice5, Eye, ArrowRight, ArrowLeft, Check, X, Shield, Swords, Target, Plus, Minus, Trophy, Save, Trash2, Download, Share2 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 // Hilfsfunktion: Konvertiert eine Data URL (Base64) in ein Blob (extrem schnell & speicherschonend via Typed Arrays)
 const dataURLtoBlob = (dataurl) => {
@@ -577,29 +577,29 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       // 1. Wait a brief moment for the DOM and loading states to settle
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // 2. Warm up Safari/WebKit's rendering engine (fixes the blank/delayed rendering bug)
-      try {
-        await toPng(scorecardRef.current, { 
-          pixelRatio: 1,
-          fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
-        });
-      } catch (e) {
-        // ignore warmup errors
-      }
-
-      // 3. Wait a tiny bit more
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // 4. Render the actual high-quality image
-      const dataUrl = await toPng(scorecardRef.current, {
+      // 2. Render the scorecard using html2canvas with strict mobile scroll & viewport fixes
+      const canvas = await html2canvas(scorecardRef.current, {
         backgroundColor: "#0a0a0a",
-        pixelRatio: renderScale,
-        cacheBust: true,
-        fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
+        scale: renderScale,
+        logging: false,
+        useCORS: false,
+        allowTaint: false,
+        width: scorecardRef.current.offsetWidth,
+        height: scorecardRef.current.offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.clientWidth,
+        windowHeight: document.documentElement.clientHeight,
       });
 
+      if (!canvas) {
+        throw new Error("Canvas generation failed");
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      
       if (!dataUrl) {
-        throw new Error("Image generation failed");
+        throw new Error("Image data extraction failed");
       }
       
       const blob = dataURLtoBlob(dataUrl);
