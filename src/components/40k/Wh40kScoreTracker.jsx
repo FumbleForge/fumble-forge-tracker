@@ -566,7 +566,10 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
 
       // 2. Warm up Safari/WebKit's rendering engine (fixes the blank/delayed rendering bug)
       try {
-        await toBlob(scorecardRef.current, { pixelRatio: 1 });
+        await toBlob(scorecardRef.current, { 
+          pixelRatio: 1,
+          fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
+        });
       } catch (e) {
         // ignore warmup errors
       }
@@ -579,6 +582,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
         backgroundColor: "#0a0a0a",
         pixelRatio: renderScale,
         cacheBust: true,
+        fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
       });
 
       if (!blob) {
