@@ -20,7 +20,7 @@ import {
   Share2,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 
 // Hilfsfunktion: Konvertiert eine Data URL (Base64) in ein Blob (extrem schnell & speicherschonend via Typed Arrays)
 const dataURLtoBlob = (dataurl) => {
@@ -469,29 +469,30 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       // 1. Wait a brief moment for the DOM and loading states to settle
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // 2. Render the scorecard using html2canvas with strict mobile scroll & viewport fixes
-      const canvas = await html2canvas(scorecardRef.current, {
-        backgroundColor: "#0a0a0a",
-        scale: renderScale,
-        logging: false,
-        useCORS: false,
-        allowTaint: false,
-        width: scorecardRef.current.offsetWidth,
-        height: scorecardRef.current.offsetHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: document.documentElement.clientWidth,
-        windowHeight: document.documentElement.clientHeight,
-      });
-
-      if (!canvas) {
-        throw new Error("Canvas generation failed");
+      // 2. Warm up Safari/WebKit's rendering engine (fixes the blank/delayed rendering bug)
+      try {
+        await toPng(scorecardRef.current, { 
+          pixelRatio: 1,
+          fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
+          cacheBust: false, // CRITICAL: Load from local PWA offline cache instantly!
+        });
+      } catch (e) {
+        // ignore warmup errors
       }
 
-      const dataUrl = canvas.toDataURL("image/png");
-      
+      // 3. Wait a tiny bit more
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 4. Render the actual high-quality image
+      const dataUrl = await toPng(scorecardRef.current, {
+        backgroundColor: "#0a0a0a",
+        pixelRatio: renderScale,
+        cacheBust: false, // CRITICAL: Load from local PWA offline cache instantly!
+        fontEmbedCSS: '', // Disable font embedding to prevent Safari from hanging
+      });
+
       if (!dataUrl) {
-        throw new Error("Image data extraction failed");
+        throw new Error("Image generation failed");
       }
       
       const blob = dataURLtoBlob(dataUrl);
