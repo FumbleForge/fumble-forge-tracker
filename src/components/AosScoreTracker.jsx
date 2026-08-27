@@ -502,7 +502,11 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   const [currentTournamentMatchIndex, setCurrentTournamentMatchIndex] = useState(() => loadSavedState("matchIndex", 1));
   const [tournamentResultsSummary, setTournamentResultsSummary] = useState(() => loadSavedState("tournamentSummary", []));
 
-  const [selectedBattleplanId, setSelectedBattleplanId] = useState(() => loadSavedState("battleplanId", TERRAIN_BATTLEPLANS[0].id));
+  const [selectedBattleplanId, setSelectedBattleplanId] = useState(() => {
+    const saved = loadSavedState("battleplanId", TERRAIN_BATTLEPLANS[0].id);
+    const exists = TERRAIN_BATTLEPLANS.some((b) => b.id === saved);
+    return exists ? saved : TERRAIN_BATTLEPLANS[0].id;
+  });
 
   const [currentRound, setCurrentRound] = useState(() => loadSavedState("currentRound", 1));
   const [activeTurnPlayer, setActiveTurnPlayer] = useState(() => loadSavedState("activeTurnPlayer", "player1"));
@@ -521,36 +525,59 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   const [showLiveStatsModal, setShowLiveStatsModal] = useState(false);
   const [shareImageUrl, setShareImageUrl] = useState(null);
 
-  const [players, setPlayers] = useState(() => loadSavedState("players", {
-    player1: {
-      name: defaultPlayer1Name,
-      faction: "Daughters of Khaine",
-      formation: "Slaughter Troupe",
-      chosenCardIds: ["blazing_onslaught", "burning_for_vengeance"],
-      vp: 0,
-      cp: 4,
-      furyLevel: 1,
-      rageDice: 0,
-      completedStepKeys: [],
-      currentSelectedStepKey: "",
-      isUnderdog: false,
-      scoredRulesByRound: {},
-    },
-    player2: {
-      name: defaultPlayer2Name,
-      faction: "Skaven",
-      formation: "Warpcog Enginecluster",
-      chosenCardIds: ["siege_of_ashes", "legend_of_the_parch"],
-      vp: 0,
-      cp: 4,
-      furyLevel: 1,
-      rageDice: 0,
-      completedStepKeys: [],
-      currentSelectedStepKey: "",
-      isUnderdog: false,
-      scoredRulesByRound: {},
-    },
-  }));
+  const [players, setPlayers] = useState(() => {
+    const raw = loadSavedState("players", null);
+    if (!raw) {
+      return {
+        player1: {
+          name: defaultPlayer1Name,
+          faction: "Daughters of Khaine",
+          formation: "Slaughter Troupe",
+          chosenCardIds: ["blazing_onslaught", "burning_for_vengeance"],
+          vp: 0,
+          cp: 4,
+          furyLevel: 1,
+          rageDice: 0,
+          completedStepKeys: [],
+          currentSelectedStepKey: "",
+          isUnderdog: false,
+          scoredRulesByRound: {},
+        },
+        player2: {
+          name: defaultPlayer2Name,
+          faction: "Skaven",
+          formation: "Warpcog Enginecluster",
+          chosenCardIds: ["siege_of_ashes", "legend_of_the_parch"],
+          vp: 0,
+          cp: 4,
+          furyLevel: 1,
+          rageDice: 0,
+          completedStepKeys: [],
+          currentSelectedStepKey: "",
+          isUnderdog: false,
+          scoredRulesByRound: {},
+        },
+      };
+    }
+    const ensurePlayerFields = (p, defaultName, defaultFaction, defaultFormation, defaultCards) => ({
+      name: p.name || defaultName,
+      faction: p.faction || defaultFaction,
+      formation: p.formation || defaultFormation,
+      chosenCardIds: Array.isArray(p.chosenCardIds) ? p.chosenCardIds : defaultCards,
+      vp: typeof p.vp === "number" ? p.vp : 0,
+      cp: typeof p.cp === "number" ? p.cp : 4,
+      furyLevel: typeof p.furyLevel === "number" ? p.furyLevel : 1,
+      rageDice: typeof p.rageDice === "number" ? p.rageDice : 0,
+      completedStepKeys: Array.isArray(p.completedStepKeys) ? p.completedStepKeys : [],
+      currentSelectedStepKey: p.currentSelectedStepKey || "",
+      isUnderdog: !!p.isUnderdog,
+      scoredRulesByRound: p.scoredRulesByRound || {},
+    });
+    return {
+      player1: ensurePlayerFields(raw.player1 || {}, defaultPlayer1Name, "Daughters of Khaine", "Slaughter Troupe", ["blazing_onslaught", "burning_for_vengeance"]),
+      player2: ensurePlayerFields(raw.player2 || {}, defaultPlayer2Name, "Skaven", "Warpcog Enginecluster", ["siege_of_ashes", "legend_of_the_parch"]),
+    };
+  });
 
   useEffect(() => {
     localStorage.setItem("fumble_forge_aos_setupStep", JSON.stringify(setupStep));
@@ -1015,7 +1042,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
       const scoredRuleIds = p.scoredRulesByRound[r] || [];
       let roundPri = 0;
       scoredRuleIds.forEach((ruleId) => {
-        const rule = activeBp?.scoringRules.find((sr) => sr.id === ruleId);
+        const rule = activeBp?.scoringRules?.find((sr) => sr.id === ruleId);
         if (rule) {
           roundPri += rule.vp;
         }
@@ -1622,7 +1649,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
                   Primary Scoring Regeln für diesen Plan:
                 </span>
                 <ul className="space-y-1">
-                  {activeBp.scoringRules.map((rule) => (
+                  {activeBp?.scoringRules?.map((rule) => (
                     <li
                       key={rule.id}
                       className="text-xs text-neutral-300 flex justify-between border-b border-neutral-900 pb-1"
@@ -1988,7 +2015,7 @@ export default function AosScoreTracker({ currentUser, onClose }) {
                   </span>
                 </label>
                 <div className="space-y-1.5">
-                  {currentBpObj?.scoringRules.map((rule) => {
+                  {currentBpObj?.scoringRules?.map((rule) => {
                     const isDone = currentRoundScoredRules.includes(rule.id);
 
                     return (

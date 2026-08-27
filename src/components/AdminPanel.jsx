@@ -1,5 +1,9 @@
-import React, { useState } from "react";
-import { ShieldCheck, Check, X, Trash2, UserCheck, Clock, AlertTriangle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { 
+  ShieldCheck, Check, X, Trash2, UserCheck, Clock, AlertTriangle, 
+  RefreshCw, Edit, Search, Filter, ArrowLeftRight, Calendar, Award 
+} from "lucide-react";
+import { supabase } from "../supabaseClient";
 
 export default function AdminPanel({
   users = [],
@@ -8,7 +12,152 @@ export default function AdminPanel({
   onRejectUser,
   onDeleteUser,
 }) {
+  const [activeTab, setActiveTab] = useState("members"); // "members" | "matches"
   const [userToDelete, setUserToDelete] = useState(null);
+
+  // Match-Verwaltung State
+  const [matches, setMatches] = useState([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [systemFilter, setSystemFilter] = useState("all"); // "all" | "aos" | "wh40k"
+  
+  // Bearbeiten-Modal State
+  const [editingMatch, setEditingMatch] = useState(null);
+  const [editForm, setEditForm] = useState({
+    player1_name: "",
+    player2_name: "",
+    player1_vp: 0,
+    player2_vp: 0,
+    winner_name: "",
+  });
+  useEffect(() => {
+    if (activeTab === "matches") {
+      fetchMatches();
+    }
+  }, [activeTab]);
+
+  const fetchMatches = async () => {
+    setLoadingMatches(true);
+    try {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error) {
+        setMatches(data || []);
+      } else {
+        console.error("Fehler beim Laden der Matches:", error.message);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+
+  const handleDeleteMatch = async (matchId) => {
+    if (window.confirm("Bist du sicher, dass du dieses Match unwiderruflich löschen möchtest? Dies kann nicht rückgängig gemacht werden!")) {
+      const { error } = await supabase
+        .from("matches")
+        .delete()
+        .eq("id", matchId);
+      if (!error) {
+        alert("Match erfolgreich gelöscht!");
+        fetchMatches();
+      } else {
+        alert("Fehler beim Löschen des Matches: " + error.message);
+      }
+    }
+  };
+
+  const handleSwapScores = async (match) => {
+    if (window.confirm(`Möchtest du die Punkte von "${match.player1_name}" und "${match.player2_name}" vertauschen?`)) {
+      const p1Vp = Number(match.player1_vp) || 0;
+      const p2Vp = Number(match.player2_vp) || 0;
+      const newP1Vp = p2Vp;
+      const newP2Vp = p1Vp;
+      const newWinner = newP1Vp > newP2Vp 
+        ? match.player1_name 
+        : newP2Vp > newP1Vp 
+        ? match.player2_name 
+        : "Unentschieden";
+
+      const details = match.details || {};
+      const newDetails = {
+        ...details,
+        p1_faction: details.p2_faction || details.player2_faction || null,
+        p2_faction: details.p1_faction || details.player1_faction || null,
+        player1_faction: details.player2_faction || details.p2_faction || null,
+        player2_faction: details.player1_faction || details.p1_faction || null,
+        p1_primary: details.p2_primary || null,
+        p2_primary: details.p1_primary || null,
+        player1_formation: details.player2_formation || null,
+        player2_formation: details.player1_formation || null,
+      };
+
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          player1_vp: newP1Vp,
+          player2_vp: newP2Vp,
+          winner_name: newWinner,
+          details: newDetails
+        })
+        .eq("id", match.id);
+
+      if (!error) {
+        alert("Punkte erfolgreich getauscht!");
+        fetchMatches();
+      } else {
+        alert("Fehler beim Tauschen: " + error.message);
+      }
+    }
+  };
+
+  const startEditing = (match) => {
+    setEditingMatch(match);
+    setEditForm({
+      player1_name: match.player1_name || "",
+      player2_name: match.player2_name || "",
+      player1_vp: match.player1_vp ?? 0,
+      player2_vp: match.player2_vp ?? 0,
+      winner_name: match.winner_name || "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMatch) return;
+    
+    let calculatedWinner = editForm.winner_name;
+    if (!calculatedWinner || calculatedWinner.trim() === "" || calculatedWinner === "Auto") {
+      const p1Vp = Number(editForm.player1_vp) || 0;
+      const p2Vp = Number(editForm.player2_vp) || 0;
+      calculatedWinner = p1Vp > p2Vp 
+        ? editForm.player1_name 
+        : p2Vp > p1Vp 
+        ? editForm.player2_name 
+        : "Unentschieden";
+    }
+
+    const { error } = await supabase
+      .from("matches")
+      .update({
+        player1_name: editForm.player1_name,
+        player2_name: editForm.player2_name,
+        player1_vp: Number(editForm.player1_vp) || 0,
+        player2_vp: Number(editForm.player2_vp) || 0,
+        winner_name: calculatedWinner,
+      })
+      .eq("id", editingMatch.id);
+
+    if (!error) {
+      alert("Match erfolgreich aktualisiert!");
+      setEditingMatch(null);
+      fetchMatches();
+    } else {
+      alert("Fehler beim Aktualisieren des Matches: " + error.message);
+    }
+  };
 
   // Flexibler gemacht: Prüft E-Mail ODER Admin-Rolle aus der Datenbank
   const isMasterAdmin = 
