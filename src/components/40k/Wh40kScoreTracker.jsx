@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Map, Dice5, Eye, ArrowRight, ArrowLeft, Check, X, Shield, Swords, Target, Plus, Minus, Trophy, Save, Trash2, Download } from 'lucide-react';
+import { Map, Dice5, Eye, ArrowRight, ArrowLeft, Check, X, Shield, Swords, Target, Plus, Minus, Trophy, Save, Trash2, Download, Share2 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import html2canvas from 'html2canvas';
 
@@ -551,47 +551,50 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
   const scorecardRef = useRef(null);
 
   const handleDownloadGraphic = async () => {
-    if (!scorecardRef.current) return;
+    if (!scorecardRef.current || isGeneratingGraphic) return;
+    setIsGeneratingGraphic(true);
     try {
+      const isMobileOrTablet = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+                               window.innerWidth <= 1024;
+      
+      // Use scale 1.5 on mobile/tablet to avoid high memory/crash issues on iOS
+      const renderScale = isMobileOrTablet ? 1.5 : 2;
+
       const canvas = await html2canvas(scorecardRef.current, {
         backgroundColor: "#0a0a0a",
-        scale: 2,
+        scale: renderScale,
         logging: false,
         useCORS: true,
       });
       
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `scorecard-40k-${player1Name}-vs-${player2Name}.png`, { type: "image/png" });
-        
-        if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: "Warhammer 40k Match Scorecard",
-              text: `${player1Name} vs ${player2Name}`,
-            });
-            return;
-          } catch (shareErr) {
-            console.error("Web Share failed, showing modal instead:", shareErr);
-          }
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setIsGeneratingGraphic(false);
+          return;
         }
         
+        const filename = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
+        const file = new File([blob], filename, { type: "image/png" });
         const image = canvas.toDataURL("image/png");
         
-        if (isMobile) {
-          setShareImageUrl(image);
-        } else {
+        setShareFile(file);
+        setShareImageUrl(image);
+
+        if (!isMobileOrTablet) {
           const link = document.createElement("a");
           link.href = image;
-          link.download = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
+          link.download = filename;
           link.click();
+          // Reset states so we don't open the modal on desktop
+          setShareImageUrl(null);
+          setShareFile(null);
         }
+        setIsGeneratingGraphic(false);
       }, "image/png");
     } catch (err) {
       console.error("Fehler beim Herunterladen der Grafik:", err);
+      setIsGeneratingGraphic(false);
     }
   };
 
@@ -644,6 +647,8 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareImageUrl, setShareImageUrl] = useState(null);
+  const [shareFile, setShareFile] = useState(null);
+  const [isGeneratingGraphic, setIsGeneratingGraphic] = useState(false);
 
   // CP Counters
   const [p1CpGained, setP1CpGained] = useState(() => loadSavedState('p1CpGained', 0));
@@ -2229,9 +2234,19 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
           <div className="max-w-xl mx-auto w-full">
             <button
               onClick={handleDownloadGraphic}
-              className="w-full bg-neutral-800 hover:bg-neutral-700 text-white font-bold py-3 px-4 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
+              disabled={isGeneratingGraphic}
+              className={`w-full ${isGeneratingGraphic ? 'bg-neutral-800 text-neutral-400' : 'bg-neutral-800 hover:bg-neutral-700 text-white'} font-bold py-3 px-4 rounded-xl uppercase text-xs tracking-wider flex items-center justify-center gap-2 transition shadow-lg cursor-pointer`}
             >
-              <Download size={18} /> Grafik Herunterladen
+              {isGeneratingGraphic ? (
+                <>
+                  <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-1"></span>
+                  Generiere Grafik...
+                </>
+              ) : (
+                <>
+                  <Download size={18} /> Grafik Herunterladen
+                </>
+              )}
             </button>
           </div>
 
@@ -2333,7 +2348,10 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       {/* POPUP: IMAGE SAVE MODAL FOR MOBILE */}
       {shareImageUrl && (
         <div
-          onClick={() => setShareImageUrl(null)}
+          onClick={() => {
+            setShareImageUrl(null);
+            setShareFile(null);
+          }}
           className="fixed inset-0 bg-neutral-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 z-55 cursor-pointer"
         >
           <div
@@ -2344,7 +2362,10 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
               <h3 className="text-sm font-black text-amber-500 uppercase tracking-wider">
                 Bild speichern / teilen
               </h3>
-              <button onClick={() => setShareImageUrl(null)} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
+              <button onClick={() => {
+                setShareImageUrl(null);
+                setShareFile(null);
+              }} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
                 <X size={18} />
               </button>
             </div>
@@ -2360,9 +2381,31 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
                 className="w-full h-auto object-contain rounded-lg"
               />
             </div>
+
+            {navigator.share && shareFile && (
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.share({
+                      files: [shareFile],
+                      title: "Warhammer 40k Match Scorecard",
+                      text: `${player1Name} vs ${player2Name}`,
+                    });
+                  } catch (shareErr) {
+                    console.error("Sharing failed:", shareErr);
+                  }
+                }}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Share2 size={16} /> Grafik Teilen
+              </button>
+            )}
             
             <button
-              onClick={() => setShareImageUrl(null)}
+              onClick={() => {
+                setShareImageUrl(null);
+                setShareFile(null);
+              }}
               className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
             >
               Schließen
