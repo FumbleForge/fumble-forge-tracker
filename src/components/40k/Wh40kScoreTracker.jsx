@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Map, Dice5, Eye, ArrowRight, ArrowLeft, Check, X, Shield, Swords, Target, Plus, Minus, Trophy, Save, Trash2, Download, Share2 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
-import html2canvas from 'html2canvas';
+import { toBlob } from 'html-to-image';
 
 // Daten-Layer
 import forceDispositionsData from '../../data/40k/force-dispositions.json';
@@ -561,30 +561,16 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       // Use scale 1.5 on mobile/tablet to avoid high memory/crash issues on iOS
       const renderScale = isMobileOrTablet ? 1.5 : 2;
 
-      const canvas = await html2canvas(scorecardRef.current, {
+      // Render the scorecard directly using html-to-image
+      const blob = await toBlob(scorecardRef.current, {
         backgroundColor: "#0a0a0a",
-        scale: renderScale,
-        logging: false,
-        useCORS: false,
-        allowTaint: false,
-        width: scorecardRef.current.offsetWidth,
-        height: scorecardRef.current.offsetHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: document.documentElement.clientWidth,
-        windowHeight: document.documentElement.clientHeight,
+        pixelRatio: renderScale,
+        cacheBust: true,
       });
-      
-      const blob = await new Promise((resolve, reject) => {
-        try {
-          canvas.toBlob((b) => {
-            if (b) resolve(b);
-            else reject(new Error("toBlob failed"));
-          }, "image/png");
-        } catch (e) {
-          reject(e);
-        }
-      });
+
+      if (!blob) {
+        throw new Error("Blob generation failed");
+      }
       
       const filename = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
       const file = new File([blob], filename, { type: "image/png" });
