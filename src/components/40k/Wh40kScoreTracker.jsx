@@ -568,35 +568,50 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
         useCORS: true,
       });
       
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          setIsGeneratingGraphic(false);
-          return;
+      const blob = await new Promise((resolve, reject) => {
+        try {
+          canvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error("toBlob failed"));
+          }, "image/png");
+        } catch (e) {
+          reject(e);
         }
-        
-        const filename = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
-        const file = new File([blob], filename, { type: "image/png" });
-        const image = canvas.toDataURL("image/png");
-        
-        setShareFile(file);
-        setShareImageUrl(image);
+      });
+      
+      const filename = `scorecard-40k-${player1Name}-vs-${player2Name}.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+      const imageUrl = URL.createObjectURL(blob);
+      
+      setShareFile(file);
+      setShareImageUrl(imageUrl);
 
-        if (!isMobileOrTablet) {
-          const link = document.createElement("a");
-          link.href = image;
-          link.download = filename;
-          link.click();
-          // Reset states so we don't open the modal on desktop
-          setShareImageUrl(null);
-          setShareFile(null);
-        }
-        setIsGeneratingGraphic(false);
-      }, "image/png");
+      if (!isMobileOrTablet) {
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.download = filename;
+        link.click();
+        // Reset states so we don't open the modal on desktop
+        setTimeout(() => URL.revokeObjectURL(imageUrl), 100);
+        setShareImageUrl(null);
+        setShareFile(null);
+      }
     } catch (err) {
       console.error("Fehler beim Herunterladen der Grafik:", err);
+      alert("Fehler beim Generieren der Grafik. Bitte versuche es erneut oder mache einen manuellen Screenshot.");
+    } finally {
       setIsGeneratingGraphic(false);
     }
   };
+
+  const handleCloseShareModal = () => {
+    if (shareImageUrl && shareImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(shareImageUrl);
+    }
+    setShareImageUrl(null);
+    setShareFile(null);
+  };
+
 
   const loadSavedState = (key, fallback) => {
     try {
@@ -2348,10 +2363,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       {/* POPUP: IMAGE SAVE MODAL FOR MOBILE */}
       {shareImageUrl && (
         <div
-          onClick={() => {
-            setShareImageUrl(null);
-            setShareFile(null);
-          }}
+          onClick={handleCloseShareModal}
           className="fixed inset-0 bg-neutral-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 z-55 cursor-pointer"
         >
           <div
@@ -2362,10 +2374,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
               <h3 className="text-sm font-black text-amber-500 uppercase tracking-wider">
                 Bild speichern / teilen
               </h3>
-              <button onClick={() => {
-                setShareImageUrl(null);
-                setShareFile(null);
-              }} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
+              <button onClick={handleCloseShareModal} className="text-neutral-400 hover:text-white p-1 cursor-pointer">
                 <X size={18} />
               </button>
             </div>
@@ -2402,10 +2411,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
             )}
             
             <button
-              onClick={() => {
-                setShareImageUrl(null);
-                setShareFile(null);
-              }}
+              onClick={handleCloseShareModal}
               className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
             >
               Schließen
