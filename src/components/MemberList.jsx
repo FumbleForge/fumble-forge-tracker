@@ -235,23 +235,26 @@ export default function MemberList({ currentUser }) {
               const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
 
               let isPlayer2 = false;
-              if (member.username) {
-                const p1NameLower = m.player1_name?.toLowerCase().trim();
-                const usernameLower = member.username.toLowerCase().trim();
-                if (p1NameLower === usernameLower) {
-                  isPlayer2 = false;
-                } else if (m.player2_name?.toLowerCase().trim() === usernameLower) {
-                  isPlayer2 = true;
-                } else if (m.opponent_id === member.id) {
-                  isPlayer2 = true;
+              const myName = member.username || member.name || "";
+              const myNameLower = myName?.toLowerCase().trim();
+              const p1NameLower = m.player1_name?.toLowerCase().trim();
+              const p2NameLower = m.player2_name?.toLowerCase().trim();
+
+              if (myNameLower && p1NameLower === myNameLower) {
+                isPlayer2 = false;
+              } else if (myNameLower && p2NameLower === myNameLower) {
+                isPlayer2 = true;
+              } else if (m.opponent_id && member?.id) {
+                if (member.id === m.opponent_id) {
+                  isPlayer2 = myNameLower && p1NameLower === myNameLower ? false : true;
+                } else if (member.id === m.user_id) {
+                  isPlayer2 = myNameLower && p2NameLower === myNameLower ? true : false;
                 }
-              } else if (m.opponent_id === member.id) {
+              } else if (member?.id && m.opponent_id === member.id) {
                 isPlayer2 = true;
               }
 
-              const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && member.username
-                ? m.winner_name.toLowerCase().trim() === member.username.toLowerCase().trim()
-                : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
+              const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
               if (isTie) {
                 currentStreak = 0;

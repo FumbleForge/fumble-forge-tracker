@@ -34,23 +34,26 @@ export default function StatsDashboard({ matches, username, userId }) {
     const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
 
     let isPlayer2 = false;
-    if (username) {
-      const p1NameLower = m.player1_name?.toLowerCase().trim();
-      const usernameLower = username.toLowerCase().trim();
-      if (p1NameLower === usernameLower) {
-        isPlayer2 = false;
-      } else if (m.player2_name?.toLowerCase().trim() === usernameLower) {
-        isPlayer2 = true;
-      } else if (userId && m.opponent_id === userId) {
-        isPlayer2 = true;
+    const myName = username || "";
+    const myNameLower = myName?.toLowerCase().trim();
+    const p1NameLower = m.player1_name?.toLowerCase().trim();
+    const p2NameLower = m.player2_name?.toLowerCase().trim();
+
+    if (myNameLower && p1NameLower === myNameLower) {
+      isPlayer2 = false;
+    } else if (myNameLower && p2NameLower === myNameLower) {
+      isPlayer2 = true;
+    } else if (m.opponent_id && userId) {
+      if (userId === m.opponent_id) {
+        isPlayer2 = myNameLower && p1NameLower === myNameLower ? false : true;
+      } else if (userId === m.user_id) {
+        isPlayer2 = myNameLower && p2NameLower === myNameLower ? true : false;
       }
     } else if (userId && m.opponent_id === userId) {
       isPlayer2 = true;
     }
 
-    const isWin = m.winner_name && m.winner_name !== "Unentschieden" && username
-      ? m.winner_name.toLowerCase().trim() === username.toLowerCase().trim()
-      : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
+    const isWin = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
     return { isTie, isWin };
   };
@@ -102,19 +105,25 @@ export default function StatsDashboard({ matches, username, userId }) {
   const avgVP = Math.round(
     matches.reduce((acc, m) => {
       let isPlayer2 = false;
-      if (username) {
-        const p1NameLower = m.player1_name?.toLowerCase().trim();
-        const usernameLower = username.toLowerCase().trim();
-        if (p1NameLower === usernameLower) {
-          isPlayer2 = false;
-        } else if (m.player2_name?.toLowerCase().trim() === usernameLower) {
-          isPlayer2 = true;
-        } else if (userId && m.opponent_id === userId) {
-          isPlayer2 = true;
+      const myName = username || "";
+      const myNameLower = myName?.toLowerCase().trim();
+      const p1NameLower = m.player1_name?.toLowerCase().trim();
+      const p2NameLower = m.player2_name?.toLowerCase().trim();
+
+      if (myNameLower && p1NameLower === myNameLower) {
+        isPlayer2 = false;
+      } else if (myNameLower && p2NameLower === myNameLower) {
+        isPlayer2 = true;
+      } else if (m.opponent_id && userId) {
+        if (userId === m.opponent_id) {
+          isPlayer2 = myNameLower && p1NameLower === myNameLower ? false : true;
+        } else if (userId === m.user_id) {
+          isPlayer2 = myNameLower && p2NameLower === myNameLower ? true : false;
         }
       } else if (userId && m.opponent_id === userId) {
         isPlayer2 = true;
       }
+
       const userVp = isPlayer2 ? (Number(m.player2_vp) || 0) : (Number(m.player1_vp) || 0);
       return acc + userVp;
     }, 0) / totalGames

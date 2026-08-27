@@ -173,23 +173,26 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
 
             let isPlayer2 = false;
-            if (myUsername) {
-              const p1NameLower = m.player1_name?.toLowerCase().trim();
-              const myUsernameLower = myUsername.toLowerCase().trim();
-              if (p1NameLower === myUsernameLower) {
-                isPlayer2 = false;
-              } else if (m.player2_name?.toLowerCase().trim() === myUsernameLower) {
-                isPlayer2 = true;
-              } else if (m.opponent_id === user.id) {
-                isPlayer2 = true;
+            const myName = myUsername || user?.username || user?.name;
+            const myNameLower = myName?.toLowerCase().trim();
+            const p1NameLower = m.player1_name?.toLowerCase().trim();
+            const p2NameLower = m.player2_name?.toLowerCase().trim();
+
+            if (myNameLower && p1NameLower === myNameLower) {
+              isPlayer2 = false;
+            } else if (myNameLower && p2NameLower === myNameLower) {
+              isPlayer2 = true;
+            } else if (m.opponent_id && user?.id) {
+              if (user.id === m.opponent_id) {
+                isPlayer2 = myNameLower && p1NameLower === myNameLower ? false : true;
+              } else if (user.id === m.user_id) {
+                isPlayer2 = myNameLower && p2NameLower === myNameLower ? true : false;
               }
-            } else if (m.opponent_id === user.id) {
+            } else if (user?.id && m.opponent_id === user.id) {
               isPlayer2 = true;
             }
 
-            const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && myUsername
-              ? m.winner_name.toLowerCase().trim() === myUsername.toLowerCase().trim()
-              : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
+            const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
             if (isTie) {
               currentStreak = 0;
@@ -348,23 +351,26 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
             const isTie = m.winner_name === "Unentschieden" || p1Vp === p2Vp;
 
             let isPlayer2 = false;
-            if (myUsername) {
-              const p1NameLower = m.player1_name?.toLowerCase().trim();
-              const myUsernameLower = myUsername.toLowerCase().trim();
-              if (p1NameLower === myUsernameLower) {
-                isPlayer2 = false;
-              } else if (m.player2_name?.toLowerCase().trim() === myUsernameLower) {
-                isPlayer2 = true;
-              } else if (m.opponent_id === user.id) {
-                isPlayer2 = true;
+            const myName = myUsername || user?.username || user?.name;
+            const myNameLower = myName?.toLowerCase().trim();
+            const p1NameLower = m.player1_name?.toLowerCase().trim();
+            const p2NameLower = m.player2_name?.toLowerCase().trim();
+
+            if (myNameLower && p1NameLower === myNameLower) {
+              isPlayer2 = false;
+            } else if (myNameLower && p2NameLower === myNameLower) {
+              isPlayer2 = true;
+            } else if (m.opponent_id && user?.id) {
+              if (user.id === m.opponent_id) {
+                isPlayer2 = myNameLower && p1NameLower === myNameLower ? false : true;
+              } else if (user.id === m.user_id) {
+                isPlayer2 = myNameLower && p2NameLower === myNameLower ? true : false;
               }
-            } else if (m.opponent_id === user.id) {
+            } else if (user?.id && m.opponent_id === user.id) {
               isPlayer2 = true;
             }
 
-            const isUserWinner = m.winner_name && m.winner_name !== "Unentschieden" && myUsername
-              ? m.winner_name.toLowerCase().trim() === myUsername.toLowerCase().trim()
-              : (isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp);
+            const isUserWinner = isPlayer2 ? p2Vp > p1Vp : p1Vp > p2Vp;
 
             if (isTie) {
               currentStreak = 0;
