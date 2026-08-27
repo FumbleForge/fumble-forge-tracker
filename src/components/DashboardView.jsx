@@ -113,6 +113,8 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
       });
 
       const myProfile = profiles?.find((p) => p.id === user.id);
+      const myUsername = myProfile?.username || user?.username;
+
       if (myProfile) {
         const parseArrayField = (field) => {
           if (Array.isArray(field)) return field;
@@ -135,7 +137,6 @@ export default function DashboardView({ user, setActiveTab, onOpenLegal }) {
           .select("*")
           .eq("user_id", user.id);
 
-        const myUsername = myProfile?.username || user?.username;
         const myMatches = matches?.filter((m) => m.status !== "planned" && (m.user_id === user.id || m.opponent_id === user.id)) || [];
 
         // Evaluate calculated badges
