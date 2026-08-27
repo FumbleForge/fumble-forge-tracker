@@ -565,7 +565,14 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
         backgroundColor: "#0a0a0a",
         scale: renderScale,
         logging: false,
-        useCORS: true,
+        useCORS: false,
+        allowTaint: false,
+        width: scorecardRef.current.offsetWidth,
+        height: scorecardRef.current.offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.clientWidth,
+        windowHeight: document.documentElement.clientHeight,
       });
       
       const blob = await new Promise((resolve, reject) => {
