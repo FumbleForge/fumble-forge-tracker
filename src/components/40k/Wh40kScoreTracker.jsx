@@ -1089,11 +1089,11 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
     return roundVp;
   };
 
-  const renderTabletopScorecard = () => {
+  const renderTabletopScorecard = (attachRef = false) => {
     const isTie = p1Stats.grandTotalVp === p2Stats.grandTotalVp;
     
     return (
-      <div ref={scorecardRef} className="bg-neutral-950 border border-neutral-800 rounded-3xl p-5 md:p-6 text-left shadow-2xl relative select-none w-full max-w-xl mx-auto space-y-6">
+      <div ref={attachRef ? scorecardRef : null} className="bg-neutral-950 border border-neutral-800 rounded-3xl p-5 md:p-6 text-left shadow-2xl relative select-none w-full max-w-xl mx-auto space-y-6">
         {/* Header Section */}
         <div className="space-y-4">
           <div className="flex justify-between text-[11px] text-neutral-500 font-mono font-bold uppercase tracking-wider">
@@ -2268,7 +2268,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
       {/* --- BILDSCHIRM 10: SIEGER- & SUMMARY-SCREEN (SCOREBOARD MATRIX & TROPHÄE) --- */}
       {step === 'summary' && (
         <div className="space-y-6">
-          {renderTabletopScorecard()}
+          {renderTabletopScorecard(true)}
 
           <div className="max-w-xl mx-auto w-full">
             <button
@@ -2319,7 +2319,7 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
             onClick={(e) => e.stopPropagation()} 
             className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-2 space-y-4 shadow-2xl cursor-default"
           >
-            {renderTabletopScorecard()}
+            {renderTabletopScorecard(false)}
             <div className="px-4 pb-4">
               <button
                 onClick={() => setShowLiveStatsModal(false)}
