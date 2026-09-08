@@ -1050,6 +1050,79 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
   const p1Stats = calculatePlayerStats('player1');
   const p2Stats = calculatePlayerStats('player2');
 
+  useEffect(() => {
+    localStorage.setItem("fumble_forge_40k_p1_total_vp", JSON.stringify(p1Stats.grandTotalVp));
+    localStorage.setItem("fumble_forge_40k_p2_total_vp", JSON.stringify(p2Stats.grandTotalVp));
+  }, [p1Stats.grandTotalVp, p2Stats.grandTotalVp]);
+
+  const broadcastChannelRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const channel = supabase.channel(`live-score-${currentUser.id}`, {
+      config: { broadcast: { ack: false, self: true } }
+    });
+
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        broadcastChannelRef.current = channel;
+        channel.send({
+          type: "broadcast",
+          event: "score-update",
+          payload: {
+            system: "40k",
+            p1Name: player1Name,
+            p2Name: player2Name,
+            p1Faction: player1Faction,
+            p2Faction: player2Faction,
+            p1Vp: p1Stats.grandTotalVp,
+            p2Vp: p2Stats.grandTotalVp,
+            round: currentRound,
+            mission: selectedMissionRule ? "Rule: " + selectedMissionRule : "Missions-Szenario",
+            active: step === "live_tracker",
+          }
+        });
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+      broadcastChannelRef.current = null;
+    };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: "broadcast",
+        event: "score-update",
+        payload: {
+          system: "40k",
+          p1Name: player1Name,
+          p2Name: player2Name,
+          p1Faction: player1Faction,
+          p2Faction: player2Faction,
+          p1Vp: p1Stats.grandTotalVp,
+          p2Vp: p2Stats.grandTotalVp,
+          round: currentRound,
+          mission: selectedMissionRule ? "Rule: " + selectedMissionRule : "Missions-Szenario",
+          active: step === "live_tracker",
+        }
+      });
+    }
+  }, [
+    p1Stats.grandTotalVp,
+    p2Stats.grandTotalVp,
+    player1Name,
+    player2Name,
+    player1Faction,
+    player2Faction,
+    currentRound,
+    selectedMissionRule,
+    step
+  ]);
+
   const getScoredSecondariesForPlayer = (playerKey) => {
     const scoredSecMap = playerKey === 'player1' ? p1ScoredSecondaries : p2ScoredSecondaries;
     const isFixed = (playerKey === 'player1' ? player1SecondaryMode : player2SecondaryMode) === 'fixed';
@@ -2321,7 +2394,18 @@ export default function Wh40kScoreTracker({ currentUser, onClose }) {
             className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-2 space-y-4 shadow-2xl cursor-default"
           >
             {renderTabletopScorecard(false)}
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 space-y-2">
+              <button
+                onClick={() => {
+                  const userIdParam = currentUser?.id ? `&user_id=${currentUser.id}` : "";
+                  const url = `${window.location.origin}${window.location.pathname}?overlay=40k${userIdParam}`;
+                  navigator.clipboard.writeText(url);
+                  alert("OBS Browser Source Link kopiert:\n" + url + "\n\nFüge diesen Link als 'Browser-Quelle' (Browser Source) in OBS ein (Breite: 1920, Höhe: 1080).");
+                }}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg"
+              >
+                <Share2 size={14} /> OBS Overlay-Link kopieren
+              </button>
               <button
                 onClick={() => setShowLiveStatsModal(false)}
                 className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"

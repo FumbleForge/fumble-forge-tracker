@@ -29,8 +29,14 @@ import EventsView from "./components/EventsView";
 import ClubMeta from "./components/ClubMeta";
 import LegalModal from "./components/LegalModal";
 import ChallengeModal from "./components/ChallengeModal";
+import StreamOverlay from "./components/StreamOverlay";
 
 export default function App() {
+  const isOverlay = window.location.search.includes("overlay=");
+  if (isOverlay) {
+    return <StreamOverlay />;
+  }
+
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);

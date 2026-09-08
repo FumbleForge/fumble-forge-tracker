@@ -1314,6 +1314,76 @@ export default function AosScoreTracker({ currentUser, onClose }) {
   const p1Stats = calculateAosPlayerStats("player1");
   const p2Stats = calculateAosPlayerStats("player2");
 
+  useEffect(() => {
+    localStorage.setItem("fumble_forge_aos_p1_total_vp", JSON.stringify(p1Stats.grandTotalVp));
+    localStorage.setItem("fumble_forge_aos_p2_total_vp", JSON.stringify(p2Stats.grandTotalVp));
+  }, [p1Stats.grandTotalVp, p2Stats.grandTotalVp]);
+
+  const broadcastChannelRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const channel = supabase.channel(`live-score-${currentUser.id}`, {
+      config: { broadcast: { ack: false, self: true } }
+    });
+
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        broadcastChannelRef.current = channel;
+        channel.send({
+          type: "broadcast",
+          event: "score-update",
+          payload: {
+            system: "aos",
+            p1Name: players.player1?.name || "Player 1",
+            p2Name: players.player2?.name || "Player 2",
+            p1Faction: players.player1?.faction || "AoS Faktion",
+            p2Faction: players.player2?.faction || "AoS Faktion",
+            p1Vp: p1Stats.grandTotalVp,
+            p2Vp: p2Stats.grandTotalVp,
+            round: currentRound + 1,
+            mission: selectedBattleplanId || "Battleplan",
+            active: setupStep === "playing",
+          }
+        });
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+      broadcastChannelRef.current = null;
+    };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: "broadcast",
+        event: "score-update",
+        payload: {
+          system: "aos",
+          p1Name: players.player1?.name || "Player 1",
+          p2Name: players.player2?.name || "Player 2",
+          p1Faction: players.player1?.faction || "AoS Faktion",
+          p2Faction: players.player2?.faction || "AoS Faktion",
+          p1Vp: p1Stats.grandTotalVp,
+          p2Vp: p2Stats.grandTotalVp,
+          round: currentRound + 1,
+          mission: selectedBattleplanId || "Battleplan",
+          active: setupStep === "playing",
+        }
+      });
+    }
+  }, [
+    p1Stats.grandTotalVp,
+    p2Stats.grandTotalVp,
+    players,
+    currentRound,
+    selectedBattleplanId,
+    setupStep
+  ]);
+
   const resetMatch = () => {
     localStorage.removeItem("fumble_forge_aos_setupStep");
     localStorage.removeItem("fumble_forge_aos_matchMode");
@@ -2397,7 +2467,18 @@ export default function AosScoreTracker({ currentUser, onClose }) {
             className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-xl w-full p-2 space-y-4 shadow-2xl cursor-default"
           >
             {renderAosTabletopScorecard(false)}
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 space-y-2">
+              <button
+                onClick={() => {
+                  const userIdParam = currentUser?.id ? `&user_id=${currentUser.id}` : "";
+                  const url = `${window.location.origin}${window.location.pathname}?overlay=aos${userIdParam}`;
+                  navigator.clipboard.writeText(url);
+                  alert("OBS Browser Source Link kopiert:\n" + url + "\n\nFüge diesen Link als 'Browser-Quelle' (Browser Source) in OBS ein (Breite: 1920, Höhe: 1080).");
+                }}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-neutral-950 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg"
+              >
+                <Share2 size={14} /> OBS Overlay-Link kopieren
+              </button>
               <button
                 onClick={() => setShowLiveStatsModal(false)}
                 className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer"
