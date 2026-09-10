@@ -609,7 +609,7 @@ function ArmyOverlay({ player }) {
           <div className="md:col-span-4 flex flex-col gap-4 justify-between">{renderList("Regimenter", regiment)}{renderList("Gelände", terrain)}</div>
           <div className="md:col-span-4 flex justify-center items-center relative min-h-[220px] bg-neutral-900/20 border border-neutral-900 rounded-xl p-3">
             {imageUrl ? (
-              <img src={imageUrl} alt="Miniatur" className="w-full h-full max-h-[220px] object-contain rounded-lg drop-shadow" onError={(e) => { e.target.style.display = 'none'; }} />
+              <img src={imageUrl} alt="Miniatur" className="w-full h-full max-h-[220px] object-contain rounded-lg drop-shadow" />
             ) : (
               <div className="flex flex-col items-center gap-2 text-neutral-850">
                 <svg className="w-20 h-20 text-neutral-800" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="50" cy="50" r="40" strokeDasharray="3 3" /><path d="M30 70 L70 30" /><path d="M70 70 L30 30" /></svg>
