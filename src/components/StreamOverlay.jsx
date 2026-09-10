@@ -195,8 +195,8 @@ export default function StreamOverlay() {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 400;
+        const MAX_WIDTH = 650;
+        const MAX_HEIGHT = 650;
         let width = img.width;
         let height = img.height;
 
@@ -547,7 +547,7 @@ export default function StreamOverlay() {
             </div>
 
             {player?.army?.imageUrl && (
-              <div className="mt-2 mb-2 h-[120px] bg-neutral-900/40 border border-neutral-850/50 rounded-xl overflow-hidden p-1.5 flex items-center justify-center relative shadow-inner">
+              <div className="mt-2 mb-2 h-[180px] bg-neutral-900/40 border border-neutral-850/50 rounded-xl overflow-hidden p-1.5 flex items-center justify-center relative shadow-inner">
                 <img 
                   src={player.army.imageUrl} 
                   alt="Miniature" 
