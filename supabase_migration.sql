@@ -104,3 +104,40 @@ CREATE POLICY matches_delete_policy ON matches
 
 -- 7. Add selected_badge column to profiles table to showcase favorite earned trophy
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS selected_badge TEXT;
+
+-- 8. Create stream_overlays table for persistent real-time stream overlays
+CREATE TABLE IF NOT EXISTS stream_overlays (
+    id TEXT PRIMARY KEY,
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for stream_overlays
+ALTER TABLE stream_overlays ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to stream_overlays (so anyone/OBS can view them)
+DROP POLICY IF EXISTS "Allow public read access to stream_overlays" ON stream_overlays;
+CREATE POLICY "Allow public read access to stream_overlays" ON stream_overlays
+    FOR SELECT USING (true);
+
+-- Allow authenticated users to perform all operations
+DROP POLICY IF EXISTS "Allow authenticated write access to stream_overlays" ON stream_overlays;
+CREATE POLICY "Allow authenticated write access to stream_overlays" ON stream_overlays
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- Enable Realtime for stream_overlays table
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime'
+    ) THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_publication_tables 
+            WHERE pubname = 'supabase_realtime' 
+              AND schemaname = 'public' 
+              AND tablename = 'stream_overlays'
+        ) THEN
+            ALTER PUBLICATION supabase_realtime ADD TABLE stream_overlays;
+        END IF;
+    END IF;
+END $$;
