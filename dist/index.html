@@ -8,6 +8,24 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="icon" href="/logo.png" type="image/png" />
+    
+    <!-- Global native debugger to display top-level crashes directly in the browser -->
+    <script>
+      window.addEventListener('error', function(e) {
+        var msg = e.message + '\nFile: ' + e.filename + '\nLine: ' + e.lineno + ':' + e.colno;
+        if (e.error && e.error.stack) {
+          msg += '\n\nStack:\n' + e.error.stack;
+        }
+        alert("⚠️ GLOBALER BROWSER-FEHLER:\n\n" + msg);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var msg = 'Promise Rejection: ' + e.reason;
+        if (e.reason && e.reason.stack) {
+          msg += '\n\nStack:\n' + e.reason.stack;
+        }
+        alert("⚠️ UNBEHANDELTER PROMISE-FEHLER:\n\n" + msg);
+      });
+    </script>
     <script type="module" crossorigin src="/assets/index-CtIeoCEi.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-C5QSYKe5.css">
   </head>
