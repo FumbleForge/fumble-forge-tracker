@@ -552,7 +552,6 @@ export default function StreamOverlay() {
                   src={player.army.imageUrl} 
                   alt="Miniature" 
                   className="w-full h-full object-contain rounded-lg drop-shadow" 
-                  onError={(e) => { e.target.style.display = 'none'; }} 
                 />
               </div>
             )}
