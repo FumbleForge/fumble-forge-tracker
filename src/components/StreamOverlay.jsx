@@ -186,6 +186,45 @@ export default function StreamOverlay() {
     updateState(updated);
   };
 
+  const handleImageUpload = (pId, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+        updateArmyField(pId, "imageUrl", compressedBase64);
+      };
+      img.src = event.target?.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const addArmyListItem = (pId, key) => {
     const updated = mergeStateWithDefault(state);
     updated.players[pId].army[key] = [...(updated.players[pId].army[key] || []), { name: "", count: "x1" }];
@@ -385,7 +424,30 @@ export default function StreamOverlay() {
                     <div className="border-t border-neutral-850 pt-3 flex flex-col gap-2.5">
                       <span className="block text-[9px] font-black uppercase text-amber-500 tracking-wider">Armeelist</span>
                       <input type="text" placeholder="ARMEE TITEL" value={player.army.title} onChange={(e) => updateArmyField(pId, "title", e.target.value.toUpperCase())} className="w-full bg-neutral-950 border border-neutral-800 rounded px-2.5 py-1 text-xs text-white uppercase focus:outline-none" />
-                      <input type="text" placeholder="Bild-URL (Miniatur)" value={player.army.imageUrl} onChange={(e) => updateArmyField(pId, "imageUrl", e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded px-2.5 py-1 text-xs text-white focus:outline-none" />
+                      
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="block text-[8px] font-bold text-neutral-400 uppercase">Miniatur Bildquelle</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          <input 
+                            type="text" 
+                            placeholder="Bild-URL (extern)" 
+                            value={player.army.imageUrl?.startsWith("data:") ? "[Lokales Bild hochgeladen]" : player.army.imageUrl || ""} 
+                            onChange={(e) => updateArmyField(pId, "imageUrl", e.target.value)} 
+                            className="bg-neutral-950 border border-neutral-800 rounded px-2 py-1 text-[10px] text-white focus:outline-none truncate" 
+                            disabled={player.army.imageUrl?.startsWith("data:")} 
+                          />
+                          <label className="bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 border-dashed rounded px-2 py-1 text-[10px] text-amber-500 font-bold text-center cursor-pointer flex items-center justify-center gap-1 transition-all">
+                            <span>Datei hochladen</span>
+                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(pId, e)} className="hidden" />
+                          </label>
+                        </div>
+                        {player.army.imageUrl && (
+                          <div className="flex justify-between items-center bg-neutral-950 p-1.5 rounded border border-neutral-850/50 text-[8px]">
+                            <span className="text-neutral-400 truncate max-w-[180px]">{player.army.imageUrl.startsWith("data:") ? "Lokales Bild (temporär)" : player.army.imageUrl}</span>
+                            <button onClick={() => updateArmyField(pId, "imageUrl", "")} className="text-red-400 hover:text-red-300 font-semibold cursor-pointer">Löschen</button>
+                          </div>
+                        )}
+                      </div>
 
                       {["generalRegiment", "regiment", "terrain"].map((listKey) => (
                         <div key={listKey} className="mt-1">
