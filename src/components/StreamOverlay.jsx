@@ -483,6 +483,18 @@ export default function StreamOverlay() {
                 })}
               </div>
             </div>
+
+            {player?.army?.imageUrl && (
+              <div className="mt-2 mb-2 h-[120px] bg-neutral-900/40 border border-neutral-850/50 rounded-xl overflow-hidden p-1.5 flex items-center justify-center relative shadow-inner">
+                <img 
+                  src={player.army.imageUrl} 
+                  alt="Miniature" 
+                  className="w-full h-full object-contain rounded-lg drop-shadow" 
+                  onError={(e) => { e.target.style.display = 'none'; }} 
+                />
+              </div>
+            )}
+
             <div className="border-t border-neutral-850 pt-3 text-center"><div className="inline-flex items-center gap-1 text-[7px] font-black uppercase text-amber-500/60 tracking-wider"><Activity size={8} /> Fumble Forged Battle-HUD</div></div>
           </div>
         );
