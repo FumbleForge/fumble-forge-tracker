@@ -15,9 +15,14 @@ const DEFAULT_STATE = {
       turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
       army: {
         title: "SKAVEN CLANS",
-        generalRegiment: [{ name: "Clawlord on Gnaw-Beast", count: "x1" }, { name: "Stormvermin", count: "x20" }],
-        regiment: [{ name: "Warplock Jezzails", count: "x3" }],
-        terrain: [{ name: "Gnawholes", count: "x3" }],
+        generalRegiment: [
+          { name: "Clawlord on Gnaw-Beast", count: "x1", note: "General - Artefakt: Arcane Tome" }, 
+          { name: "Stormvermin", count: "x20", note: "Schildwache" }
+        ],
+        regiment: [{ name: "Warplock Jezzails", count: "x3", note: "Fernkampf" }],
+        regiment2: [],
+        regiment3: [],
+        terrain: [{ name: "Gnawholes", count: "x3", note: "Fraktionsgelände" }],
         imageUrl: ""
       }
     },
@@ -26,9 +31,14 @@ const DEFAULT_STATE = {
       turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
       army: {
         title: "KHARADRON OVERLORDS",
-        generalRegiment: [{ name: "Brokk Grungsson", count: "x1" }, { name: "Arkanaut Frigate", count: "x1" }],
-        regiment: [{ name: "Arkanaut Company", count: "x20" }, { name: "Endrinriggers", count: "x6" }],
-        terrain: [{ name: "Zontari Endrin Dock", count: "x1" }],
+        generalRegiment: [
+          { name: "Brokk Grungsson", count: "x1", note: "General - Lord-Magnate" }, 
+          { name: "Arkanaut Frigate", count: "x1", note: "Flaggschiff" }
+        ],
+        regiment: [{ name: "Arkanaut Company", count: "x20", note: "Linieninfanterie" }],
+        regiment2: [{ name: "Endrinriggers", count: "x6", note: "Reparaturtrupp" }],
+        regiment3: [],
+        terrain: [{ name: "Zontari Endrin Dock", count: "x1", note: "Anlegestelle" }],
         imageUrl: ""
       }
     }
@@ -60,6 +70,8 @@ export default function StreamOverlay() {
             ...(loaded.players?.[1]?.army || {}),
             generalRegiment: Array.isArray(loaded.players?.[1]?.army?.generalRegiment) ? loaded.players[1].army.generalRegiment : DEFAULT_STATE.players[1].army.generalRegiment,
             regiment: Array.isArray(loaded.players?.[1]?.army?.regiment) ? loaded.players[1].army.regiment : DEFAULT_STATE.players[1].army.regiment,
+            regiment2: Array.isArray(loaded.players?.[1]?.army?.regiment2) ? loaded.players[1].army.regiment2 : [],
+            regiment3: Array.isArray(loaded.players?.[1]?.army?.regiment3) ? loaded.players[1].army.regiment3 : [],
             terrain: Array.isArray(loaded.players?.[1]?.army?.terrain) ? loaded.players[1].army.terrain : DEFAULT_STATE.players[1].army.terrain,
           }
         },
@@ -72,6 +84,8 @@ export default function StreamOverlay() {
             ...(loaded.players?.[2]?.army || {}),
             generalRegiment: Array.isArray(loaded.players?.[2]?.army?.generalRegiment) ? loaded.players[2].army.generalRegiment : DEFAULT_STATE.players[2].army.generalRegiment,
             regiment: Array.isArray(loaded.players?.[2]?.army?.regiment) ? loaded.players[2].army.regiment : DEFAULT_STATE.players[2].army.regiment,
+            regiment2: Array.isArray(loaded.players?.[2]?.army?.regiment2) ? loaded.players[2].army.regiment2 : [],
+            regiment3: Array.isArray(loaded.players?.[2]?.army?.regiment3) ? loaded.players[2].army.regiment3 : [],
             terrain: Array.isArray(loaded.players?.[2]?.army?.terrain) ? loaded.players[2].army.terrain : DEFAULT_STATE.players[2].army.terrain,
           }
         }
@@ -449,15 +463,25 @@ export default function StreamOverlay() {
                         )}
                       </div>
 
-                      {["generalRegiment", "regiment", "terrain"].map((listKey) => (
+                      {["generalRegiment", "regiment", "regiment2", "regiment3", "terrain"].map((listKey) => (
                         <div key={listKey} className="mt-1">
-                          <div className="flex justify-between items-center mb-1"><span className="text-[8px] font-bold text-neutral-400 uppercase">{listKey === "generalRegiment" ? "General's Reg." : listKey === "regiment" ? "Regimenter" : "Gelände"}</span><button onClick={() => addArmyListItem(pId, listKey)} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700"><Plus size={8} /> Add</button></div>
-                          <div className="flex flex-col gap-1">
-                            {player.army[listKey].map((item, idx) => (
-                              <div key={idx} className="flex gap-0.5">
-                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, listKey, idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
-                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, listKey, idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
-                                <button onClick={() => deleteArmyListItem(pId, listKey, idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1 hover:bg-red-950/30 cursor-pointer"><Trash2 size={8} /></button>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[8px] font-bold text-neutral-400 uppercase text-left">
+                              {listKey === "generalRegiment" ? "General's Reg." : listKey === "regiment" ? "Regiment 1" : listKey === "regiment2" ? "Regiment 2" : listKey === "regiment3" ? "Regiment 3" : "Gelände / Aux."}
+                            </span>
+                            <button onClick={() => addArmyListItem(pId, listKey)} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
+                              <Plus size={8} /> Add
+                            </button>
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            {(player.army[listKey] || []).map((item, idx) => (
+                              <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
+                                <div className="flex gap-1">
+                                  <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, listKey, idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
+                                  <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, listKey, idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
+                                  <button onClick={() => deleteArmyListItem(pId, listKey, idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
+                                </div>
+                                <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, listKey, idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
                               </div>
                             ))}
                           </div>
@@ -565,14 +589,17 @@ export default function StreamOverlay() {
 }
 
 function ArmyOverlay({ player }) {
-  const { title, generalRegiment, regiment, terrain, imageUrl } = player.army;
+  const { title, generalRegiment, regiment, regiment2, regiment3, terrain, imageUrl } = player.army;
   const renderList = (label, list) => (
-    <div className="flex flex-col gap-2 flex-1">
+    <div className="flex flex-col gap-2 flex-1 min-w-0">
       <div className="border-b border-amber-500/20 pb-0.5"><h4 className="text-[10px] font-serif font-black uppercase text-amber-500">{label}</h4></div>
-      <div className="flex flex-col gap-1 max-h-[140px] overflow-y-auto">
+      <div className="flex flex-col gap-1 max-h-[140px] overflow-y-auto pr-0.5">
         {list?.length > 0 ? list.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center bg-neutral-900/60 border border-neutral-850/60 rounded-lg px-2.5 py-1.5 text-[11px]">
-            <span className="font-semibold text-neutral-200 truncate pr-1 text-left">{item.name || "—"}</span>
+          <div key={idx} className="flex justify-between items-center bg-neutral-900/60 border border-neutral-850/60 rounded-lg px-2.5 py-1.5 text-[11px] gap-2">
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="font-semibold text-neutral-200 truncate text-left">{item.name || "—"}</span>
+              {item.note && <span className="text-[9px] text-amber-500/85 italic font-medium text-left mt-0.5 truncate">{item.note}</span>}
+            </div>
             <span className="font-mono text-amber-500 font-extrabold bg-neutral-950 border border-neutral-800 px-1.5 py-0.5 rounded shrink-0">{item.count || "x1"}</span>
           </div>
         )) : <span className="text-[9px] text-neutral-500 italic text-left">Keine Einträge</span>}
@@ -606,7 +633,12 @@ function ArmyOverlay({ player }) {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 mt-5 items-stretch">
           <div className="md:col-span-4 flex flex-col gap-2.5">{renderList("General's Regiment", generalRegiment)}</div>
-          <div className="md:col-span-4 flex flex-col gap-4 justify-between">{renderList("Regimenter", regiment)}{renderList("Gelände", terrain)}</div>
+          <div className="md:col-span-4 flex flex-col gap-4 justify-between">
+            {renderList("Regiment 1", regiment)}
+            {regiment2?.length > 0 && renderList("Regiment 2", regiment2)}
+            {regiment3?.length > 0 && renderList("Regiment 3", regiment3)}
+            {renderList("Gelände", terrain)}
+          </div>
           <div className="md:col-span-4 flex justify-center items-center relative min-h-[220px] bg-neutral-900/20 border border-neutral-900 rounded-xl p-3">
             {imageUrl ? (
               <img src={imageUrl} alt="Miniatur" className="w-full h-full max-h-[220px] object-contain rounded-lg drop-shadow" />
