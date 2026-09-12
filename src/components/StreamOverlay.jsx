@@ -590,26 +590,26 @@ export default function StreamOverlay() {
 
 function ArmyOverlay({ player }) {
   const { title, generalRegiment, regiment, regiment2, regiment3, terrain, imageUrl } = player.army;
-  const renderList = (label, list) => (
+  const renderList = (label, list, heightClass = "max-h-[140px]") => (
     <div className="flex flex-col gap-2 flex-1 min-w-0">
-      <div className="border-b border-amber-500/20 pb-0.5"><h4 className="text-[10px] font-serif font-black uppercase text-amber-500">{label}</h4></div>
-      <div className="flex flex-col gap-1 max-h-[140px] overflow-y-auto pr-0.5">
+      <div className="border-b border-amber-500/20 pb-1.5"><h4 className="text-xs font-serif font-black uppercase text-amber-500">{label}</h4></div>
+      <div className={`flex flex-col gap-1.5 ${heightClass} overflow-y-auto pr-0.5`}>
         {list?.length > 0 ? list.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center bg-neutral-900/60 border border-neutral-850/60 rounded-lg px-2.5 py-1.5 text-[11px] gap-2">
+          <div key={idx} className="flex justify-between items-center bg-neutral-900/60 border border-neutral-850/60 rounded-lg px-3 py-2 text-[11px] gap-2.5">
             <div className="flex flex-col min-w-0 flex-1">
               <span className="font-semibold text-neutral-200 truncate text-left">{item.name || "—"}</span>
-              {item.note && <span className="text-[9px] text-amber-500/85 italic font-medium text-left mt-0.5 truncate">{item.note}</span>}
+              {item.note && <span className="text-[9.5px] text-amber-500/85 italic font-medium text-left mt-1 truncate">{item.note}</span>}
             </div>
-            <span className="font-mono text-amber-500 font-extrabold bg-neutral-950 border border-neutral-800 px-1.5 py-0.5 rounded shrink-0">{item.count || "x1"}</span>
+            <span className="font-mono text-amber-500 font-extrabold bg-neutral-950 border border-neutral-800 px-2 py-1 rounded shrink-0">{item.count || "x1"}</span>
           </div>
-        )) : <span className="text-[9px] text-neutral-500 italic text-left">Keine Einträge</span>}
+        )) : <span className="text-[9px] text-neutral-500 italic text-left pl-1">Keine Einträge</span>}
       </div>
     </div>
   );
 
   return (
-    <div className="w-screen h-screen bg-transparent p-12 flex items-center justify-center font-sans animate-fade-in text-white select-none">
-      <div className="relative bg-neutral-950/98 border border-neutral-800 rounded-3xl p-8 max-w-4xl w-full min-h-[460px] flex flex-col justify-between shadow-[0_15px_45px_rgba(0,0,0,0.95)]">
+    <div className="w-screen h-screen bg-transparent p-8 flex items-center justify-center font-sans animate-fade-in text-white select-none">
+      <div className="relative bg-neutral-950/98 border border-neutral-800 rounded-3xl p-8 w-full max-w-[1760px] h-[900px] flex flex-col justify-between shadow-[0_15px_45px_rgba(0,0,0,0.95)]">
         <div className="absolute top-0 left-0 w-6 h-6 border-t border-l border-neutral-700 rounded-tl-2xl"></div>
         <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-neutral-700 rounded-tr-2xl"></div>
         <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l border-neutral-700 rounded-bl-2xl"></div>
@@ -631,21 +631,32 @@ function ArmyOverlay({ player }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 mt-5 items-stretch">
-          <div className="md:col-span-4 flex flex-col gap-2.5">{renderList("General's Regiment", generalRegiment)}</div>
-          <div className="md:col-span-4 flex flex-col gap-4 justify-between">
-            {renderList("Regiment 1", regiment)}
-            {regiment2?.length > 0 && renderList("Regiment 2", regiment2)}
-            {regiment3?.length > 0 && renderList("Regiment 3", regiment3)}
-            {renderList("Gelände", terrain)}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
+          {/* SPALTE 1: General's Regiment */}
+          <div className="flex flex-col gap-3 min-h-0">
+            {renderList("General's Regiment", generalRegiment, "max-h-[580px]")}
           </div>
-          <div className="md:col-span-4 flex justify-center items-center relative min-h-[220px] bg-neutral-900/20 border border-neutral-900 rounded-xl p-3">
+
+          {/* SPALTE 2: Regiment 1 */}
+          <div className="flex flex-col gap-3 min-h-0">
+            {renderList("Regiment 1", regiment, "max-h-[580px]")}
+          </div>
+
+          {/* SPALTE 3: Regiment 2, Regiment 3 & Gelände */}
+          <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
+            {regiment2?.length > 0 && renderList("Regiment 2", regiment2, "max-h-[220px]")}
+            {regiment3?.length > 0 && renderList("Regiment 3", regiment3, "max-h-[220px]")}
+            {renderList("Gelände / Auxiliaries", terrain, "max-h-[220px]")}
+          </div>
+
+          {/* SPALTE 4: Miniature Picture */}
+          <div className="flex justify-center items-center relative bg-neutral-900/20 border border-neutral-900 rounded-2xl p-4 h-[580px] shadow-inner">
             {imageUrl ? (
-              <img src={imageUrl} alt="Miniatur" className="w-full h-full max-h-[220px] object-contain rounded-lg drop-shadow" />
+              <img src={imageUrl} alt="Miniatur" className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]" />
             ) : (
-              <div className="flex flex-col items-center gap-2 text-neutral-850">
-                <svg className="w-20 h-20 text-neutral-800" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="50" cy="50" r="40" strokeDasharray="3 3" /><path d="M30 70 L70 30" /><path d="M70 70 L30 30" /></svg>
-                <span className="text-[8px] font-black tracking-widest text-neutral-500">FUMBLE FORGE</span>
+              <div className="flex flex-col items-center gap-3 text-neutral-800">
+                <svg className="w-24 h-24 text-neutral-800" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="50" cy="50" r="40" strokeDasharray="3 3" /><path d="M30 70 L70 30" /><path d="M70 70 L30 30" /></svg>
+                <span className="text-[10px] font-black tracking-widest text-neutral-500">FUMBLE FORGE</span>
               </div>
             )}
           </div>
