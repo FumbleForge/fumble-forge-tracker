@@ -130,3 +130,19 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(245, 158, 11, 0.6) !important;
 }
+
+/* Slowly pulsating glow animation for active player box */
+@keyframes active-player-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.1), inset 0 0 10px rgba(245, 158, 11, 0.05);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.4), inset 0 0 20px rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+}
+
+.active-player-glow {
+  animation: active-player-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

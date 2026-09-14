@@ -9,6 +9,8 @@ const DEFAULT_STATE = {
   activeOverlayType: "game", // "game" | "army-p1" | "army-p2"
   gameSystem: "AoS",
   round: 1,
+  activePlayer: null, // null | 1 | 2
+  underdogPlayer: null, // null | 1 | 2
   players: {
     1: {
       name: "Player 1", faction: "Skaven", cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
@@ -75,6 +77,8 @@ export default function StreamOverlay() {
     return {
       ...DEFAULT_STATE,
       ...loaded,
+      activePlayer: loaded.activePlayer !== undefined ? loaded.activePlayer : null,
+      underdogPlayer: loaded.underdogPlayer !== undefined ? loaded.underdogPlayer : null,
       players: {
         1: {
           ...DEFAULT_STATE.players[1],
@@ -458,6 +462,54 @@ export default function StreamOverlay() {
               </div>
             </div>
 
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 shadow grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Aktiver Spieler (Am Zug)</label>
+                <div className="grid grid-cols-3 gap-1.5 h-8">
+                  {[
+                    { label: "Keiner", value: null },
+                    { label: state.players[1].name || "Player 1", value: 1 },
+                    { label: state.players[2].name || "Player 2", value: 2 }
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => updateState({ ...state, activePlayer: opt.value })}
+                      className={`font-bold rounded-lg border text-[10px] cursor-pointer transition truncate px-1.5 ${
+                        state.activePlayer === opt.value
+                          ? "bg-amber-500 text-neutral-950 border-amber-500"
+                          : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Underdog</label>
+                <div className="grid grid-cols-3 gap-1.5 h-8">
+                  {[
+                    { label: "Keiner", value: null },
+                    { label: state.players[1].name || "Player 1", value: 1 },
+                    { label: state.players[2].name || "Player 2", value: 2 }
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => updateState({ ...state, underdogPlayer: opt.value })}
+                      className={`font-bold rounded-lg border text-[10px] cursor-pointer transition truncate px-1.5 ${
+                        state.underdogPlayer === opt.value
+                          ? "bg-amber-500 text-neutral-950 border-amber-500"
+                          : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2].map((pId) => {
                 const player = state.players[pId];
@@ -693,14 +745,21 @@ export default function StreamOverlay() {
         const player = state.players[pId];
         const isLeft = pId === 1;
         const totalScore = calculateScore(pId);
+        const isActive = state.activePlayer === pId;
+        const activeClass = isActive ? "active-player-glow z-50 border-amber-500/80" : "border-neutral-800";
         return (
-          <div key={pId} className={`fixed top-0 bottom-0 w-[290px] bg-neutral-950/95 flex flex-col justify-between py-6 px-4 shadow-2xl z-40 border-neutral-800 ${isLeft ? "left-0 border-r" : "right-0 border-l"}`}>
+          <div key={pId} className={`fixed top-0 bottom-0 w-[290px] bg-neutral-950/95 flex flex-col justify-between py-6 px-4 shadow-2xl z-40 transition-all duration-300 ${activeClass} ${isLeft ? "left-0 border-r" : "right-0 border-l"}`}>
             <div className={`absolute top-8 bottom-8 w-px bg-gradient-to-b from-transparent via-amber-500/10 to-transparent ${isLeft ? "right-0.5" : "left-0.5"}`}></div>
             <div className="flex flex-col gap-4">
               <div className="relative py-2 border-b border-neutral-850 text-center">
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded text-[7px] font-black uppercase text-amber-500 tracking-widest">{isLeft ? "PLAYER ONE" : "PLAYER TWO"}</div>
                 <h2 className="text-lg font-serif font-black tracking-wider text-white uppercase mt-1 truncate drop-shadow">{player.faction || "Faction"}</h2>
                 <p className="text-[9px] font-black uppercase text-neutral-400 truncate tracking-wider mt-0.5">{player.name}</p>
+                {state.underdogPlayer === pId && (
+                  <span className="inline-block mt-1.5 text-[8px] font-black tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 py-0.5 px-2.5 rounded uppercase leading-none animate-pulse">
+                    ★ Underdog
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
