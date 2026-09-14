@@ -776,7 +776,7 @@ function ArmyOverlay({ player }) {
   const regimentsCol2 = (regiments || []).slice(half);
 
   const renderList = (label, list) => (
-    <div className="flex flex-col gap-3.5 flex-1 min-w-0">
+    <div className="flex flex-col gap-3.5 w-full min-w-0 shrink-0">
       <div className="border-b-2 border-amber-500/40 pb-2.5 mb-1.5 text-left">
         <h4 className="text-base font-serif font-black uppercase tracking-wider text-amber-500">{label}</h4>
       </div>
@@ -820,13 +820,13 @@ function ArmyOverlay({ player }) {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
           {/* SPALTE 1: General's Regiment & Gelände */}
-          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto pr-1 text-left">
+          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto custom-scrollbar pr-2 text-left">
             {renderList("General's Regiment", generalRegiment)}
             {renderList("Gelände / Auxiliaries", terrain)}
           </div>
 
           {/* SPALTE 2: Erste Hälfte der Custom-Regimenter */}
-          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto pr-1 text-left">
+          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto custom-scrollbar pr-2 text-left">
             {regimentsCol1?.length > 0 ? regimentsCol1.map((reg) => (
               <div key={reg.id} className="flex flex-col gap-2 min-h-0">
                 {renderList(reg.title || "Regiment", reg.units)}
@@ -840,7 +840,7 @@ function ArmyOverlay({ player }) {
           </div>
 
           {/* SPALTE 3: Zweite Hälfte der Custom-Regimenter & Auxiliaries */}
-          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto pr-1 text-left">
+          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto custom-scrollbar pr-2 text-left">
             {regimentsCol2?.length > 0 && regimentsCol2.map((reg) => (
               <div key={reg.id} className="flex flex-col gap-2 min-h-0">
                 {renderList(reg.title || "Regiment", reg.units)}
