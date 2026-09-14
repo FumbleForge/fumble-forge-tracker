@@ -818,17 +818,17 @@ function ArmyOverlay({ player }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
           {/* SPALTE 1: General's Regiment & Gelände */}
-          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto custom-scrollbar pr-2 text-left">
+          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 text-left">
             {renderList("General's Regiment", generalRegiment)}
             {renderList("Gelände / Auxiliaries", terrain)}
           </div>
 
           {/* SPALTE 2: Erste Hälfte der Custom-Regimenter */}
-          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto custom-scrollbar pr-2 text-left">
+          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 text-left">
             {regimentsCol1?.length > 0 ? regimentsCol1.map((reg) => (
-              <div key={reg.id} className="flex flex-col gap-2 min-h-0">
+              <div key={reg.id} className="shrink-0">
                 {renderList(reg.title || "Regiment", reg.units)}
               </div>
             )) : (
@@ -840,9 +840,9 @@ function ArmyOverlay({ player }) {
           </div>
 
           {/* SPALTE 3: Zweite Hälfte der Custom-Regimenter & Auxiliaries */}
-          <div className="flex flex-col gap-6 max-h-[620px] overflow-y-auto custom-scrollbar pr-2 text-left">
+          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 text-left">
             {regimentsCol2?.length > 0 && regimentsCol2.map((reg) => (
-              <div key={reg.id} className="flex flex-col gap-2 min-h-0">
+              <div key={reg.id} className="shrink-0">
                 {renderList(reg.title || "Regiment", reg.units)}
               </div>
             ))}
@@ -850,7 +850,7 @@ function ArmyOverlay({ player }) {
           </div>
 
           {/* SPALTE 4: Miniature Picture */}
-          <div className="flex justify-center items-center relative bg-neutral-900/20 border border-neutral-900 rounded-2xl p-4 h-[620px] shadow-inner">
+          <div className="flex justify-center items-center relative bg-neutral-900/20 border border-neutral-900 rounded-2xl p-4 h-[700px] shadow-inner">
             {imageUrl ? (
               <img src={imageUrl} alt="Miniatur" className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]" />
             ) : (
