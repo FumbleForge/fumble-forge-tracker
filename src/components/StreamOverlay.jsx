@@ -591,27 +591,27 @@ export default function StreamOverlay() {
 function ArmyOverlay({ player }) {
   const { title, generalRegiment, regiment, regiment2, regiment3, terrain, imageUrl } = player.army;
   const renderList = (label, list, heightClass = "max-h-[140px]") => (
-    <div className="flex flex-col gap-3 flex-1 min-w-0">
-      <div className="border-b-2 border-amber-500/30 pb-2 mb-1">
-        <h4 className="text-sm font-serif font-black uppercase tracking-wider text-amber-500 text-left">{label}</h4>
+    <div className="flex flex-col gap-3.5 flex-1 min-w-0">
+      <div className="border-b-2 border-amber-500/40 pb-2.5 mb-1.5 text-left">
+        <h4 className="text-base font-serif font-black uppercase tracking-wider text-amber-500">{label}</h4>
       </div>
-      <div className={`flex flex-col gap-3 ${heightClass} overflow-y-auto pr-1`}>
+      <div className={`flex flex-col gap-4 ${heightClass} overflow-y-auto pr-1.5`}>
         {list?.length > 0 ? list.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center bg-neutral-900/80 border border-neutral-800/80 rounded-xl px-4 py-3.5 shadow-[0_4px_12px_rgba(0,0,0,0.5)] border-l-4 border-l-amber-500/60 gap-3 text-left">
-            <div className="flex flex-col min-w-0 flex-1 gap-1">
-              <span className="text-sm md:text-base font-bold text-neutral-100 text-left truncate leading-tight">{item.name || "—"}</span>
-              {item.note && <span className="text-xs text-amber-400/90 italic font-medium text-left truncate max-w-full">{item.note}</span>}
+          <div key={idx} className="flex justify-between items-center bg-neutral-900/90 border border-neutral-800/90 rounded-2xl px-5 py-4 shadow-[0_6px_16px_rgba(0,0,0,0.6)] border-l-4 border-l-amber-500 gap-4 text-left">
+            <div className="flex flex-col min-w-0 flex-1 gap-1.5">
+              <span className="text-base md:text-lg font-black text-neutral-100 truncate leading-tight">{item.name || "—"}</span>
+              {item.note && <span className="text-xs md:text-sm text-amber-400 font-semibold italic truncate max-w-full leading-snug">{item.note}</span>}
             </div>
-            <span className="font-mono text-sm text-amber-500 font-extrabold bg-neutral-950/80 border border-neutral-800/80 px-2.5 py-1.5 rounded-lg shrink-0 shadow-inner">{item.count || "x1"}</span>
+            <span className="font-mono text-base text-amber-500 font-black bg-neutral-950/90 border border-neutral-800/80 px-3 py-1.5 rounded-xl shrink-0 shadow-inner">{item.count || "x1"}</span>
           </div>
-        )) : <span className="text-xs text-neutral-500 italic text-left pl-1">Keine Einträge</span>}
+        )) : <span className="text-sm text-neutral-500 italic text-left pl-1">Keine Einträge</span>}
       </div>
     </div>
   );
 
   return (
-    <div className="w-screen h-screen bg-transparent p-8 flex items-center justify-center font-sans animate-fade-in text-white select-none">
-      <div className="relative bg-neutral-950/98 border border-neutral-800 rounded-3xl p-8 w-full max-w-[1760px] h-[900px] flex flex-col justify-between shadow-[0_15px_45px_rgba(0,0,0,0.95)]">
+    <div className="w-screen h-screen bg-transparent p-6 flex items-center justify-center font-sans animate-fade-in text-white select-none">
+      <div className="relative bg-neutral-950/98 border border-neutral-800 rounded-3xl p-8 w-full max-w-[1800px] h-[940px] flex flex-col justify-between shadow-[0_15px_45px_rgba(0,0,0,0.95)]">
         <div className="absolute top-0 left-0 w-6 h-6 border-t border-l border-neutral-700 rounded-tl-2xl"></div>
         <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-neutral-700 rounded-tr-2xl"></div>
         <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l border-neutral-700 rounded-bl-2xl"></div>
@@ -636,23 +636,23 @@ function ArmyOverlay({ player }) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
           {/* SPALTE 1: General's Regiment */}
           <div className="flex flex-col gap-3 min-h-0">
-            {renderList("General's Regiment", generalRegiment, "max-h-[580px]")}
+            {renderList("General's Regiment", generalRegiment, "max-h-[620px]")}
           </div>
 
           {/* SPALTE 2: Regiment 1 */}
           <div className="flex flex-col gap-3 min-h-0">
-            {renderList("Regiment 1", regiment, "max-h-[580px]")}
+            {renderList("Regiment 1", regiment, "max-h-[620px]")}
           </div>
 
           {/* SPALTE 3: Regiment 2, Regiment 3 & Gelände */}
           <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
-            {regiment2?.length > 0 && renderList("Regiment 2", regiment2, "max-h-[220px]")}
-            {regiment3?.length > 0 && renderList("Regiment 3", regiment3, "max-h-[220px]")}
-            {renderList("Gelände / Auxiliaries", terrain, "max-h-[220px]")}
+            {regiment2?.length > 0 && renderList("Regiment 2", regiment2, "max-h-[250px]")}
+            {regiment3?.length > 0 && renderList("Regiment 3", regiment3, "max-h-[250px]")}
+            {renderList("Gelände / Auxiliaries", terrain, "max-h-[250px]")}
           </div>
 
           {/* SPALTE 4: Miniature Picture */}
-          <div className="flex justify-center items-center relative bg-neutral-900/20 border border-neutral-900 rounded-2xl p-4 h-[580px] shadow-inner">
+          <div className="flex justify-center items-center relative bg-neutral-900/20 border border-neutral-900 rounded-2xl p-4 h-[620px] shadow-inner">
             {imageUrl ? (
               <img src={imageUrl} alt="Miniatur" className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]" />
             ) : (
