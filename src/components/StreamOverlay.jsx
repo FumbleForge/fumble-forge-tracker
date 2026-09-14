@@ -19,9 +19,14 @@ const DEFAULT_STATE = {
           { name: "Clawlord on Gnaw-Beast", count: "x1", note: "General - Artefakt: Arcane Tome" }, 
           { name: "Stormvermin", count: "x20", note: "Schildwache" }
         ],
-        regiment: [{ name: "Warplock Jezzails", count: "x3", note: "Fernkampf" }],
-        regiment2: [],
-        regiment3: [],
+        regiments: [
+          {
+            id: "reg-1",
+            title: "Regiment 1",
+            units: [{ name: "Warplock Jezzails", count: "x3", note: "Fernkampf" }]
+          }
+        ],
+        auxiliaries: [],
         terrain: [{ name: "Gnawholes", count: "x3", note: "Fraktionsgelände" }],
         imageUrl: ""
       }
@@ -35,9 +40,19 @@ const DEFAULT_STATE = {
           { name: "Brokk Grungsson", count: "x1", note: "General - Lord-Magnate" }, 
           { name: "Arkanaut Frigate", count: "x1", note: "Flaggschiff" }
         ],
-        regiment: [{ name: "Arkanaut Company", count: "x20", note: "Linieninfanterie" }],
-        regiment2: [{ name: "Endrinriggers", count: "x6", note: "Reparaturtrupp" }],
-        regiment3: [],
+        regiments: [
+          {
+            id: "reg-1",
+            title: "Regiment 1",
+            units: [{ name: "Arkanaut Company", count: "x20", note: "Linieninfanterie" }]
+          },
+          {
+            id: "reg-2",
+            title: "Regiment 2",
+            units: [{ name: "Endrinriggers", count: "x6", note: "Reparaturtrupp" }]
+          }
+        ],
+        auxiliaries: [],
         terrain: [{ name: "Zontari Endrin Dock", count: "x1", note: "Anlegestelle" }],
         imageUrl: ""
       }
@@ -69,9 +84,12 @@ export default function StreamOverlay() {
             ...DEFAULT_STATE.players[1].army,
             ...(loaded.players?.[1]?.army || {}),
             generalRegiment: Array.isArray(loaded.players?.[1]?.army?.generalRegiment) ? loaded.players[1].army.generalRegiment : DEFAULT_STATE.players[1].army.generalRegiment,
-            regiment: Array.isArray(loaded.players?.[1]?.army?.regiment) ? loaded.players[1].army.regiment : DEFAULT_STATE.players[1].army.regiment,
-            regiment2: Array.isArray(loaded.players?.[1]?.army?.regiment2) ? loaded.players[1].army.regiment2 : [],
-            regiment3: Array.isArray(loaded.players?.[1]?.army?.regiment3) ? loaded.players[1].army.regiment3 : [],
+            regiments: Array.isArray(loaded.players?.[1]?.army?.regiments) 
+              ? loaded.players[1].army.regiments 
+              : (loaded.players?.[1]?.army?.regiment 
+                  ? [{ id: "reg-1", title: "Regiment 1", units: loaded.players[1].army.regiment }] 
+                  : DEFAULT_STATE.players[1].army.regiments),
+            auxiliaries: Array.isArray(loaded.players?.[1]?.army?.auxiliaries) ? loaded.players[1].army.auxiliaries : [],
             terrain: Array.isArray(loaded.players?.[1]?.army?.terrain) ? loaded.players[1].army.terrain : DEFAULT_STATE.players[1].army.terrain,
           }
         },
@@ -83,9 +101,12 @@ export default function StreamOverlay() {
             ...DEFAULT_STATE.players[2].army,
             ...(loaded.players?.[2]?.army || {}),
             generalRegiment: Array.isArray(loaded.players?.[2]?.army?.generalRegiment) ? loaded.players[2].army.generalRegiment : DEFAULT_STATE.players[2].army.generalRegiment,
-            regiment: Array.isArray(loaded.players?.[2]?.army?.regiment) ? loaded.players[2].army.regiment : DEFAULT_STATE.players[2].army.regiment,
-            regiment2: Array.isArray(loaded.players?.[2]?.army?.regiment2) ? loaded.players[2].army.regiment2 : [],
-            regiment3: Array.isArray(loaded.players?.[2]?.army?.regiment3) ? loaded.players[2].army.regiment3 : [],
+            regiments: Array.isArray(loaded.players?.[2]?.army?.regiments) 
+              ? loaded.players[2].army.regiments 
+              : (loaded.players?.[2]?.army?.regiment 
+                  ? [{ id: "reg-1", title: "Regiment 1", units: loaded.players[2].army.regiment }] 
+                  : DEFAULT_STATE.players[2].army.regiments),
+            auxiliaries: Array.isArray(loaded.players?.[2]?.army?.auxiliaries) ? loaded.players[2].army.auxiliaries : [],
             terrain: Array.isArray(loaded.players?.[2]?.army?.terrain) ? loaded.players[2].army.terrain : DEFAULT_STATE.players[2].army.terrain,
           }
         }
@@ -256,6 +277,58 @@ export default function StreamOverlay() {
   const deleteArmyListItem = (pId, key, idx) => {
     const updated = mergeStateWithDefault(state);
     updated.players[pId].army[key] = (updated.players[pId].army[key] || []).filter((_, i) => i !== idx);
+    updateState(updated);
+  };
+
+  const addCustomRegiment = (pId) => {
+    const updated = mergeStateWithDefault(state);
+    const currentRegs = updated.players[pId].army.regiments || [];
+    const nextNum = currentRegs.length + 1;
+    updated.players[pId].army.regiments = [
+      ...currentRegs,
+      { id: `reg-${Date.now()}`, title: `Regiment ${nextNum}`, units: [] }
+    ];
+    updateState(updated);
+  };
+
+  const deleteCustomRegiment = (pId, regId) => {
+    const updated = mergeStateWithDefault(state);
+    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).filter(r => r.id !== regId);
+    updateState(updated);
+  };
+
+  const updateRegimentTitle = (pId, regId, title) => {
+    const updated = mergeStateWithDefault(state);
+    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
+      r.id === regId ? { ...r, title } : r
+    );
+    updateState(updated);
+  };
+
+  const addUnitToRegiment = (pId, regId) => {
+    const updated = mergeStateWithDefault(state);
+    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
+      r.id === regId ? { ...r, units: [...(r.units || []), { name: "", count: "x1", note: "" }] } : r
+    );
+    updateState(updated);
+  };
+
+  const updateUnitInRegiment = (pId, regId, unitIdx, field, value) => {
+    const updated = mergeStateWithDefault(state);
+    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
+      r.id === regId ? { 
+        ...r, 
+        units: (r.units || []).map((u, i) => i === unitIdx ? { ...u, [field]: value } : u) 
+      } : r
+    );
+    updateState(updated);
+  };
+
+  const deleteUnitFromRegiment = (pId, regId, unitIdx) => {
+    const updated = mergeStateWithDefault(state);
+    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
+      r.id === regId ? { ...r, units: (r.units || []).filter((_, i) => i !== unitIdx) } : r
+    );
     updateState(updated);
   };
 
@@ -482,30 +555,107 @@ export default function StreamOverlay() {
                         )}
                       </div>
 
-                      {["generalRegiment", "regiment", "regiment2", "regiment3", "terrain"].map((listKey) => (
-                        <div key={listKey} className="mt-1">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[8px] font-bold text-neutral-400 uppercase text-left">
-                              {listKey === "generalRegiment" ? "General's Reg." : listKey === "regiment" ? "Regiment 1" : listKey === "regiment2" ? "Regiment 2" : listKey === "regiment3" ? "Regiment 3" : "Gelände / Aux."}
-                            </span>
-                            <button onClick={() => addArmyListItem(pId, listKey)} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
-                              <Plus size={8} /> Add
-                            </button>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            {(player.army[listKey] || []).map((item, idx) => (
-                              <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
-                                <div className="flex gap-1">
-                                  <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, listKey, idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
-                                  <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, listKey, idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
-                                  <button onClick={() => deleteArmyListItem(pId, listKey, idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
-                                </div>
-                                <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, listKey, idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
-                              </div>
-                            ))}
-                          </div>
+                      {/* GENERAL'S REGIMENT */}
+                      <div className="mt-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[8px] font-black text-amber-500 uppercase text-left">General's Regiment</span>
+                          <button onClick={() => addArmyListItem(pId, "generalRegiment")} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
+                            <Plus size={8} /> Add Unit
+                          </button>
                         </div>
-                      ))}
+                        <div className="flex flex-col gap-1.5">
+                          {(player.army.generalRegiment || []).map((item, idx) => (
+                            <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
+                              <div className="flex gap-1">
+                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, "generalRegiment", idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
+                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, "generalRegiment", idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
+                                <button onClick={() => deleteArmyListItem(pId, "generalRegiment", idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
+                              </div>
+                              <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, "generalRegiment", idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* DYNAMIC REGIMENTS (Zusätzliche Regimenter) */}
+                      <div className="border-t border-neutral-850 pt-2 flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-black uppercase text-neutral-300">Regimenter</span>
+                          <button onClick={() => addCustomRegiment(pId)} className="text-[8px] bg-neutral-950 border border-amber-500/30 text-amber-500 px-2 py-1 rounded flex items-center gap-0.5 cursor-pointer hover:bg-neutral-900 transition-all font-bold">
+                            <Plus size={8} /> Neues Regiment
+                          </button>
+                        </div>
+                        
+                        <div className="flex flex-col gap-3">
+                          {(player.army.regiments || []).map((reg) => (
+                            <div key={reg.id} className="bg-neutral-950/50 p-2 border border-neutral-800/80 rounded-xl flex flex-col gap-2 relative">
+                              <div className="flex justify-between items-center gap-2">
+                                <input type="text" value={reg.title} onChange={(e) => updateRegimentTitle(pId, reg.id, e.target.value)} className="bg-transparent border-b border-transparent hover:border-neutral-800 focus:border-amber-500 font-bold text-[10px] text-amber-500 uppercase focus:outline-none py-0.5 min-w-0" />
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button onClick={() => addUnitToRegiment(pId, reg.id)} className="text-[8px] bg-neutral-950 border border-neutral-800 text-neutral-300 hover:text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer"><Plus size={8} /> Add Unit</button>
+                                  <button onClick={() => deleteCustomRegiment(pId, reg.id)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1 py-0.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={8} /></button>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                {(reg.units || []).map((unit, uIdx) => (
+                                  <div key={uIdx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
+                                    <div className="flex gap-1">
+                                      <input type="text" placeholder="Einheit" value={unit.name} onChange={(e) => updateUnitInRegiment(pId, reg.id, uIdx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
+                                      <input type="text" placeholder="x1" value={unit.count} onChange={(e) => updateUnitInRegiment(pId, reg.id, uIdx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
+                                      <button onClick={() => deleteUnitFromRegiment(pId, reg.id, uIdx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
+                                    </div>
+                                    <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={unit.note || ""} onChange={(e) => updateUnitInRegiment(pId, reg.id, uIdx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* AUXILIARY REGIMENTS */}
+                      <div className="border-t border-neutral-850 pt-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[8px] font-black text-amber-500 uppercase text-left">Auxiliary Regiments</span>
+                          <button onClick={() => addArmyListItem(pId, "auxiliaries")} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
+                            <Plus size={8} /> Add Unit
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          {(player.army.auxiliaries || []).map((item, idx) => (
+                            <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
+                              <div className="flex gap-1">
+                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, "auxiliaries", idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
+                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, "auxiliaries", idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
+                                <button onClick={() => deleteArmyListItem(pId, "auxiliaries", idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
+                              </div>
+                              <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, "auxiliaries", idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* TERRAIN (Static) */}
+                      <div className="border-t border-neutral-850 pt-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[8px] font-black text-neutral-400 uppercase text-left">Gelände / Aux.</span>
+                          <button onClick={() => addArmyListItem(pId, "terrain")} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
+                            <Plus size={8} /> Add Unit
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          {(player.army.terrain || []).map((item, idx) => (
+                            <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
+                              <div className="flex gap-1">
+                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, "terrain", idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
+                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, "terrain", idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
+                                <button onClick={() => deleteArmyListItem(pId, "terrain", idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
+                              </div>
+                              <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, "terrain", idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -669,16 +819,24 @@ function ArmyOverlay({ player }) {
             {renderList("General's Regiment", generalRegiment, "max-h-[620px]")}
           </div>
 
-          {/* SPALTE 2: Regiment 1 */}
-          <div className="flex flex-col gap-3 min-h-0">
-            {renderList("Regiment 1", regiment, "max-h-[620px]")}
+          {/* SPALTE 2: Alle Regimenter (Dynamisch) */}
+          <div className="flex flex-col gap-5 min-h-0 overflow-y-auto pr-1">
+            {regiments?.length > 0 ? regiments.map((reg) => (
+              <div key={reg.id} className="flex flex-col gap-2 min-h-0">
+                {renderList(reg.title || "Regiment", reg.units, "max-h-[450px]")}
+              </div>
+            )) : (
+              <div className="flex flex-col gap-2">
+                <div className="border-b-2 border-amber-500/20 pb-1.5"><h4 className="text-xs font-serif font-black uppercase text-amber-500">Regimenter</h4></div>
+                <span className="text-xs text-neutral-500 italic text-left pl-1">Keine Regimenter</span>
+              </div>
+            )}
           </div>
 
-          {/* SPALTE 3: Regiment 2, Regiment 3 & Gelände */}
-          <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
-            {regiment2?.length > 0 && renderList("Regiment 2", regiment2, "max-h-[250px]")}
-            {regiment3?.length > 0 && renderList("Regiment 3", regiment3, "max-h-[250px]")}
-            {renderList("Gelände / Auxiliaries", terrain, "max-h-[250px]")}
+          {/* SPALTE 3: Auxiliary Regiments & Gelände */}
+          <div className="flex flex-col gap-5 min-h-0 overflow-y-auto pr-1">
+            {renderList("Auxiliary Regiments", auxiliaries, "max-h-[280px]")}
+            {renderList("Gelände / Auxiliaries", terrain, "max-h-[280px]")}
           </div>
 
           {/* SPALTE 4: Miniature Picture */}
