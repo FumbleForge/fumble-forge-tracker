@@ -11,7 +11,7 @@ const DEFAULT_STATE = {
   round: 1,
   players: {
     1: {
-      name: "Player 1", faction: "Skaven", cp: 4, scoreOverride: "",
+      name: "Player 1", faction: "Skaven", cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
       turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
       army: {
         title: "SKAVEN CLANS",
@@ -27,7 +27,7 @@ const DEFAULT_STATE = {
       }
     },
     2: {
-      name: "Player 2", faction: "Kharadron Overlords", cp: 4, scoreOverride: "",
+      name: "Player 2", faction: "Kharadron Overlords", cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
       turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
       army: {
         title: "KHARADRON OVERLORDS",
@@ -417,6 +417,25 @@ export default function StreamOverlay() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Fury Dice</label>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => updatePlayerField(pId, "furyDice", Math.max(0, (player.furyDice || 0) - 1))} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Minus size={10} /></button>
+                          <div className="flex-1 text-center font-mono font-bold bg-neutral-950 border border-neutral-800 py-0.5 rounded text-xs">{player.furyDice || 0} FD</div>
+                          <button onClick={() => updatePlayerField(pId, "furyDice", (player.furyDice || 0) + 1)} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Plus size={10} /></button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Fury Points</label>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => updatePlayerField(pId, "furyPoints", Math.max(0, (player.furyPoints || 0) - 1))} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Minus size={10} /></button>
+                          <div className="flex-1 text-center font-mono font-bold bg-neutral-950 border border-neutral-800 py-0.5 rounded text-xs">{player.furyPoints || 0} FP</div>
+                          <button onClick={() => updatePlayerField(pId, "furyPoints", (player.furyPoints || 0) + 1)} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Plus size={10} /></button>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="bg-neutral-950 rounded-lg p-2 border border-neutral-800/55 flex justify-between items-center text-[11px] font-bold"><span className="text-neutral-400 uppercase">Summe VP:</span><span className="text-amber-500 text-sm font-black">{calculateScore(pId)} VP</span></div>
 
                     <div>
@@ -535,13 +554,24 @@ export default function StreamOverlay() {
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2.5 text-center shadow-inner">
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
                   <span className="block text-[8px] font-black text-neutral-400 tracking-wider">SCORE</span>
-                  <span className="block text-3xl font-serif font-black text-amber-500 font-mono mt-1 drop-shadow">{totalScore}</span>
+                  <span className="block text-2xl font-serif font-black text-amber-500 font-mono mt-0.5 drop-shadow">{totalScore}</span>
                 </div>
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2.5 text-center shadow-inner">
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
                   <span className="block text-[8px] font-black text-neutral-400 tracking-wider">COMMAND P.</span>
-                  <span className="block text-3xl font-serif font-black text-blue-400 font-mono mt-1 drop-shadow">{player.cp}</span>
+                  <span className="block text-2xl font-serif font-black text-blue-400 font-mono mt-0.5 drop-shadow">{player.cp}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
+                  <span className="block text-[8px] font-black text-red-400 tracking-wider">FURY DICE</span>
+                  <span className="block text-2xl font-serif font-black text-red-500 font-mono mt-0.5 drop-shadow">{player.furyDice || 0}</span>
+                </div>
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
+                  <span className="block text-[8px] font-black text-orange-400 tracking-wider">FURY POINTS</span>
+                  <span className="block text-2xl font-serif font-black text-orange-400 font-mono mt-0.5 drop-shadow">{player.furyPoints || 0}</span>
                 </div>
               </div>
 
