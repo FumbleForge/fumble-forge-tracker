@@ -591,18 +591,20 @@ export default function StreamOverlay() {
 function ArmyOverlay({ player }) {
   const { title, generalRegiment, regiment, regiment2, regiment3, terrain, imageUrl } = player.army;
   const renderList = (label, list, heightClass = "max-h-[140px]") => (
-    <div className="flex flex-col gap-2 flex-1 min-w-0">
-      <div className="border-b border-amber-500/20 pb-1.5"><h4 className="text-xs font-serif font-black uppercase text-amber-500">{label}</h4></div>
-      <div className={`flex flex-col gap-1.5 ${heightClass} overflow-y-auto pr-0.5`}>
+    <div className="flex flex-col gap-3 flex-1 min-w-0">
+      <div className="border-b-2 border-amber-500/30 pb-2 mb-1">
+        <h4 className="text-sm font-serif font-black uppercase tracking-wider text-amber-500 text-left">{label}</h4>
+      </div>
+      <div className={`flex flex-col gap-3 ${heightClass} overflow-y-auto pr-1`}>
         {list?.length > 0 ? list.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center bg-neutral-900/60 border border-neutral-850/60 rounded-lg px-3 py-2 text-[11px] gap-2.5">
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="font-semibold text-neutral-200 truncate text-left">{item.name || "—"}</span>
-              {item.note && <span className="text-[9.5px] text-amber-500/85 italic font-medium text-left mt-1 truncate">{item.note}</span>}
+          <div key={idx} className="flex justify-between items-center bg-neutral-900/80 border border-neutral-800/80 rounded-xl px-4 py-3.5 shadow-[0_4px_12px_rgba(0,0,0,0.5)] border-l-4 border-l-amber-500/60 gap-3 text-left">
+            <div className="flex flex-col min-w-0 flex-1 gap-1">
+              <span className="text-sm md:text-base font-bold text-neutral-100 text-left truncate leading-tight">{item.name || "—"}</span>
+              {item.note && <span className="text-xs text-amber-400/90 italic font-medium text-left truncate max-w-full">{item.note}</span>}
             </div>
-            <span className="font-mono text-amber-500 font-extrabold bg-neutral-950 border border-neutral-800 px-2 py-1 rounded shrink-0">{item.count || "x1"}</span>
+            <span className="font-mono text-sm text-amber-500 font-extrabold bg-neutral-950/80 border border-neutral-800/80 px-2.5 py-1.5 rounded-lg shrink-0 shadow-inner">{item.count || "x1"}</span>
           </div>
-        )) : <span className="text-[9px] text-neutral-500 italic text-left pl-1">Keine Einträge</span>}
+        )) : <span className="text-xs text-neutral-500 italic text-left pl-1">Keine Einträge</span>}
       </div>
     </div>
   );
