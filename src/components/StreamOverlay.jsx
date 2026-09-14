@@ -769,7 +769,7 @@ export default function StreamOverlay() {
 }
 
 function ArmyOverlay({ player }) {
-  const { title, generalRegiment, regiment, regiment2, regiment3, terrain, imageUrl } = player.army;
+  const { title, generalRegiment, regiments, auxiliaries, terrain, imageUrl } = player?.army || {};
   const renderList = (label, list, heightClass = "max-h-[140px]") => (
     <div className="flex flex-col gap-3.5 flex-1 min-w-0">
       <div className="border-b-2 border-amber-500/40 pb-2.5 mb-1.5 text-left">
