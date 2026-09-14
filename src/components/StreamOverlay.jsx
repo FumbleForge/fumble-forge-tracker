@@ -820,13 +820,13 @@ function ArmyOverlay({ player }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
           {/* SPALTE 1: General's Regiment & Gelände */}
-          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 text-left">
+          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-8 text-left">
             {renderList("General's Regiment", generalRegiment)}
             {renderList("Gelände / Auxiliaries", terrain)}
           </div>
 
           {/* SPALTE 2: Erste Hälfte der Custom-Regimenter */}
-          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 text-left">
+          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-8 text-left">
             {regimentsCol1?.length > 0 ? regimentsCol1.map((reg) => (
               <div key={reg.id} className="shrink-0">
                 {renderList(reg.title || "Regiment", reg.units)}
@@ -840,7 +840,7 @@ function ArmyOverlay({ player }) {
           </div>
 
           {/* SPALTE 3: Zweite Hälfte der Custom-Regimenter & Auxiliaries */}
-          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 text-left">
+          <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-8 text-left">
             {regimentsCol2?.length > 0 && regimentsCol2.map((reg) => (
               <div key={reg.id} className="shrink-0">
                 {renderList(reg.title || "Regiment", reg.units)}
