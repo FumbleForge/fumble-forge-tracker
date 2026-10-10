@@ -3,6 +3,14 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css'; // <-- WICHTIG: Das muss hier stehen!
 
+if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.log('Service Worker Registrierung fehlgeschlagen:', err);
+    });
+  });
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);

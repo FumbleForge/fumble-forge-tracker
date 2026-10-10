@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Activity, Lock, Unlock, Settings, Plus, Minus, RotateCcw, 
-  Copy, ExternalLink, Check, Trash2, Layers, ShieldAlert 
+  Copy, ExternalLink, Check, Trash2, Layers, ShieldAlert,
+  Wifi, WifiOff
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -70,7 +71,9 @@ export default function StreamOverlay() {
   const [errorMsg, setErrorMsg] = useState("");
   const [syncStatus, setSyncStatus] = useState("connecting");
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const broadcastChannelRef = useRef(null);
+  const nativeChannelRef = useRef(null);
 
   const mergeStateWithDefault = (loaded) => {
     if (!loaded || typeof loaded !== "object") return DEFAULT_STATE;
@@ -118,6 +121,14 @@ export default function StreamOverlay() {
     };
   };
 
+  // Load local state first on mount
+  useEffect(() => {
+    const local = localStorage.getItem("fumble_forge_stream_overlay_state");
+    if (local) {
+      try { setState(mergeStateWithDefault(JSON.parse(local))); } catch (e) {}
+    }
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const overlayParam = params.get("overlay");
@@ -125,16 +136,63 @@ export default function StreamOverlay() {
   }, []);
 
   useEffect(() => {
-    broadcastChannelRef.current = supabase.channel("fumble-forge-stream-overlay-broadcast", {
-      config: { broadcast: { ack: false, self: true } },
-    });
-    broadcastChannelRef.current
-      .on("broadcast", { event: "overlay-update" }, ({ payload }) => {
-        if (payload) setState(mergeStateWithDefault(payload));
-      })
-      .subscribe();
+    // 1. Native BroadcastChannel for 100% offline local tab/window sync
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      nativeChannelRef.current = new BroadcastChannel("fumble_forge_stream_overlay_native");
+      nativeChannelRef.current.onmessage = (event) => {
+        if (event.data) {
+          setState(mergeStateWithDefault(event.data));
+        }
+      };
+    }
+
+    // 2. Storage event listener for cross-tab local sync
+    const handleStorageChange = (e) => {
+      if (e.key === "fumble_forge_stream_overlay_state" && e.newValue) {
+        try {
+          setState(mergeStateWithDefault(JSON.parse(e.newValue)));
+        } catch (err) {}
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // 3. Online/Offline status listeners
+    const handleOnline = () => {
+      setIsOnline(true);
+      const local = localStorage.getItem("fumble_forge_stream_overlay_state");
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          syncWithSupabase(parsed);
+        } catch (e) {}
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setSyncStatus("offline_local");
+    };
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // 4. Supabase Realtime channel setup
+    try {
+      broadcastChannelRef.current = supabase.channel("fumble-forge-stream-overlay-broadcast", {
+        config: { broadcast: { ack: false, self: true } },
+      });
+      broadcastChannelRef.current
+        .on("broadcast", { event: "overlay-update" }, ({ payload }) => {
+          if (payload) setState(mergeStateWithDefault(payload));
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn("Supabase realtime channel skipped/offline:", e);
+    }
 
     const loadAndSubscribe = async () => {
+      if (!navigator.onLine) {
+        setSyncStatus("offline_local");
+        return;
+      }
       try {
         const { data, error } = await supabase.from("stream_overlays").select("data").eq("id", "active_game").maybeSingle();
         if (error) throw error;
@@ -147,21 +205,19 @@ export default function StreamOverlay() {
           })
           .subscribe();
       } catch (err) {
-        setSyncStatus("broadcast_only");
-        const local = localStorage.getItem("fumble_forge_stream_overlay_state");
-        if (local) {
-          try { setState(mergeStateWithDefault(JSON.parse(local))); } catch (e) {}
-        }
+        setSyncStatus("offline_local");
       }
     };
     loadAndSubscribe();
 
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
-        if (profile?.role === "admin") setIsAuthenticated(true);
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
+          if (profile?.role === "admin") setIsAuthenticated(true);
+        }
+      } catch (e) {}
       if (localStorage.getItem("fumble_forge_overlay_admin_auth") === "true") {
         setIsAuthenticated(true);
       }
@@ -169,23 +225,48 @@ export default function StreamOverlay() {
     checkAuth();
 
     return () => {
+      if (nativeChannelRef.current) nativeChannelRef.current.close();
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       if (broadcastChannelRef.current) supabase.removeChannel(broadcastChannelRef.current);
     };
   }, []);
+
+  const syncWithSupabase = async (stateToSync) => {
+    if (!navigator.onLine) {
+      setSyncStatus("offline_local");
+      return;
+    }
+    try {
+      const { error } = await supabase.from("stream_overlays").upsert({ id: "active_game", data: stateToSync, updated_at: new Date() });
+      setSyncStatus(error ? "offline_local" : "active_db");
+    } catch (e) {
+      setSyncStatus("offline_local");
+    }
+  };
 
   const updateState = async (newState) => {
     const merged = mergeStateWithDefault(newState);
     setState(merged);
     localStorage.setItem("fumble_forge_stream_overlay_state", JSON.stringify(merged));
-    if (broadcastChannelRef.current) {
-      broadcastChannelRef.current.send({ type: "broadcast", event: "overlay-update", payload: merged }).catch(() => {});
+
+    // Native local BroadcastChannel (100% offline reliable across tabs/OBS)
+    if (nativeChannelRef.current) {
+      try {
+        nativeChannelRef.current.postMessage(merged);
+      } catch (e) {}
     }
-    try {
-      const { error } = await supabase.from("stream_overlays").upsert({ id: "active_game", data: merged, updated_at: new Date() });
-      setSyncStatus(error ? "broadcast_only" : "active_db");
-    } catch (e) {
-      setSyncStatus("broadcast_only");
+
+    // Supabase Realtime broadcast (if online)
+    if (broadcastChannelRef.current && navigator.onLine) {
+      try {
+        broadcastChannelRef.current.send({ type: "broadcast", event: "overlay-update", payload: merged }).catch(() => {});
+      } catch (e) {}
     }
+
+    // Supabase DB persist
+    await syncWithSupabase(merged);
   };
 
   const handleLogin = (e) => {
@@ -383,7 +464,24 @@ export default function StreamOverlay() {
             <div className="w-8 h-8 bg-amber-500 text-neutral-950 rounded-lg flex items-center justify-center font-bold"><Settings size={16} /></div>
             <div>
               <h1 className="text-sm font-black tracking-wider text-white uppercase">Stream-Overlay Admin</h1>
-              <p className="text-[9px] text-neutral-400 flex items-center gap-1">{syncStatus === "active_db" ? <><span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span><span className="text-green-400 font-semibold">DB Sync aktiv</span></> : <><span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span><span className="text-amber-400 font-semibold">Realtime-Only</span></>}</p>
+              <p className="text-[9px] text-neutral-400 flex items-center gap-1.5">
+                {!isOnline || syncStatus === "offline_local" ? (
+                  <>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                    <span className="text-amber-400 font-bold flex items-center gap-1"><WifiOff size={10} /> Offline-Modus (Lokaler Sync aktiv)</span>
+                  </>
+                ) : syncStatus === "active_db" ? (
+                  <>
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="text-green-400 font-bold flex items-center gap-1"><Wifi size={10} /> Cloud DB & Lokaler Sync</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 bg-sky-500 rounded-full"></span>
+                    <span className="text-sky-400 font-bold flex items-center gap-1"><Wifi size={10} /> Lokaler & Realtime Sync</span>
+                  </>
+                )}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
