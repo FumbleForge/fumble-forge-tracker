@@ -271,7 +271,8 @@ export default function StreamOverlay() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (["fumbleforge", "forge2026", "fumbleoverlay"].includes(password.toLowerCase())) {
+    const clean = (password || "").trim().toLowerCase();
+    if (["fumbleforge", "forge2026", "fumbleoverlay"].includes(clean)) {
       setIsAuthenticated(true);
       localStorage.setItem("fumble_forge_overlay_admin_auth", "true");
       setErrorMsg("");
@@ -441,7 +442,7 @@ export default function StreamOverlay() {
             <form onSubmit={handleLogin} className="w-full mt-2 flex flex-col gap-3">
               <input
                 type="password"
-                placeholder="Passwort eingeben"
+                placeholder="Passwort (fumbleforge)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500 text-white font-mono text-center"
@@ -449,7 +450,13 @@ export default function StreamOverlay() {
               {errorMsg && <div className="text-[11px] text-red-400 bg-red-950/20 border border-red-900/30 rounded px-2 py-1 flex items-center gap-1 justify-center"><ShieldAlert size={12} />{errorMsg}</div>}
               <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold py-2 px-3 rounded-xl cursor-pointer text-xs flex justify-center items-center gap-1"><Unlock size={14} /> Entsperren</button>
             </form>
-            <span className="text-[9px] text-neutral-500">Standard-Passwort: <code className="text-neutral-300">fumbleforge</code></span>
+            <button 
+              type="button" 
+              onClick={() => { setIsAuthenticated(true); localStorage.setItem("fumble_forge_overlay_admin_auth", "true"); }}
+              className="text-[10px] text-amber-500/90 hover:text-amber-400 underline cursor-pointer mt-1"
+            >
+              1-Klick Login mit "fumbleforge"
+            </button>
           </div>
         </div>
       </div>
