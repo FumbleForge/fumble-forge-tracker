@@ -189,15 +189,14 @@ export default function StreamOverlay() {
     }
 
     const loadAndSubscribe = async () => {
-      if (!navigator.onLine) {
-        setSyncStatus("offline_local");
-        return;
-      }
       try {
         const { data, error } = await supabase.from("stream_overlays").select("data").eq("id", "active_game").maybeSingle();
-        if (error) throw error;
-        if (data?.data) setState(mergeStateWithDefault(data.data));
-        setSyncStatus("active_db");
+        if (!error && data?.data) {
+          setState(mergeStateWithDefault(data.data));
+          setSyncStatus("active_db");
+        } else {
+          setSyncStatus("offline_local");
+        }
 
         supabase.channel("fumble-forge-stream-overlay-db")
           .on("postgres_changes", { event: "*", schema: "public", table: "stream_overlays", filter: "id=eq.active_game" }, (payload) => {
@@ -234,10 +233,6 @@ export default function StreamOverlay() {
   }, []);
 
   const syncWithSupabase = async (stateToSync) => {
-    if (!navigator.onLine) {
-      setSyncStatus("offline_local");
-      return;
-    }
     try {
       const { error } = await supabase.from("stream_overlays").upsert({ id: "active_game", data: stateToSync, updated_at: new Date() });
       setSyncStatus(error ? "offline_local" : "active_db");
@@ -258,8 +253,8 @@ export default function StreamOverlay() {
       } catch (e) {}
     }
 
-    // Supabase Realtime broadcast (if online)
-    if (broadcastChannelRef.current && navigator.onLine) {
+    // Supabase Realtime broadcast
+    if (broadcastChannelRef.current) {
       try {
         broadcastChannelRef.current.send({ type: "broadcast", event: "overlay-update", payload: merged }).catch(() => {});
       } catch (e) {}

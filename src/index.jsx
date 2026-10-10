@@ -3,12 +3,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css'; // <-- WICHTIG: Das muss hier stehen!
 
+// Service Worker in OBS/Browsern deaktivieren/aufraeumen, um Vercel-Asset-404s und Caching-Probleme zu verhindern
 if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.log('Service Worker Registrierung fehlgeschlagen:', err);
-    });
-  });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  }).catch(() => {});
 }
 
 class ErrorBoundary extends React.Component {
