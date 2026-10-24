@@ -52,7 +52,7 @@ export default function BroadcastOverlayView({ player, state, pId }) {
             </h1>
           </div>
 
-          <div className="h-[260px] bg-neutral-950/60 backdrop-blur-sm border-2 border-cyan-500/30 rounded-xl relative overflow-hidden flex items-center justify-center shadow-2xl">
+          <div className="h-[480px] bg-neutral-950/60 backdrop-blur-sm border-2 border-cyan-500/30 rounded-xl relative overflow-hidden flex items-center justify-center shadow-2xl">
             {playerPhotoUrl || imageUrl ? (
               <img src={playerPhotoUrl || imageUrl} alt="Player" className="w-full h-full object-cover" />
             ) : (
