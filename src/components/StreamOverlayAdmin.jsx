@@ -75,6 +75,25 @@ export default function StreamOverlayAdmin({
     updateState(updated);
   };
 
+  const updatePlayerTurn = (pId, turnIdx, field, value) => {
+    const updated = { ...state };
+    const pTurns = [...(updated.players[pId]?.turns || Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })))];
+    if (pTurns[turnIdx]) {
+      pTurns[turnIdx] = {
+        ...pTurns[turnIdx],
+        [field]: Math.max(0, parseInt(value, 10) || 0)
+      };
+      updated.players = {
+        ...updated.players,
+        [pId]: {
+          ...updated.players[pId],
+          turns: pTurns
+        }
+      };
+      updateState(updated);
+    }
+  };
+
   const updateArmyField = (pId, field, value) => {
     const updated = { ...state };
     const pArmy = updated.players[pId].army || {};
@@ -326,9 +345,11 @@ export default function StreamOverlayAdmin({
               key={pId}
               pId={pId}
               player={state.players[pId]}
+              stateRound={state.round}
               setImportModalOpen={setImportModalOpen}
               setRawTextInput={setRawTextInput}
               updatePlayerField={updatePlayerField}
+              updatePlayerTurn={updatePlayerTurn}
               updateArmyField={updateArmyField}
               handleImageUpload={handleImageUpload}
               addParsedUnit={addParsedUnit}

@@ -1,18 +1,29 @@
 import React from "react";
-import { Plus, Trash2, Upload, Image, Clipboard } from "lucide-react";
+import { Plus, Minus, Trash2, Upload, Image, Clipboard, Trophy, Flame, BarChart2 } from "lucide-react";
 
 export default function StreamOverlayAdminPlayerCard({
   pId,
   player,
+  stateRound,
   setImportModalOpen,
   setRawTextInput,
   updatePlayerField,
+  updatePlayerTurn,
   updateArmyField,
   handleImageUpload,
   addParsedUnit,
   updateParsedUnit,
   deleteParsedUnit
 }) {
+  const turns = player.turns || Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 }));
+  
+  const totalTurnPoints = turns.reduce(
+    (acc, t) => acc + (parseInt(t?.battleplan, 10) || 0) + (parseInt(t?.battle_tactic, 10) || 0),
+    0
+  );
+  
+  const isOverridden = player.scoreOverride !== undefined && player.scoreOverride !== null && player.scoreOverride !== "";
+  const displayTotalScore = isOverridden ? player.scoreOverride : totalTurnPoints;
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-6 shadow-xl flex flex-col gap-4">
       <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
@@ -36,6 +47,87 @@ export default function StreamOverlayAdminPlayerCard({
         <div>
           <label className="block text-[10px] font-bold text-neutral-400 mb-1 uppercase">Fraktion</label>
           <input type="text" value={player.faction || ""} onChange={(e) => updatePlayerField(pId, "faction", e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-xs text-amber-400 focus:outline-none focus:border-amber-500 font-bold uppercase" />
+        </div>
+      </div>
+
+      {/* RESSOURCEN & MANUELLER SCORE OVERRIDE */}
+      <div className="bg-neutral-950 border border-neutral-850 p-3 rounded-xl flex flex-col gap-2">
+        <span className="text-[10px] font-black uppercase text-amber-500/80 flex items-center gap-1">
+          <Trophy size={12} /> Ressourcen & Spielstand
+        </span>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="block text-[9px] font-bold text-neutral-400 mb-1 uppercase">Command Points (CP)</label>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => updatePlayerField(pId, "cp", Math.max(0, (player.cp || 0) - 1))} className="p-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-300 hover:text-amber-400 cursor-pointer"><Minus size={12} /></button>
+              <input type="number" value={player.cp ?? 0} onChange={(e) => updatePlayerField(pId, "cp", Math.max(0, parseInt(e.target.value) || 0))} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg text-center text-xs font-mono font-bold text-amber-400 p-1 focus:outline-none" />
+              <button type="button" onClick={() => updatePlayerField(pId, "cp", (player.cp || 0) + 1)} className="p-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-300 hover:text-amber-400 cursor-pointer"><Plus size={12} /></button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[9px] font-bold text-neutral-400 mb-1 uppercase">Fury Dice / Points</label>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => updatePlayerField(pId, "furyDice", Math.max(0, (player.furyDice || 0) - 1))} className="p-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-300 hover:text-amber-400 cursor-pointer"><Minus size={12} /></button>
+              <input type="number" value={player.furyDice ?? 0} onChange={(e) => updatePlayerField(pId, "furyDice", Math.max(0, parseInt(e.target.value) || 0))} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg text-center text-xs font-mono font-bold text-red-400 p-1 focus:outline-none" />
+              <button type="button" onClick={() => updatePlayerField(pId, "furyDice", (player.furyDice || 0) + 1)} className="p-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-300 hover:text-amber-400 cursor-pointer"><Plus size={12} /></button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[9px] font-bold text-neutral-400 mb-1 uppercase">Score Override (Manuell)</label>
+            <input type="text" placeholder={`Auto (${totalTurnPoints} VP)`} value={player.scoreOverride ?? ""} onChange={(e) => updatePlayerField(pId, "scoreOverride", e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg text-center text-xs font-mono font-bold text-white p-1.5 focus:outline-none" />
+          </div>
+        </div>
+      </div>
+
+      {/* RUNDEN-PUNKTE (PUNKTE PRO RUNDE 1 - 5) */}
+      <div className="bg-neutral-950 border border-neutral-850 p-3 rounded-xl flex flex-col gap-2">
+        <div className="flex justify-between items-center border-b border-neutral-800/80 pb-1.5">
+          <span className="text-[10px] font-black uppercase text-amber-500/80 flex items-center gap-1">
+            <BarChart2 size={12} /> Punkte pro Runde (Runden 1 bis 5)
+          </span>
+          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-lg">
+            Aktiv Gesamt: {displayTotalScore} VP {isOverridden ? "(Override)" : ""}
+          </span>
+        </div>
+        <div className="grid grid-cols-5 gap-1.5">
+          {turns.map((turn, tIdx) => {
+            const isCurrent = stateRound === tIdx + 1;
+            return (
+              <div 
+                key={tIdx} 
+                className={`p-1.5 rounded-xl border flex flex-col gap-1 text-center transition ${
+                  isCurrent 
+                    ? "bg-amber-500/10 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.15)]" 
+                    : "bg-neutral-900 border-neutral-800"
+                }`}
+              >
+                <div className="flex items-center justify-between px-0.5">
+                  <span className="text-[9px] font-black uppercase text-neutral-400">Runde {tIdx + 1}</span>
+                  {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div>
+                    <span className="block text-[7px] text-neutral-500 uppercase font-bold text-left pl-0.5">Primär/Plan</span>
+                    <input 
+                      type="number" 
+                      value={turn.battleplan ?? 0} 
+                      onChange={(e) => updatePlayerTurn(pId, tIdx, "battleplan", e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded px-1 py-0.5 text-center text-xs font-mono font-bold text-amber-400 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-[7px] text-neutral-500 uppercase font-bold text-left pl-0.5">Sekundär/Taktik</span>
+                    <input 
+                      type="number" 
+                      value={turn.battle_tactic ?? 0} 
+                      onChange={(e) => updatePlayerTurn(pId, tIdx, "battle_tactic", e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded px-1 py-0.5 text-center text-xs font-mono font-bold text-cyan-400 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
