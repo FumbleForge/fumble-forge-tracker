@@ -167,6 +167,7 @@ export default function StreamOverlayAdmin({
 
     if (parsed.parsedUnits && parsed.parsedUnits.length > 0) {
       pArmy.parsedUnits = parsed.parsedUnits;
+      pArmy.regiments = parsed.regiments || [];
       pArmy.rawListText = rawTextInput;
 
       pArmy.generalRegiment = parsed.parsedUnits.slice(0, 2).map((u) => ({

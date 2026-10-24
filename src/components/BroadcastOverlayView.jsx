@@ -29,6 +29,13 @@ export default function BroadcastOverlayView({ player, state, pId }) {
 
   const activeMission = state?.missionTag || player?.army?.missionTag || "TAKE AND HOLD";
 
+  const groupedUnits = displayUnits.reduce((acc, unit) => {
+    const cat = unit.category || "EINHEITEN";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(unit);
+    return acc;
+  }, {});
+
   return (
     <div className="w-screen h-screen bg-[#070b12]/80 backdrop-blur-md text-white font-sans select-none overflow-hidden p-6 md:p-8 flex flex-col justify-between relative animate-fade-in">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-cyan-950/20 via-[#070b12]/50 to-[#04060a]/70 pointer-events-none"></div>
@@ -108,29 +115,42 @@ export default function BroadcastOverlayView({ player, state, pId }) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[calc(100vh-160px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {displayUnits.map((item, idx) => (
-                <div key={item.id || idx} className="bg-neutral-900/90 hover:bg-neutral-850 border border-cyan-500/20 rounded-lg p-2.5 transition-all shadow-md flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-center gap-2 font-bold text-xs md:text-sm text-neutral-100 uppercase tracking-wide truncate">
-                      {item.count && <span className="text-amber-400 font-mono text-xs shrink-0">{item.count}</span>}
-                      <span className="truncate">{item.name}</span>
-                    </div>
-                    {item.points && (
-                      <span className="font-mono font-black text-amber-400 text-xs md:text-sm shrink-0 ml-1">
-                        {item.points}
-                      </span>
-                    )}
-                  </div>
-                  {item.note && (
-                    <div className="text-[10px] text-cyan-300/80 italic mt-1 pl-2 border-l-2 border-cyan-500/30 font-sans truncate">
-                      {item.note}
-                    </div>
-                  )}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[calc(100vh-160px)] flex flex-col gap-6">
+            {Object.entries(groupedUnits).map(([categoryName, units]) => (
+              <div key={categoryName} className="flex flex-col gap-2.5">
+                <div className="flex items-center gap-2 border-b border-cyan-500/30 pb-1">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                  <h3 className="text-xs font-serif font-black uppercase text-amber-400 tracking-wider">
+                    {categoryName}
+                  </h3>
+                  <span className="text-[10px] font-mono text-neutral-400 ml-auto font-bold">
+                    {units.length} {units.length === 1 ? "Einheit" : "Einheiten"}
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {units.map((item, idx) => (
+                    <div key={item.id || idx} className="bg-neutral-900/70 hover:bg-neutral-850/80 border border-cyan-500/20 rounded-lg p-2.5 transition-all shadow-md flex flex-col justify-between backdrop-blur-sm">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex items-center gap-2 font-bold text-xs md:text-sm text-neutral-100 uppercase tracking-wide truncate">
+                          {item.count && <span className="text-amber-400 font-mono text-xs shrink-0">{item.count}</span>}
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                        {item.points && (
+                          <span className="font-mono font-black text-amber-400 text-xs md:text-sm shrink-0 ml-1">
+                            {item.points}
+                          </span>
+                        )}
+                      </div>
+                      {item.note && (
+                        <div className="text-[10px] text-cyan-300/80 italic mt-1 pl-2 border-l-2 border-cyan-500/30 font-sans truncate">
+                          {item.note}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

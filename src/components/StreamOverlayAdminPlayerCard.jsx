@@ -228,16 +228,37 @@ export default function StreamOverlayAdminPlayerCard({
           </button>
         </div>
 
-        <div className="flex flex-col gap-1.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
-          {(player.army?.parsedUnits || []).map((unit, uIdx) => (
-            <div key={unit.id || uIdx} className="bg-neutral-950 border border-neutral-850 p-2 rounded-xl flex flex-col gap-1">
-              <div className="flex gap-1.5 items-center">
-                <input type="text" placeholder="Anzahl" value={unit.count || ""} onChange={(e) => updateParsedUnit(pId, uIdx, "count", e.target.value)} className="w-12 bg-neutral-900 border border-neutral-800 rounded px-1.5 py-0.5 text-xs text-amber-400 font-mono text-center focus:outline-none" />
-                <input type="text" placeholder="Einheiten-Name" value={unit.name || ""} onChange={(e) => updateParsedUnit(pId, uIdx, "name", e.target.value)} className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-2 py-0.5 text-xs text-white font-bold focus:outline-none" />
-                <input type="text" placeholder="Punkte" value={unit.points || ""} onChange={(e) => updateParsedUnit(pId, uIdx, "points", e.target.value)} className="w-16 bg-neutral-900 border border-neutral-800 rounded px-1.5 py-0.5 text-xs text-amber-400 font-mono text-center focus:outline-none" />
-                <button onClick={() => deleteParsedUnit(pId, uIdx)} className="text-red-400 bg-neutral-900 border border-neutral-800 p-1 rounded hover:bg-red-950/40 cursor-pointer"><Trash2 size={12} /></button>
+        <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+          {Object.entries(
+            (player.army?.parsedUnits || []).reduce((acc, unit) => {
+              const cat = unit.category || "Einheiten";
+              if (!acc[cat]) acc[cat] = [];
+              acc[cat].push(unit);
+              return acc;
+            }, {})
+          ).map(([categoryName, catUnits]) => (
+            <div key={categoryName} className="flex flex-col gap-1.5">
+              <div className="text-[10px] font-black uppercase text-amber-400/90 border-b border-neutral-800 pb-0.5 flex items-center justify-between">
+                <span>📍 {categoryName}</span>
+                <span className="text-neutral-500 font-normal">({catUnits.length})</span>
               </div>
-              <input type="text" placeholder="Wargear / Enhancements / Zusatz-Info" value={unit.note || ""} onChange={(e) => updateParsedUnit(pId, uIdx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850 rounded px-2 py-0.5 text-[10px] text-cyan-300 italic focus:outline-none" />
+              {catUnits.map((unit, uIdx) => {
+                const globalIdx = (player.army?.parsedUnits || []).indexOf(unit);
+                return (
+                  <div key={unit.id || uIdx} className="bg-neutral-950 border border-neutral-850 p-2 rounded-xl flex flex-col gap-1">
+                    <div className="flex gap-1.5 items-center">
+                      <input type="text" placeholder="Anzahl" value={unit.count || ""} onChange={(e) => updateParsedUnit(pId, globalIdx, "count", e.target.value)} className="w-12 bg-neutral-900 border border-neutral-800 rounded px-1.5 py-0.5 text-xs text-amber-400 font-mono text-center focus:outline-none" />
+                      <input type="text" placeholder="Einheiten-Name" value={unit.name || ""} onChange={(e) => updateParsedUnit(pId, globalIdx, "name", e.target.value)} className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-2 py-0.5 text-xs text-white font-bold focus:outline-none" />
+                      <input type="text" placeholder="Punkte" value={unit.points || ""} onChange={(e) => updateParsedUnit(pId, globalIdx, "points", e.target.value)} className="w-16 bg-neutral-900 border border-neutral-800 rounded px-1.5 py-0.5 text-xs text-amber-400 font-mono text-center focus:outline-none" />
+                      <button onClick={() => deleteParsedUnit(pId, globalIdx)} className="text-red-400 bg-neutral-900 border border-neutral-800 p-1 rounded hover:bg-red-950/40 cursor-pointer"><Trash2 size={12} /></button>
+                    </div>
+                    <div className="flex gap-1.5 items-center">
+                      <input type="text" placeholder="Regiment / Kategorie" value={unit.category || ""} onChange={(e) => updateParsedUnit(pId, globalIdx, "category", e.target.value)} className="w-1/3 bg-neutral-900 border border-neutral-850 rounded px-2 py-0.5 text-[10px] text-amber-300 font-mono focus:outline-none" />
+                      <input type="text" placeholder="Wargear / Enhancements / Zusatz-Info" value={unit.note || ""} onChange={(e) => updateParsedUnit(pId, globalIdx, "note", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-850 rounded px-2 py-0.5 text-[10px] text-cyan-300 italic focus:outline-none" />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>

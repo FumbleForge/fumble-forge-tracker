@@ -19,12 +19,12 @@ export function parseArmyListText(text) {
       faction = rawLine.replace(/^(faction|army faction|allegiance|army|system|faktion):/i, "").trim();
       continue;
     }
-    if (!detachment && /^(detachment|subfaction|battle host|regiment|kontingent):/i.test(rawLine)) {
-      detachment = rawLine.replace(/^(detachment|subfaction|battle host|regiment|kontingent):/i, "").trim();
+    if (!detachment && /^(detachment|battle formation|subfaction|battle host|kontingent):/i.test(rawLine)) {
+      detachment = rawLine.replace(/^(detachment|battle formation|subfaction|battle host|kontingent):/i, "").trim();
       continue;
     }
 
-    // Check if line looks like a detachment rule (e.g. "EMPEROR'S CHOSEN 1DP", "LIONS OF THE EMPEROR 1DP")
+    // Check if line looks like a detachment rule
     if (/^[A-Z0-9\s'\-]+\s+\d+DP$/i.test(rawLine)) {
       detachmentRules.push(rawLine);
       continue;
@@ -38,12 +38,18 @@ export function parseArmyListText(text) {
       continue;
     }
 
-    // Category / Section Header (e.g., "CHARACTERS", "BATTLELINE", "OTHER DRAMATIS PERSONAE", "Regiment 1")
-    if (
-      /^(CHARACTERS|BATTLELINE|DEDICATED TRANSPORTS?|OTHER DRAMATIS PERSONAE|OTHER UNITS|ALLIES|REGIMENT \d+|GENERAL'S REGIMENT|AUXILIARIES|TERRAIN|EINHEITEN)$/i.test(rawLine) ||
-      (rawLine.endsWith(":") && !rawLine.toLowerCase().includes("pts") && !rawLine.toLowerCase().includes("punkte"))
-    ) {
-      currentCategory = rawLine.replace(":", "").trim();
+    // Cleaned header candidate
+    const cleanHeaderCandidate = rawLine.replace(/^[\+\*#\-=\[\]]+\s*/, "").replace(/\s*[\+\*#\-=\[\]]+$/, "").replace(/:$/, "").trim();
+
+    // Check for Regiment / Category headers
+    const isCategoryHeader =
+      /^(CHARACTERS|CHARACTER|BATTLELINE|DEDICATED TRANSPORTS?|OTHER DRAMATIS PERSONAE|OTHER DATACARDS|OTHER UNITS|ALLIES|REGIMENT\s*\d*|GENERAL'?S REGIMENT|AUXILIARIES|AUXILIARY|TERRAIN|FACTION TERRAIN|MANIFESTATIONS|EINHEITEN)$/i.test(cleanHeaderCandidate) ||
+      (/^[\+=\-]{2,}\s*.*?\s*[\+=\-]{2,}$/.test(rawLine) && !rawLine.includes("pts") && !rawLine.includes("(")) ||
+      (rawLine.endsWith(":") && !/\d+\s*(pts|p|punkte|\))/i.test(rawLine) && !rawLine.startsWith("•")) ||
+      (/^[A-Z\s'–\-]{3,30}$/.test(rawLine) && !/\d/.test(rawLine) && !/^(faction|detachment|points|army)/i.test(rawLine));
+
+    if (isCategoryHeader && cleanHeaderCandidate.length > 1) {
+      currentCategory = cleanHeaderCandidate;
       continue;
     }
 
@@ -103,10 +109,24 @@ export function parseArmyListText(text) {
     }
   }
 
+  const regimentsMap = {};
+  parsedUnits.forEach((u) => {
+    const cat = u.category || "Einheiten";
+    if (!regimentsMap[cat]) regimentsMap[cat] = [];
+    regimentsMap[cat].push(u);
+  });
+
+  const regiments = Object.entries(regimentsMap).map(([title, units], idx) => ({
+    id: `reg-${idx + 1}`,
+    title,
+    units
+  }));
+
   return {
     faction,
     detachment,
     detachmentRules,
-    parsedUnits
+    parsedUnits,
+    regiments
   };
 }
