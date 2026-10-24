@@ -178,7 +178,7 @@ export default function StreamOverlayAdminPlayerCard({
               </label>
             </div>
             {player.army?.playerPhotoUrl && (
-              <div className="h-16 bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden relative group">
+              <div className="h-28 bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden relative group">
                 <img src={player.army.playerPhotoUrl} alt="Player" className="w-full h-full object-cover" />
                 <button onClick={() => updateArmyField(pId, "playerPhotoUrl", "")} className="absolute top-1 right-1 bg-red-950/80 text-red-400 p-1 rounded hover:bg-red-900 cursor-pointer"><Trash2 size={10} /></button>
               </div>
@@ -195,7 +195,7 @@ export default function StreamOverlayAdminPlayerCard({
               </label>
             </div>
             {player.army?.characterArtUrl && (
-              <div className="h-16 bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden relative group">
+              <div className="h-28 bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden relative group">
                 <img src={player.army.characterArtUrl} alt="Character Art" className="w-full h-full object-cover" />
                 <button onClick={() => updateArmyField(pId, "characterArtUrl", "")} className="absolute top-1 right-1 bg-red-950/80 text-red-400 p-1 rounded hover:bg-red-900 cursor-pointer"><Trash2 size={10} /></button>
               </div>
@@ -212,7 +212,7 @@ export default function StreamOverlayAdminPlayerCard({
               </label>
             </div>
             {player.army?.imageUrl && (
-              <div className="h-16 bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden relative group">
+              <div className="h-28 bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden relative group">
                 <img src={player.army.imageUrl} alt="Miniature" className="w-full h-full object-contain" />
                 <button onClick={() => updateArmyField(pId, "imageUrl", "")} className="absolute top-1 right-1 bg-red-950/80 text-red-400 p-1 rounded hover:bg-red-900 cursor-pointer"><Trash2 size={10} /></button>
               </div>

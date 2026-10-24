@@ -35,7 +35,7 @@ export default function BroadcastOverlayView({ player, state, pId }) {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
 
       <div className="relative z-10 flex-1 flex flex-col md:flex-row gap-6 md:gap-8 min-h-0">
-        <div className="w-full md:w-[340px] shrink-0 flex flex-col gap-3.5 border-r border-cyan-500/20 pr-0 md:pr-6">
+        <div className="w-full md:w-[420px] shrink-0 flex flex-col gap-3.5 border-r border-cyan-500/20 pr-0 md:pr-6">
           <div className="bg-neutral-900/90 border border-cyan-500/30 rounded-xl p-3 shadow-lg flex flex-col">
             <span className="text-[9px] font-black uppercase text-cyan-400 tracking-widest flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> SPIELER PROFIL
@@ -45,7 +45,7 @@ export default function BroadcastOverlayView({ player, state, pId }) {
             </h1>
           </div>
 
-          <div className="h-[180px] bg-neutral-950/80 border-2 border-cyan-500/30 rounded-xl relative overflow-hidden flex items-center justify-center shadow-2xl">
+          <div className="h-[260px] bg-neutral-950/80 border-2 border-cyan-500/30 rounded-xl relative overflow-hidden flex items-center justify-center shadow-2xl">
             {playerPhotoUrl || imageUrl ? (
               <img src={playerPhotoUrl || imageUrl} alt="Player" className="w-full h-full object-cover" />
             ) : (
@@ -84,7 +84,7 @@ export default function BroadcastOverlayView({ player, state, pId }) {
             )}
           </div>
 
-          <div className="h-[180px] bg-neutral-950/60 border border-cyan-500/20 rounded-xl relative overflow-hidden flex items-center justify-center shadow-inner mt-auto">
+          <div className="h-[260px] bg-neutral-950/60 border border-cyan-500/20 rounded-xl relative overflow-hidden flex items-center justify-center shadow-inner mt-auto">
             {characterArtUrl || imageUrl ? (
               <img src={characterArtUrl || imageUrl} alt="Character Art" className="w-full h-full object-contain p-1.5" />
             ) : (
