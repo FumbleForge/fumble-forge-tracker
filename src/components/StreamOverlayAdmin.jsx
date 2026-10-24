@@ -188,6 +188,27 @@ export default function StreamOverlayAdmin({
     updated.players[pId].army = pArmy;
     updateState(updated);
   };
+
+  const updateParsedUnit = (pId, uIdx, field, value) => {
+    const updated = { ...state };
+    const pArmy = updated.players[pId].army || {};
+    const currentUnits = [...(pArmy.parsedUnits || [])];
+    if (currentUnits[uIdx]) {
+      currentUnits[uIdx] = { ...currentUnits[uIdx], [field]: value };
+      pArmy.parsedUnits = currentUnits;
+      updated.players[pId].army = pArmy;
+      updateState(updated);
+    }
+  };
+
+  const deleteParsedUnit = (pId, uIdx) => {
+    const updated = { ...state };
+    const pArmy = updated.players[pId].army || {};
+    const currentUnits = (pArmy.parsedUnits || []).filter((_, idx) => idx !== uIdx);
+    pArmy.parsedUnits = currentUnits;
+    updated.players[pId].army = pArmy;
+    updateState(updated);
+  };
   return (
     <div className="min-h-screen bg-neutral-950 text-white font-sans p-4 md:p-8 pb-20">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
