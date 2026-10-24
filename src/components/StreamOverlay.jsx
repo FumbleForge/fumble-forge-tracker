@@ -275,6 +275,27 @@ export default function StreamOverlay() {
       />
     );
   }
+
+  const effectiveOverlay = (view === "live" || !view) 
+    ? (state.activeOverlayType || "game") 
+    : view;
+
+  if (effectiveOverlay === "broadcast-p1") {
+    return <BroadcastOverlayView state={state} player={state.players[1]} pId={1} />;
+  }
+
+  if (effectiveOverlay === "broadcast-p2") {
+    return <BroadcastOverlayView state={state} player={state.players[2]} pId={2} />;
+  }
+
+  if (effectiveOverlay === "army-p1") {
+    return <ArmyOverlay player={state.players[1]} />;
+  }
+
+  if (effectiveOverlay === "army-p2") {
+    return <ArmyOverlay player={state.players[2]} />;
+  }
+
   return (
     <div className="w-screen h-screen bg-transparent relative overflow-hidden font-sans select-none text-white animate-fade-in">
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">

@@ -57,7 +57,8 @@ export default function StreamOverlayAdmin({
     { label: "⚔️ Army Card Spieler 1 (AoS)", url: `${baseUrl}?overlay=army-p1` },
     { label: "⚔️ Army Card Spieler 2 (AoS)", url: `${baseUrl}?overlay=army-p2` },
     { label: "📊 Broadcast List Spieler 1 (Art of War Style)", url: `${baseUrl}?overlay=broadcast-p1` },
-    { label: "📊 Broadcast List Spieler 2 (Art of War Style)", url: `${baseUrl}?overlay=broadcast-p2` }
+    { label: "📊 Broadcast List Spieler 2 (Art of War Style)", url: `${baseUrl}?overlay=broadcast-p2` },
+    { label: "📺 Dynamic Live Switcher (Schaltet per Admin um)", url: `${baseUrl}?overlay=live` }
   ];
 
   const copyToClipboard = (text, index) => {
