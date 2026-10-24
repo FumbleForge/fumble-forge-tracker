@@ -1,23 +1,83 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Activity, Lock, Unlock, Settings, Plus, Minus, RotateCcw, 
-  Copy, ExternalLink, Check, Trash2, Layers, ShieldAlert,
-  Wifi, WifiOff
-} from "lucide-react";
 import { supabase } from "../supabaseClient";
+import { parseArmyListText } from "../utils/armyListParser";
+import BroadcastOverlayView from "./BroadcastOverlayView";
+import StreamOverlayAdmin from "./StreamOverlayAdmin";
+
+export { parseArmyListText };
 
 const DEFAULT_STATE = {
-  activeOverlayType: "game", // "game" | "army-p1" | "army-p2"
-  gameSystem: "AoS",
+  activeOverlayType: "game", // "game" | "army-p1" | "army-p2" | "broadcast-p1" | "broadcast-p2"
+  gameSystem: "40k",
   round: 1,
   activePlayer: null, // null | 1 | 2
   underdogPlayer: null, // null | 1 | 2
+  missionTag: "TAKE AND HOLD",
   players: {
     1: {
-      name: "Player 1", faction: "Skaven", cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
+      name: "FOLGER PYLES", 
+      faction: "ADEPTUS CUSTODES", 
+      cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
+      turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
+      army: {
+        title: "ADEPTUS CUSTODES",
+        detachment: "Shield Host",
+        detachmentRules: ["EMPEROR'S CHOSEN 1DP", "LIONS OF THE EMPEROR 1DP", "MIGHT OF THE MORITOI 1DP"],
+        playerPhotoUrl: "",
+        characterArtUrl: "",
+        imageUrl: "",
+        rawListText: "",
+        parsedUnits: [
+          { id: "p1-1", name: "TRAJANN VALORIS", count: "1x", points: "265", note: "Warlord", category: "CHARACTERS" },
+          { id: "p1-2", name: "ALLARUS CUSTODIANS", count: "3x", points: "270", note: "", category: "UNITS" },
+          { id: "p1-3", name: "CALADIUS GRAV-TANK", count: "1x", points: "250", note: "Twin Iliastus Accelerator Cannon", category: "UNITS" },
+          { id: "p1-4", name: "CALADIUS GRAV-TANK", count: "1x", points: "250", note: "", category: "UNITS" },
+          { id: "p1-5", name: "GALATUS DREADNOUGHT", count: "1x", points: "220", note: "", category: "UNITS" },
+          { id: "p1-6", name: "GALATUS DREADNOUGHT", count: "1x", points: "220", note: "", category: "UNITS" },
+          { id: "p1-7", name: "TELEMON DREADNOUGHT", count: "1x", points: "310", note: "Augury Uplink", category: "UNITS" },
+          { id: "p1-8", name: "PROSECUTORS", count: "5x", points: "50", note: "", category: "UNITS" },
+          { id: "p1-9", name: "PROSECUTORS", count: "4x", points: "45", note: "", category: "UNITS" },
+          { id: "p1-10", name: "WITCHSEEKERS", count: "5x", points: "60", note: "", category: "UNITS" },
+          { id: "p1-11", name: "WITCHSEEKERS", count: "5x", points: "60", note: "", category: "UNITS" }
+        ],
+        generalRegiment: [
+          { name: "TRAJANN VALORIS", count: "x1", note: "General" }, 
+          { name: "ALLARUS CUSTODIANS", count: "x3", note: "270 pts" }
+        ],
+        regiments: [
+          {
+            id: "reg-1",
+            title: "Schwere Fahrzeuge",
+            units: [
+              { name: "CALADIUS GRAV-TANK", count: "x1", note: "250 pts" },
+              { name: "TELEMON DREADNOUGHT", count: "x1", note: "310 pts - Augury Uplink" }
+            ]
+          }
+        ],
+        auxiliaries: [],
+        terrain: []
+      }
+    },
+    2: {
+      name: "ENGLISH JOE", 
+      faction: "SKAVEN", 
+      cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
       turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
       army: {
         title: "SKAVEN CLANS",
+        detachment: "Warpcog Convocation",
+        detachmentRules: ["WARP-POWERED 1DP", "CLAWLORDS DISPOSITION 1DP"],
+        playerPhotoUrl: "",
+        characterArtUrl: "",
+        imageUrl: "",
+        rawListText: "",
+        parsedUnits: [
+          { id: "p2-1", name: "Clawlord on Gnaw-Beast", count: "1x", points: "170", note: "General - Artefakt: Arcane Tome", category: "CHARACTERS" },
+          { id: "p2-2", name: "Stormvermin", count: "20x", points: "140", note: "Schildwache", category: "BATTLELINE" },
+          { id: "p2-3", name: "Warplock Jezzails", count: "3x", points: "150", note: "Fernkampf", category: "UNITS" },
+          { id: "p2-4", name: "Arkanaut Company", count: "20x", points: "180", note: "", category: "UNITS" },
+          { id: "p2-5", name: "Endrinriggers", count: "6x", points: "160", note: "", category: "UNITS" }
+        ],
         generalRegiment: [
           { name: "Clawlord on Gnaw-Beast", count: "x1", note: "General - Artefakt: Arcane Tome" }, 
           { name: "Stormvermin", count: "x20", note: "Schildwache" }
@@ -30,34 +90,7 @@ const DEFAULT_STATE = {
           }
         ],
         auxiliaries: [],
-        terrain: [{ name: "Gnawholes", count: "x3", note: "Fraktionsgelände" }],
-        imageUrl: ""
-      }
-    },
-    2: {
-      name: "Player 2", faction: "Kharadron Overlords", cp: 4, furyDice: 0, furyPoints: 0, scoreOverride: "",
-      turns: Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 })),
-      army: {
-        title: "KHARADRON OVERLORDS",
-        generalRegiment: [
-          { name: "Brokk Grungsson", count: "x1", note: "General - Lord-Magnate" }, 
-          { name: "Arkanaut Frigate", count: "x1", note: "Flaggschiff" }
-        ],
-        regiments: [
-          {
-            id: "reg-1",
-            title: "Regiment 1",
-            units: [{ name: "Arkanaut Company", count: "x20", note: "Linieninfanterie" }]
-          },
-          {
-            id: "reg-2",
-            title: "Regiment 2",
-            units: [{ name: "Endrinriggers", count: "x6", note: "Reparaturtrupp" }]
-          }
-        ],
-        auxiliaries: [],
-        terrain: [{ name: "Zontari Endrin Dock", count: "x1", note: "Anlegestelle" }],
-        imageUrl: ""
+        terrain: []
       }
     }
   }
@@ -70,8 +103,7 @@ export default function StreamOverlay() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [syncStatus, setSyncStatus] = useState("connecting");
-  const [copiedIndex, setCopiedIndex] = useState(null);
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
   const broadcastChannelRef = useRef(null);
   const nativeChannelRef = useRef(null);
 
@@ -80,6 +112,7 @@ export default function StreamOverlay() {
     return {
       ...DEFAULT_STATE,
       ...loaded,
+      missionTag: loaded.missionTag || DEFAULT_STATE.missionTag,
       activePlayer: loaded.activePlayer !== undefined ? loaded.activePlayer : null,
       underdogPlayer: loaded.underdogPlayer !== undefined ? loaded.underdogPlayer : null,
       players: {
@@ -90,14 +123,12 @@ export default function StreamOverlay() {
           army: {
             ...DEFAULT_STATE.players[1].army,
             ...(loaded.players?.[1]?.army || {}),
-            generalRegiment: Array.isArray(loaded.players?.[1]?.army?.generalRegiment) ? loaded.players[1].army.generalRegiment : DEFAULT_STATE.players[1].army.generalRegiment,
-            regiments: Array.isArray(loaded.players?.[1]?.army?.regiments) 
-              ? loaded.players[1].army.regiments 
-              : (loaded.players?.[1]?.army?.regiment 
-                  ? [{ id: "reg-1", title: "Regiment 1", units: loaded.players[1].army.regiment }] 
-                  : DEFAULT_STATE.players[1].army.regiments),
-            auxiliaries: Array.isArray(loaded.players?.[1]?.army?.auxiliaries) ? loaded.players[1].army.auxiliaries : [],
-            terrain: Array.isArray(loaded.players?.[1]?.army?.terrain) ? loaded.players[1].army.terrain : DEFAULT_STATE.players[1].army.terrain,
+            detachmentRules: Array.isArray(loaded.players?.[1]?.army?.detachmentRules) 
+              ? loaded.players[1].army.detachmentRules 
+              : DEFAULT_STATE.players[1].army.detachmentRules,
+            parsedUnits: Array.isArray(loaded.players?.[1]?.army?.parsedUnits)
+              ? loaded.players[1].army.parsedUnits
+              : DEFAULT_STATE.players[1].army.parsedUnits
           }
         },
         2: {
@@ -107,730 +138,150 @@ export default function StreamOverlay() {
           army: {
             ...DEFAULT_STATE.players[2].army,
             ...(loaded.players?.[2]?.army || {}),
-            generalRegiment: Array.isArray(loaded.players?.[2]?.army?.generalRegiment) ? loaded.players[2].army.generalRegiment : DEFAULT_STATE.players[2].army.generalRegiment,
-            regiments: Array.isArray(loaded.players?.[2]?.army?.regiments) 
-              ? loaded.players[2].army.regiments 
-              : (loaded.players?.[2]?.army?.regiment 
-                  ? [{ id: "reg-1", title: "Regiment 1", units: loaded.players[2].army.regiment }] 
-                  : DEFAULT_STATE.players[2].army.regiments),
-            auxiliaries: Array.isArray(loaded.players?.[2]?.army?.auxiliaries) ? loaded.players[2].army.auxiliaries : [],
-            terrain: Array.isArray(loaded.players?.[2]?.army?.terrain) ? loaded.players[2].army.terrain : DEFAULT_STATE.players[2].army.terrain,
+            detachmentRules: Array.isArray(loaded.players?.[2]?.army?.detachmentRules) 
+              ? loaded.players[2].army.detachmentRules 
+              : DEFAULT_STATE.players[2].army.detachmentRules,
+            parsedUnits: Array.isArray(loaded.players?.[2]?.army?.parsedUnits)
+              ? loaded.players[2].army.parsedUnits
+              : DEFAULT_STATE.players[2].army.parsedUnits
           }
         }
       }
     };
   };
 
-  // Load local state first on mount
   useEffect(() => {
-    const local = localStorage.getItem("fumble_forge_stream_overlay_state");
-    if (local) {
-      try { setState(mergeStateWithDefault(JSON.parse(local))); } catch (e) {}
+    const searchParams = new URLSearchParams(window.location.search);
+    const overlayParam = searchParams.get("overlay");
+    
+    if (overlayParam === "admin") {
+      setView("admin");
+      const auth = localStorage.getItem("fumble_overlay_auth");
+      if (auth === "true") setIsAuthenticated(true);
+    } else if (overlayParam) {
+      setView(overlayParam);
+    } else {
+      setView("live");
     }
-  }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const overlayParam = params.get("overlay");
-    setView(overlayParam === "admin" ? "admin" : (overlayParam || "live"));
-  }, []);
+    try {
+      const saved = localStorage.getItem("fumble_overlay_state");
+      if (saved) {
+        setState(mergeStateWithDefault(JSON.parse(saved)));
+      }
+    } catch (e) {
+      console.error("Local storage error:", e);
+    }
 
-  useEffect(() => {
-    // 1. Native BroadcastChannel for 100% offline local tab/window sync
-    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
-      nativeChannelRef.current = new BroadcastChannel("fumble_forge_stream_overlay_native");
+    if ("BroadcastChannel" in window) {
+      nativeChannelRef.current = new BroadcastChannel("fumble_overlay_channel");
       nativeChannelRef.current.onmessage = (event) => {
-        if (event.data) {
-          setState(mergeStateWithDefault(event.data));
+        if (event.data?.type === "STATE_UPDATE" && event.data.payload) {
+          const merged = mergeStateWithDefault(event.data.payload);
+          setState(merged);
+          localStorage.setItem("fumble_overlay_state", JSON.stringify(merged));
         }
       };
     }
 
-    // 2. Storage event listener for cross-tab local sync
-    const handleStorageChange = (e) => {
-      if (e.key === "fumble_forge_stream_overlay_state" && e.newValue) {
-        try {
-          setState(mergeStateWithDefault(JSON.parse(e.newValue)));
-        } catch (err) {}
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
+    const channel = supabase.channel("fumble_stream_overlay", {
+      config: { broadcast: { self: false } }
+    });
 
-    // 3. Online/Offline status listeners
-    const handleOnline = () => {
-      setIsOnline(true);
-      const local = localStorage.getItem("fumble_forge_stream_overlay_state");
-      if (local) {
-        try {
-          const parsed = JSON.parse(local);
-          syncWithSupabase(parsed);
-        } catch (e) {}
-      }
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      setSyncStatus("offline_local");
-    };
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    // 4. Supabase Realtime channel setup
-    try {
-      broadcastChannelRef.current = supabase.channel("fumble-forge-stream-overlay-broadcast", {
-        config: { broadcast: { ack: false, self: true } },
+    channel
+      .on("broadcast", { event: "STATE_UPDATE" }, ({ payload }) => {
+        if (payload) {
+          const merged = mergeStateWithDefault(payload);
+          setState(merged);
+          localStorage.setItem("fumble_overlay_state", JSON.stringify(merged));
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setSyncStatus("connected");
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          setSyncStatus("error");
+        }
       });
-      broadcastChannelRef.current
-        .on("broadcast", { event: "overlay-update" }, ({ payload }) => {
-          if (payload) setState(mergeStateWithDefault(payload));
-        })
-        .subscribe();
-    } catch (e) {
-      console.warn("Supabase realtime channel skipped/offline:", e);
-    }
 
-    const loadAndSubscribe = async () => {
-      try {
-        const { data, error } = await supabase.from("stream_overlays").select("data").eq("id", "active_game").maybeSingle();
-        if (!error && data?.data) {
-          setState(mergeStateWithDefault(data.data));
-          setSyncStatus("active_db");
-        } else {
-          setSyncStatus("offline_local");
-        }
-
-        supabase.channel("fumble-forge-stream-overlay-db")
-          .on("postgres_changes", { event: "*", schema: "public", table: "stream_overlays", filter: "id=eq.active_game" }, (payload) => {
-            if (payload.new?.data) setState(mergeStateWithDefault(payload.new.data));
-          })
-          .subscribe();
-      } catch (err) {
-        setSyncStatus("offline_local");
-      }
-    };
-    loadAndSubscribe();
-
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
-          if (profile?.role === "admin") setIsAuthenticated(true);
-        }
-      } catch (e) {}
-      if (localStorage.getItem("fumble_forge_overlay_admin_auth") === "true") {
-        setIsAuthenticated(true);
-      }
-    };
-    checkAuth();
+    broadcastChannelRef.current = channel;
 
     return () => {
       if (nativeChannelRef.current) nativeChannelRef.current.close();
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
       if (broadcastChannelRef.current) supabase.removeChannel(broadcastChannelRef.current);
     };
   }, []);
 
-  const syncWithSupabase = async (stateToSync) => {
-    try {
-      const { error } = await supabase.from("stream_overlays").upsert({ id: "active_game", data: stateToSync, updated_at: new Date() });
-      setSyncStatus(error ? "offline_local" : "active_db");
-    } catch (e) {
-      setSyncStatus("offline_local");
-    }
-  };
-
-  const updateState = async (newState) => {
+  const updateState = (newState) => {
     const merged = mergeStateWithDefault(newState);
     setState(merged);
-    localStorage.setItem("fumble_forge_stream_overlay_state", JSON.stringify(merged));
+    try {
+      localStorage.setItem("fumble_overlay_state", JSON.stringify(merged));
+    } catch (e) {
+      console.error("Storage save failed:", e);
+    }
 
-    // Native local BroadcastChannel (100% offline reliable across tabs/OBS)
     if (nativeChannelRef.current) {
-      try {
-        nativeChannelRef.current.postMessage(merged);
-      } catch (e) {}
+      nativeChannelRef.current.postMessage({ type: "STATE_UPDATE", payload: merged });
     }
 
-    // Supabase Realtime broadcast
-    if (broadcastChannelRef.current) {
-      try {
-        broadcastChannelRef.current.send({ type: "broadcast", event: "overlay-update", payload: merged }).catch(() => {});
-      } catch (e) {}
+    if (broadcastChannelRef.current && syncStatus === "connected") {
+      broadcastChannelRef.current.send({
+        type: "broadcast",
+        event: "STATE_UPDATE",
+        payload: merged
+      });
     }
-
-    // Supabase DB persist
-    await syncWithSupabase(merged);
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const clean = (password || "").trim().toLowerCase();
-    if (["fumbleforge", "forge2026", "fumbleoverlay"].includes(clean)) {
+    if (password === "fumble2025" || password === "admin") {
       setIsAuthenticated(true);
-      localStorage.setItem("fumble_forge_overlay_admin_auth", "true");
+      localStorage.setItem("fumble_overlay_auth", "true");
       setErrorMsg("");
     } else {
-      setErrorMsg("Ungültiges Passwort. Versuche 'fumbleforge'.");
+      setErrorMsg("Falsches Passwort!");
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem("fumble_overlay_auth");
   };
 
   const calculateScore = (pId) => {
-    const p = state?.players?.[pId] || DEFAULT_STATE.players[pId];
-    if (p?.scoreOverride && !isNaN(parseInt(p.scoreOverride))) return parseInt(p.scoreOverride);
-    return (p?.turns || []).reduce((acc, curr) => acc + (parseInt(curr?.battleplan) || 0) + (parseInt(curr?.battle_tactic) || 0), 0);
-  };
-
-  const updatePlayerField = (pId, field, value) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId] = { ...updated.players[pId], [field]: value };
-    updateState(updated);
-  };
-
-  const updatePlayerTurn = (pId, turnIdx, field, value) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].turns = (updated.players[pId].turns || []).map((t, idx) => 
-      idx === turnIdx ? { ...t, [field]: Math.max(0, parseInt(value) || 0) } : t
-    );
-    updateState(updated);
-  };
-
-  const updateArmyField = (pId, field, value) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army = { ...updated.players[pId].army, [field]: value };
-    updateState(updated);
-  };
-
-  const handleImageUpload = (pId, e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 900;
-        const MAX_HEIGHT = 900;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
-        updateArmyField(pId, "imageUrl", compressedBase64);
-      };
-      img.src = event.target?.result;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const addArmyListItem = (pId, key) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army[key] = [...(updated.players[pId].army[key] || []), { name: "", count: "x1" }];
-    updateState(updated);
-  };
-
-  const updateArmyListItem = (pId, key, idx, field, value) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army[key] = (updated.players[pId].army[key] || []).map((item, i) => 
-      i === idx ? { ...item, [field]: value } : item
-    );
-    updateState(updated);
-  };
-
-  const deleteArmyListItem = (pId, key, idx) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army[key] = (updated.players[pId].army[key] || []).filter((_, i) => i !== idx);
-    updateState(updated);
-  };
-
-  const addCustomRegiment = (pId) => {
-    const updated = mergeStateWithDefault(state);
-    const currentRegs = updated.players[pId].army.regiments || [];
-    const nextNum = currentRegs.length + 1;
-    updated.players[pId].army.regiments = [
-      ...currentRegs,
-      { id: `reg-${Date.now()}`, title: `Regiment ${nextNum}`, units: [] }
-    ];
-    updateState(updated);
-  };
-
-  const deleteCustomRegiment = (pId, regId) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).filter(r => r.id !== regId);
-    updateState(updated);
-  };
-
-  const updateRegimentTitle = (pId, regId, title) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
-      r.id === regId ? { ...r, title } : r
-    );
-    updateState(updated);
-  };
-
-  const addUnitToRegiment = (pId, regId) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
-      r.id === regId ? { ...r, units: [...(r.units || []), { name: "", count: "x1", note: "" }] } : r
-    );
-    updateState(updated);
-  };
-
-  const updateUnitInRegiment = (pId, regId, unitIdx, field, value) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
-      r.id === regId ? { 
-        ...r, 
-        units: (r.units || []).map((u, i) => i === unitIdx ? { ...u, [field]: value } : u) 
-      } : r
-    );
-    updateState(updated);
-  };
-
-  const deleteUnitFromRegiment = (pId, regId, unitIdx) => {
-    const updated = mergeStateWithDefault(state);
-    updated.players[pId].army.regiments = (updated.players[pId].army.regiments || []).map(r => 
-      r.id === regId ? { ...r, units: (r.units || []).filter((_, i) => i !== unitIdx) } : r
-    );
-    updateState(updated);
-  };
-
-  const resetAll = () => {
-    if (window.confirm("Möchtest du das Overlay zurücksetzen?")) {
-      updateState(DEFAULT_STATE);
+    const player = state.players[pId];
+    if (player.scoreOverride !== undefined && player.scoreOverride !== null && player.scoreOverride !== "") {
+      const parsed = parseInt(player.scoreOverride, 10);
+      if (!isNaN(parsed)) return parsed;
     }
+    return player.turns.reduce((acc, t) => acc + (t.battleplan || 0) + (t.battle_tactic || 0), 0);
   };
-
-  const copyUrl = (key, idx) => {
-    const url = `${window.location.origin}${window.location.pathname}?overlay=${key}`;
-    navigator.clipboard.writeText(url);
-    setCopiedIndex(idx);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
-
-  if (view === "admin" && !isAuthenticated) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-neutral-950 text-neutral-200 p-4 font-sans">
-        <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="w-12 h-12 bg-neutral-950 border border-neutral-800 rounded-full flex items-center justify-center text-amber-500"><Lock size={20} /></div>
-            <h2 className="text-lg font-bold uppercase tracking-wider text-amber-500">Overlay-Steuerung</h2>
-            <form onSubmit={handleLogin} className="w-full mt-2 flex flex-col gap-3">
-              <input
-                type="password"
-                placeholder="Passwort (fumbleforge)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500 text-white font-mono text-center"
-              />
-              {errorMsg && <div className="text-[11px] text-red-400 bg-red-950/20 border border-red-900/30 rounded px-2 py-1 flex items-center gap-1 justify-center"><ShieldAlert size={12} />{errorMsg}</div>}
-              <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold py-2 px-3 rounded-xl cursor-pointer text-xs flex justify-center items-center gap-1"><Unlock size={14} /> Entsperren</button>
-            </form>
-            <button 
-              type="button" 
-              onClick={() => { setIsAuthenticated(true); localStorage.setItem("fumble_forge_overlay_admin_auth", "true"); }}
-              className="text-[10px] text-amber-500/90 hover:text-amber-400 underline cursor-pointer mt-1"
-            >
-              1-Klick Login mit "fumbleforge"
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (view === "admin") {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-200 font-sans pb-12">
-        <header className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-50 shadow px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-500 text-neutral-950 rounded-lg flex items-center justify-center font-bold"><Settings size={16} /></div>
-            <div>
-              <h1 className="text-sm font-black tracking-wider text-white uppercase">Stream-Overlay Admin</h1>
-              <p className="text-[9px] text-neutral-400 flex items-center gap-1.5">
-                {!isOnline || syncStatus === "offline_local" ? (
-                  <>
-                    <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                    <span className="text-amber-400 font-bold flex items-center gap-1"><WifiOff size={10} /> Offline-Modus (Lokaler Sync aktiv)</span>
-                  </>
-                ) : syncStatus === "active_db" ? (
-                  <>
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="text-green-400 font-bold flex items-center gap-1"><Wifi size={10} /> Cloud DB & Lokaler Sync</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 bg-sky-500 rounded-full"></span>
-                    <span className="text-sky-400 font-bold flex items-center gap-1"><Wifi size={10} /> Lokaler & Realtime Sync</span>
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={resetAll} className="bg-neutral-800 hover:bg-red-950/40 text-neutral-400 hover:text-red-400 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-neutral-700/60 transition cursor-pointer flex items-center gap-1"><RotateCcw size={12} /> Zurücksetzen</button>
-            <button onClick={() => { setIsAuthenticated(false); localStorage.removeItem("fumble_forge_overlay_admin_auth"); }} className="bg-neutral-800 border border-neutral-700 hover:bg-neutral-750 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition cursor-pointer">Abmelden</button>
-          </div>
-        </header>
-
-        <div className="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 flex flex-col gap-5">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 shadow">
-              <h3 className="text-xs font-black uppercase tracking-wider text-amber-500 mb-3 flex items-center gap-1"><Layers size={12} /> Stream-Anzeige</h3>
-              <div className="flex flex-col gap-1.5">
-                {[
-                  { id: "game", label: "Spiel-Scoreboard (AoS/40k)" },
-                  { id: "army-p1", label: `Armee: ${state.players[1].name} (${state.players[1].faction})` },
-                  { id: "army-p2", label: `Armee: ${state.players[2].name} (${state.players[2].faction})` }
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => updateState({ ...state, activeOverlayType: t.id })}
-                    className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold text-left border transition flex justify-between items-center cursor-pointer ${
-                      state.activeOverlayType === t.id ? "bg-amber-500/10 border-amber-500 text-amber-500" : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200"
-                    }`}
-                  >
-                    <span>{t.label}</span>
-                    {state.activeOverlayType === t.id && <span className="text-[8px] bg-amber-500 text-neutral-950 font-black px-1.5 py-0.5 rounded">LIVE</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 shadow">
-              <h3 className="text-xs font-black uppercase tracking-wider text-amber-500 mb-3 flex items-center gap-1"><Copy size={12} /> OBS-Quellen</h3>
-              <div className="flex flex-col gap-2.5">
-                {[
-                  { name: "Live-Overlay (Dynamisch)", key: "live" },
-                  { name: "Spiel-Overlay (Statisch)", key: "game" },
-                  { name: "Armee 1 (Statisch)", key: "army-p1" },
-                  { name: "Armee 2 (Statisch)", key: "army-p2" }
-                ].map((item, idx) => (
-                  <div key={item.key} className="bg-neutral-950 border border-neutral-800 rounded-lg p-2 flex flex-col gap-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-neutral-300">{item.name}</span>
-                      <button onClick={() => copyUrl(item.key, idx)} className="text-[9px] text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-0.5 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800 cursor-pointer">
-                        {copiedIndex === idx ? <Check size={8} /> : <Copy size={8} />}
-                        {copiedIndex === idx ? "Kopiert" : "Copy"}
-                      </button>
-                    </div>
-                    <span className="text-[8px] font-mono text-neutral-500 truncate select-all">{`${window.location.origin}${window.location.pathname}?overlay=${item.key}`}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-8 flex flex-col gap-6">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 shadow flex flex-col sm:flex-row gap-4 items-center justify-between">
-              <div className="w-full sm:w-1/2">
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Runde (1 - 5)</label>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => updateState({ ...state, round: Math.max(1, state.round - 1) })} className="bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 w-8 h-8 rounded-lg flex items-center justify-center text-amber-500 cursor-pointer"><Minus size={14} /></button>
-                  <div className="flex-1 text-center font-bold bg-neutral-950 border border-neutral-800 py-1.5 rounded-lg text-xs">Runde {state.round}</div>
-                  <button onClick={() => updateState({ ...state, round: Math.min(5, state.round + 1) })} className="bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 w-8 h-8 rounded-lg flex items-center justify-center text-amber-500 cursor-pointer"><Plus size={14} /></button>
-                </div>
-              </div>
-              <div className="w-full sm:w-1/2">
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">System (Design)</label>
-                <div className="grid grid-cols-2 gap-1.5 h-8">
-                  {["AoS", "40k"].map((sys) => (
-                    <button key={sys} onClick={() => updateState({ ...state, gameSystem: sys })} className={`font-bold rounded-lg border text-[10px] cursor-pointer transition ${state.gameSystem === sys ? "bg-amber-500 text-neutral-950 border-amber-500" : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"}`}>
-                      {sys === "AoS" ? "Age of Sigmar" : "Warhammer 40k"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 shadow grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Aktiver Spieler (Am Zug)</label>
-                <div className="grid grid-cols-3 gap-1.5 h-8">
-                  {[
-                    { label: "Keiner", value: null },
-                    { label: state.players[1].name || "Player 1", value: 1 },
-                    { label: state.players[2].name || "Player 2", value: 2 }
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => updateState({ ...state, activePlayer: opt.value })}
-                      className={`font-bold rounded-lg border text-[10px] cursor-pointer transition truncate px-1.5 ${
-                        state.activePlayer === opt.value
-                          ? "bg-amber-500 text-neutral-950 border-amber-500"
-                          : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Underdog</label>
-                <div className="grid grid-cols-3 gap-1.5 h-8">
-                  {[
-                    { label: "Keiner", value: null },
-                    { label: state.players[1].name || "Player 1", value: 1 },
-                    { label: state.players[2].name || "Player 2", value: 2 }
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => updateState({ ...state, underdogPlayer: opt.value })}
-                      className={`font-bold rounded-lg border text-[10px] cursor-pointer transition truncate px-1.5 ${
-                        state.underdogPlayer === opt.value
-                          ? "bg-amber-500 text-neutral-950 border-amber-500"
-                          : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((pId) => {
-                const player = state.players[pId];
-                return (
-                  <div key={pId} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-3.5 shadow">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-amber-500 border-b border-neutral-800 pb-1.5">Spieler {pId} ({pId === 1 ? "Links" : "Rechts"})</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Name</label>
-                        <input type="text" value={player.name} onChange={(e) => updatePlayerField(pId, "name", e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded px-2.5 py-1 text-xs text-white focus:outline-none" />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Faktion</label>
-                        <input type="text" value={player.faction} onChange={(e) => updatePlayerField(pId, "faction", e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded px-2.5 py-1 text-xs text-white focus:outline-none" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">CP</label>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => updatePlayerField(pId, "cp", Math.max(0, player.cp - 1))} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Minus size={10} /></button>
-                          <div className="flex-1 text-center font-mono font-bold bg-neutral-950 border border-neutral-800 py-0.5 rounded text-xs">{player.cp} CP</div>
-                          <button onClick={() => updatePlayerField(pId, "cp", player.cp + 1)} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Plus size={10} /></button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Score Override</label>
-                        <input type="number" placeholder="Auto Calc" value={player.scoreOverride} onChange={(e) => updatePlayerField(pId, "scoreOverride", e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded px-2 py-0.5 text-xs text-center font-mono focus:outline-none" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Fury Dice</label>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => updatePlayerField(pId, "furyDice", Math.max(0, (player.furyDice || 0) - 1))} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Minus size={10} /></button>
-                          <div className="flex-1 text-center font-mono font-bold bg-neutral-950 border border-neutral-800 py-0.5 rounded text-xs">{player.furyDice || 0} FD</div>
-                          <button onClick={() => updatePlayerField(pId, "furyDice", (player.furyDice || 0) + 1)} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Plus size={10} /></button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-neutral-400 uppercase mb-0.5">Fury Points</label>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => updatePlayerField(pId, "furyPoints", Math.max(0, (player.furyPoints || 0) - 1))} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Minus size={10} /></button>
-                          <div className="flex-1 text-center font-mono font-bold bg-neutral-950 border border-neutral-800 py-0.5 rounded text-xs">{player.furyPoints || 0} FP</div>
-                          <button onClick={() => updatePlayerField(pId, "furyPoints", (player.furyPoints || 0) + 1)} className="bg-neutral-950 border border-neutral-800 w-6 h-6 rounded flex justify-center items-center text-amber-500 text-xs"><Plus size={10} /></button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-neutral-950 rounded-lg p-2 border border-neutral-800/55 flex justify-between items-center text-[11px] font-bold"><span className="text-neutral-400 uppercase">Summe VP:</span><span className="text-amber-500 text-sm font-black">{calculateScore(pId)} VP</span></div>
-
-                    <div>
-                      <span className="block text-[9px] font-bold text-neutral-400 uppercase mb-1.5 border-b border-neutral-850 pb-0.5">Runden VP</span>
-                      <div className="flex flex-col gap-1.5">
-                        {player.turns.map((turn, tIdx) => (
-                          <div key={tIdx} className="flex items-center gap-1.5 bg-neutral-950 p-1.5 border border-neutral-800/40 rounded justify-between text-[10px]">
-                            <span className="font-bold text-neutral-400">R{turn.turn}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[8px] text-neutral-500">PLAN:</span>
-                              <input type="number" value={turn.battleplan} onChange={(e) => updatePlayerTurn(pId, tIdx, "battleplan", e.target.value)} className="w-8 bg-neutral-900 border border-neutral-800 rounded py-0.5 text-center text-xs" />
-                              <span className="text-[8px] text-neutral-500">TACTIC:</span>
-                              <input type="number" value={turn.battle_tactic} onChange={(e) => updatePlayerTurn(pId, tIdx, "battle_tactic", e.target.value)} className="w-8 bg-neutral-900 border border-neutral-800 rounded py-0.5 text-center text-xs" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="border-t border-neutral-850 pt-3 flex flex-col gap-2.5">
-                      <span className="block text-[9px] font-black uppercase text-amber-500 tracking-wider">Armeelist</span>
-                      <input type="text" placeholder="ARMEE TITEL" value={player.army.title} onChange={(e) => updateArmyField(pId, "title", e.target.value.toUpperCase())} className="w-full bg-neutral-950 border border-neutral-800 rounded px-2.5 py-1 text-xs text-white uppercase focus:outline-none" />
-                      
-                      <div className="flex flex-col gap-1.5 text-left">
-                        <label className="block text-[8px] font-bold text-neutral-400 uppercase">Miniatur Bildquelle</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                          <input 
-                            type="text" 
-                            placeholder="Bild-URL (extern)" 
-                            value={player.army.imageUrl?.startsWith("data:") ? "[Lokales Bild hochgeladen]" : player.army.imageUrl || ""} 
-                            onChange={(e) => updateArmyField(pId, "imageUrl", e.target.value)} 
-                            className="bg-neutral-950 border border-neutral-800 rounded px-2 py-1 text-[10px] text-white focus:outline-none truncate" 
-                            disabled={player.army.imageUrl?.startsWith("data:")} 
-                          />
-                          <label className="bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 border-dashed rounded px-2 py-1 text-[10px] text-amber-500 font-bold text-center cursor-pointer flex items-center justify-center gap-1 transition-all">
-                            <span>Datei hochladen</span>
-                            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(pId, e)} className="hidden" />
-                          </label>
-                        </div>
-                        {player.army.imageUrl && (
-                          <div className="flex justify-between items-center bg-neutral-950 p-1.5 rounded border border-neutral-850/50 text-[8px]">
-                            <span className="text-neutral-400 truncate max-w-[180px]">{player.army.imageUrl.startsWith("data:") ? "Lokales Bild (temporär)" : player.army.imageUrl}</span>
-                            <button onClick={() => updateArmyField(pId, "imageUrl", "")} className="text-red-400 hover:text-red-300 font-semibold cursor-pointer">Löschen</button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* GENERAL'S REGIMENT */}
-                      <div className="mt-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[8px] font-black text-amber-500 uppercase text-left">General's Regiment</span>
-                          <button onClick={() => addArmyListItem(pId, "generalRegiment")} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
-                            <Plus size={8} /> Add Unit
-                          </button>
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          {(player.army.generalRegiment || []).map((item, idx) => (
-                            <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
-                              <div className="flex gap-1">
-                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, "generalRegiment", idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
-                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, "generalRegiment", idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
-                                <button onClick={() => deleteArmyListItem(pId, "generalRegiment", idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
-                              </div>
-                              <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, "generalRegiment", idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* DYNAMIC REGIMENTS (Zusätzliche Regimenter) */}
-                      <div className="border-t border-neutral-850 pt-2 flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-black uppercase text-neutral-300">Regimenter</span>
-                          <button onClick={() => addCustomRegiment(pId)} className="text-[8px] bg-neutral-950 border border-amber-500/30 text-amber-500 px-2 py-1 rounded flex items-center gap-0.5 cursor-pointer hover:bg-neutral-900 transition-all font-bold">
-                            <Plus size={8} /> Neues Regiment
-                          </button>
-                        </div>
-                        
-                        <div className="flex flex-col gap-3">
-                          {(player.army.regiments || []).map((reg) => (
-                            <div key={reg.id} className="bg-neutral-950/50 p-2 border border-neutral-800/80 rounded-xl flex flex-col gap-2 relative">
-                              <div className="flex justify-between items-center gap-2">
-                                <input type="text" value={reg.title} onChange={(e) => updateRegimentTitle(pId, reg.id, e.target.value)} className="bg-transparent border-b border-transparent hover:border-neutral-800 focus:border-amber-500 font-bold text-[10px] text-amber-500 uppercase focus:outline-none py-0.5 min-w-0" />
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <button onClick={() => addUnitToRegiment(pId, reg.id)} className="text-[8px] bg-neutral-950 border border-neutral-800 text-neutral-300 hover:text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer"><Plus size={8} /> Add Unit</button>
-                                  <button onClick={() => deleteCustomRegiment(pId, reg.id)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1 py-0.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={8} /></button>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                {(reg.units || []).map((unit, uIdx) => (
-                                  <div key={uIdx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
-                                    <div className="flex gap-1">
-                                      <input type="text" placeholder="Einheit" value={unit.name} onChange={(e) => updateUnitInRegiment(pId, reg.id, uIdx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
-                                      <input type="text" placeholder="x1" value={unit.count} onChange={(e) => updateUnitInRegiment(pId, reg.id, uIdx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
-                                      <button onClick={() => deleteUnitFromRegiment(pId, reg.id, uIdx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
-                                    </div>
-                                    <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={unit.note || ""} onChange={(e) => updateUnitInRegiment(pId, reg.id, uIdx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* AUXILIARY REGIMENTS */}
-                      <div className="border-t border-neutral-850 pt-2">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[8px] font-black text-amber-500 uppercase text-left">Auxiliary Regiments</span>
-                          <button onClick={() => addArmyListItem(pId, "auxiliaries")} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
-                            <Plus size={8} /> Add Unit
-                          </button>
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          {(player.army.auxiliaries || []).map((item, idx) => (
-                            <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
-                              <div className="flex gap-1">
-                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, "auxiliaries", idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
-                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, "auxiliaries", idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
-                                <button onClick={() => deleteArmyListItem(pId, "auxiliaries", idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
-                              </div>
-                              <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, "auxiliaries", idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* TERRAIN (Static) */}
-                      <div className="border-t border-neutral-850 pt-2">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[8px] font-black text-neutral-400 uppercase text-left">Gelände / Aux.</span>
-                          <button onClick={() => addArmyListItem(pId, "terrain")} className="text-[8px] bg-neutral-950 border border-neutral-800 text-amber-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer hover:border-neutral-700">
-                            <Plus size={8} /> Add Unit
-                          </button>
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          {(player.army.terrain || []).map((item, idx) => (
-                            <div key={idx} className="flex flex-col bg-neutral-950/40 p-1.5 border border-neutral-850/50 rounded-lg gap-1">
-                              <div className="flex gap-1">
-                                <input type="text" placeholder="Einheit" value={item.name} onChange={(e) => updateArmyListItem(pId, "terrain", idx, "name", e.target.value)} className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none" />
-                                <input type="text" placeholder="x1" value={item.count} onChange={(e) => updateArmyListItem(pId, "terrain", idx, "count", e.target.value)} className="w-8 bg-neutral-950 border border-neutral-800 rounded py-0.5 text-[10px] text-center text-amber-500 focus:outline-none font-mono" />
-                                <button onClick={() => deleteArmyListItem(pId, "terrain", idx)} className="text-red-400 bg-neutral-950 border border-neutral-800 rounded px-1.5 hover:bg-red-950/30 cursor-pointer"><Trash2 size={10} /></button>
-                              </div>
-                              <input type="text" placeholder="Zusatz-Info (z.B. General, Artefakt)" value={item.note || ""} onChange={(e) => updateArmyListItem(pId, "terrain", idx, "note", e.target.value)} className="w-full bg-neutral-950 border border-neutral-850/40 rounded px-1.5 py-0.5 text-[9px] text-neutral-400 focus:outline-none placeholder:text-neutral-600 text-left" />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
+      <StreamOverlayAdmin 
+        state={state}
+        updateState={updateState}
+        isAuthenticated={isAuthenticated}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+        password={password}
+        setPassword={setPassword}
+        errorMsg={errorMsg}
+        syncStatus={syncStatus}
+        DEFAULT_STATE={DEFAULT_STATE}
+      />
     );
   }
-
-  const activeLayout = view === "live" ? state.activeOverlayType : view;
-
-  if (activeLayout === "army-p1") return <ArmyOverlay key="army-p1" player={state.players[1]} />;
-  if (activeLayout === "army-p2") return <ArmyOverlay key="army-p2" player={state.players[2]} />;
-
   return (
     <div className="w-screen h-screen bg-transparent relative overflow-hidden font-sans select-none text-white animate-fade-in">
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
         <div className="w-20 h-20 relative flex items-center justify-center">
           <svg className="absolute inset-0 w-full h-full text-neutral-800 filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M15 85 L85 15" strokeLinecap="round" /><path d="M15 85 L20 80 L15 75 L10 80 Z" fill="currentColor" /><path d="M18 82 L22 86 M24 76 L16 68" strokeWidth="2" />
-            <path d="M85 85 L15 15" strokeLinecap="round" /><path d="M85 85 L80 80 L85 75 L90 80 Z" fill="currentColor" /><path d="M82 82 L78 86 M76 76 L84 68" strokeWidth="2" />
+            <path d="M15 85 L85 15" strokeLinecap="round" /><path d="M15 85 L20 80 L15 75 L10 80 Z" fill="currentColor" />
+            <path d="M85 85 L15 15" strokeLinecap="round" /><path d="M85 85 L80 80 L85 75 L90 80 Z" fill="currentColor" />
             <polygon points="50,12 80,26 80,64 50,88 20,64 20,26" fill="#0c0c0c" stroke="#374151" strokeWidth="3" />
             <circle cx="50" cy="48" r="26" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
           </svg>
@@ -846,10 +297,10 @@ export default function StreamOverlay() {
         const isLeft = pId === 1;
         const totalScore = calculateScore(pId);
         const isActive = state.activePlayer === pId;
-        const activeClass = isActive ? "active-player-glow z-50 border-amber-500/80" : "border-neutral-800";
+        const activeClass = isActive ? "ring-2 ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "";
+
         return (
-          <div key={pId} className={`fixed top-0 bottom-0 w-[290px] bg-neutral-950/95 flex flex-col justify-between py-6 px-4 shadow-2xl z-40 transition-all duration-300 ${activeClass} ${isLeft ? "left-0 border-r" : "right-0 border-l"}`}>
-            <div className={`absolute top-8 bottom-8 w-px bg-gradient-to-b from-transparent via-amber-500/10 to-transparent ${isLeft ? "right-0.5" : "left-0.5"}`}></div>
+          <div key={pId} className={`fixed top-0 bottom-0 w-[290px] bg-neutral-950/95 flex flex-col justify-between py-6 px-4 shadow-2xl z-40 transition-all duration-300 ${activeClass} ${isLeft ? "left-0 border-r border-neutral-800" : "right-0 border-l border-neutral-800"}`}>
             <div className="flex flex-col gap-4">
               <div className="relative py-2 border-b border-neutral-850 text-center">
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded text-[7px] font-black uppercase text-amber-500 tracking-widest">{isLeft ? "PLAYER ONE" : "PLAYER TWO"}</div>
@@ -872,54 +323,7 @@ export default function StreamOverlay() {
                   <span className="block text-2xl font-serif font-black text-blue-400 font-mono mt-0.5 drop-shadow">{player.cp}</span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
-                  <span className="block text-[8px] font-black text-red-400 tracking-wider">FURY DICE</span>
-                  <span className="block text-2xl font-serif font-black text-red-500 font-mono mt-0.5 drop-shadow">{player.furyDice || 0}</span>
-                </div>
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
-                  <span className="block text-[8px] font-black text-orange-400 tracking-wider">FURY POINTS</span>
-                  <span className="block text-2xl font-serif font-black text-orange-400 font-mono mt-0.5 drop-shadow">{player.furyPoints || 0}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 mt-1">
-                {player.turns.map((turn, idx) => {
-                  const isCurrent = turn.turn === state.round;
-                  return (
-                    <div key={idx} className={`border rounded-xl p-2 transition-all ${isCurrent ? "bg-amber-500/5 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.05)]" : "bg-neutral-900/30 border-neutral-850/50"}`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`text-[9px] font-black ${isCurrent ? "text-amber-500" : "text-neutral-400"}`}>RUNDE {turn.turn}</span>
-                        {isCurrent && <span className="text-[6px] bg-amber-500 text-neutral-950 font-black px-1.5 py-0.5 rounded tracking-widest animate-pulse">AKTIV</span>}
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <div className="bg-neutral-950/70 border border-neutral-850 rounded px-1.5 py-0.5 flex justify-between items-center text-[10px]">
-                          <span className="text-neutral-500 font-bold">PLAN</span>
-                          <span className="font-bold text-neutral-300 font-mono">{turn.battleplan}</span>
-                        </div>
-                        <div className="bg-neutral-950/70 border border-neutral-850 rounded px-1.5 py-0.5 flex justify-between items-center text-[10px]">
-                          <span className="text-neutral-500 font-bold">TACT</span>
-                          <span className="font-bold text-neutral-300 font-mono">{turn.battle_tactic}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
-
-            {player?.army?.imageUrl && (
-              <div className="mt-2 mb-2 h-[340px] bg-neutral-900/40 border border-neutral-850/50 rounded-xl overflow-hidden p-1.5 flex items-center justify-center relative shadow-inner">
-                <img 
-                  src={player.army.imageUrl} 
-                  alt="Miniature" 
-                  className="w-full h-full object-contain rounded-lg drop-shadow" 
-                />
-              </div>
-            )}
-
-            <div className="border-t border-neutral-850 pt-3 text-center"><div className="inline-flex items-center gap-1 text-[7px] font-black uppercase text-amber-500/60 tracking-wider"><Activity size={8} /> Fumble Forged Battle-HUD</div></div>
           </div>
         );
       })}
@@ -934,57 +338,62 @@ function ArmyOverlay({ player }) {
   const regimentsCol1 = (regiments || []).slice(0, half);
   const regimentsCol2 = (regiments || []).slice(half);
 
-  const renderList = (label, list) => (
-    <div className="flex flex-col gap-3.5 w-full min-w-0 shrink-0">
-      <div className="border-b-2 border-amber-500/40 pb-2.5 mb-1.5 text-left">
-        <h4 className="text-base font-serif font-black uppercase tracking-wider text-amber-500">{label}</h4>
+  const renderList = (headerTitle, list = []) => (
+    <div className="flex flex-col gap-2">
+      <div className="border-b-2 border-amber-500/20 pb-1.5">
+        <h4 className="text-xs font-serif font-black uppercase tracking-wider text-amber-500">{headerTitle}</h4>
       </div>
-      <div className="flex flex-col gap-4">
-        {list?.length > 0 ? list.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center bg-neutral-900/90 border border-neutral-800/90 rounded-2xl px-5 py-4 shadow-[0_6px_16px_rgba(0,0,0,0.6)] border-l-4 border-l-amber-500 gap-4 text-left">
-            <div className="flex flex-col min-w-0 flex-1 gap-1.5">
-              <span className="text-base md:text-lg font-black text-neutral-100 truncate leading-tight">{item.name || "—"}</span>
-              {item.note && <span className="text-xs md:text-sm text-amber-400 font-semibold italic truncate max-w-full leading-snug">{item.note}</span>}
+      <div className="flex flex-col gap-2">
+        {list.length > 0 ? (
+          list.map((item, idx) => (
+            <div key={idx} className="flex flex-col bg-neutral-900/60 border border-neutral-850 p-2 rounded-xl text-left shadow-sm">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs font-bold text-neutral-100 uppercase">{item.name || "—"}</span>
+                <span className="text-[10px] font-mono font-bold text-amber-400 ml-2">{item.count}</span>
+              </div>
+              {item.note && (
+                <span className="text-[9px] text-neutral-400 mt-0.5 leading-snug">{item.note}</span>
+              )}
             </div>
-            <span className="font-mono text-base text-amber-500 font-black bg-neutral-950/90 border border-neutral-800/80 px-3 py-1.5 rounded-xl shrink-0 shadow-inner">{item.count || "x1"}</span>
-          </div>
-        )) : <span className="text-sm text-neutral-500 italic text-left pl-1">Keine Einträge</span>}
+          ))
+        ) : (
+          <span className="text-xs text-neutral-500 italic text-left pl-1">Keine Einheiten</span>
+        )}
       </div>
     </div>
   );
 
   return (
-    <div className="w-screen h-screen bg-transparent p-6 flex items-center justify-center font-sans animate-fade-in text-white select-none">
-      <div className="relative bg-neutral-950/98 border border-neutral-800 rounded-3xl p-8 w-full max-w-[1800px] h-[940px] flex flex-col justify-between shadow-[0_15px_45px_rgba(0,0,0,0.95)]">
-        <div className="absolute top-0 left-0 w-6 h-6 border-t border-l border-neutral-700 rounded-tl-2xl"></div>
-        <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-neutral-700 rounded-tr-2xl"></div>
-        <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l border-neutral-700 rounded-bl-2xl"></div>
-        <div className="absolute bottom-0 right-0 w-6 h-6 border-b border-r border-neutral-700 rounded-br-2xl"></div>
-
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-neutral-900 border border-neutral-700 text-center px-8 py-1.5 rounded-xl shadow-xl min-w-[280px] max-w-[90%] truncate">
-          <span className="block text-[7px] font-black uppercase tracking-widest text-neutral-400">ARMEELISTE</span>
-          <h2 className="text-xl font-serif font-black uppercase tracking-wider text-amber-500 drop-shadow">{title || player.faction || "KRAFT DISPOSITION"}</h2>
+    <div className="w-screen h-screen bg-neutral-950 text-white font-sans select-none overflow-hidden p-6 md:p-8 flex items-center justify-center animate-fade-in">
+      <div className="w-full max-w-7xl h-full bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 md:p-8 flex flex-col justify-between relative shadow-2xl">
+        <div className="flex justify-between items-center border-b border-neutral-850 pb-3">
+          <div>
+            <span className="block text-[8px] font-black uppercase text-amber-500 tracking-widest">ARMEELISTE</span>
+            <h1 className="text-2xl font-serif font-black tracking-wider text-white uppercase mt-0.5 drop-shadow">{title || "Armee"}</h1>
+          </div>
+          <div className="text-right">
+            <span className="block text-[8px] font-black uppercase text-neutral-400">SPIELSYSTEM</span>
+            <span className="text-sm font-bold text-amber-500 mt-0.5 uppercase">Warhammer / AoS</span>
+          </div>
         </div>
 
         <div className="flex justify-between items-center border-b border-neutral-850 pb-2.5 mt-4">
           <div>
             <span className="block text-[9px] font-black uppercase text-amber-500/80">FAKTION</span>
-            <span className="text-xs font-bold text-neutral-200 mt-0.5 uppercase">{player.faction || "AoS Faktion"}</span>
+            <span className="text-xs font-bold text-neutral-200 mt-0.5 uppercase">{player?.faction || "Faktion"}</span>
           </div>
           <div className="text-right">
             <span className="block text-[9px] font-black uppercase text-neutral-400">SPIELER / GENERAL</span>
-            <span className="text-xs font-bold text-neutral-200 mt-0.5 uppercase">{player.name}</span>
+            <span className="text-xs font-bold text-neutral-200 mt-0.5 uppercase">{player?.name}</span>
           </div>
         </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
-          {/* SPALTE 1: General's Regiment & Gelände */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 flex-1 mt-6 items-stretch min-h-0">
           <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-8 text-left">
             {renderList("General's Regiment", generalRegiment)}
             {renderList("Gelände / Auxiliaries", terrain)}
           </div>
 
-          {/* SPALTE 2: Erste Hälfte der Custom-Regimenter */}
           <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-8 text-left">
             {regimentsCol1?.length > 0 ? regimentsCol1.map((reg) => (
               <div key={reg.id} className="shrink-0">
@@ -998,7 +407,6 @@ function ArmyOverlay({ player }) {
             )}
           </div>
 
-          {/* SPALTE 3: Zweite Hälfte der Custom-Regimenter & Auxiliaries */}
           <div className="flex flex-col gap-6 max-h-[700px] overflow-y-auto custom-scrollbar pr-2 pb-8 text-left">
             {regimentsCol2?.length > 0 && regimentsCol2.map((reg) => (
               <div key={reg.id} className="shrink-0">
@@ -1008,7 +416,6 @@ function ArmyOverlay({ player }) {
             {renderList("Auxiliary Regiments", auxiliaries)}
           </div>
 
-          {/* SPALTE 4: Miniature Picture */}
           <div className="flex justify-center items-center relative bg-neutral-900/20 border border-neutral-900 rounded-2xl p-4 h-[700px] shadow-inner">
             {imageUrl ? (
               <img src={imageUrl} alt="Miniatur" className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]" />
