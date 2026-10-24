@@ -321,7 +321,7 @@ export default function StreamOverlay() {
         const activeClass = isActive ? "ring-2 ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "";
 
         return (
-          <div key={pId} className={`fixed top-0 bottom-0 w-[320px] bg-neutral-950/95 flex flex-col justify-between p-4 shadow-2xl z-40 transition-all duration-300 backdrop-blur-md ${activeClass} ${isLeft ? "left-0 border-r border-neutral-800" : "right-0 border-l border-neutral-800"}`}>
+          <div key={pId} className={`fixed top-0 bottom-0 w-[320px] bg-neutral-950/75 flex flex-col justify-between p-4 shadow-2xl z-40 transition-all duration-300 backdrop-blur-md ${activeClass} ${isLeft ? "left-0 border-r border-neutral-800/80" : "right-0 border-l border-neutral-800/80"}`}>
             <div className="flex flex-col gap-3">
               <div className="relative py-2 border-b border-neutral-850 text-center">
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded text-[7px] font-black uppercase text-amber-500 tracking-widest">{isLeft ? "PLAYER ONE" : "PLAYER TWO"}</div>
@@ -335,15 +335,15 @@ export default function StreamOverlay() {
               </div>
 
               <div className="grid grid-cols-3 gap-1.5">
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-2 text-center shadow-inner">
+                <div className="bg-neutral-900/60 border border-neutral-850/80 rounded-xl p-2 text-center shadow-inner backdrop-blur-sm">
                   <span className="block text-[7px] font-black text-neutral-400 tracking-wider">SCORE</span>
                   <span className="block text-xl font-serif font-black text-amber-500 font-mono mt-0.5 drop-shadow">{totalScore}</span>
                 </div>
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-2 text-center shadow-inner">
+                <div className="bg-neutral-900/60 border border-neutral-850/80 rounded-xl p-2 text-center shadow-inner backdrop-blur-sm">
                   <span className="block text-[7px] font-black text-neutral-400 tracking-wider">COMMAND P.</span>
                   <span className="block text-xl font-serif font-black text-cyan-400 font-mono mt-0.5 drop-shadow">{player.cp ?? 0}</span>
                 </div>
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-2 text-center shadow-inner">
+                <div className="bg-neutral-900/60 border border-neutral-850/80 rounded-xl p-2 text-center shadow-inner backdrop-blur-sm">
                   <span className="block text-[7px] font-black text-neutral-400 tracking-wider">FURY DICE</span>
                   <span className="block text-xl font-serif font-black text-red-500 font-mono mt-0.5 drop-shadow">{player.furyDice ?? 0}</span>
                 </div>
@@ -364,10 +364,10 @@ export default function StreamOverlay() {
                     return (
                       <div 
                         key={tIdx} 
-                        className={`p-2 rounded-xl border flex items-center justify-between text-xs transition ${
+                        className={`p-2 rounded-xl border flex items-center justify-between text-xs transition backdrop-blur-sm ${
                           isCurrent 
-                            ? "bg-amber-500/10 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]" 
-                            : "bg-neutral-900/80 border-neutral-850/80"
+                            ? "bg-amber-500/15 border-amber-500/70 shadow-[0_0_12px_rgba(245,158,11,0.25)]" 
+                            : "bg-neutral-900/50 border-neutral-850/60"
                         }`}
                       >
                         <div className="flex items-center gap-1.5">

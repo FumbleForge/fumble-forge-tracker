@@ -30,13 +30,13 @@ export default function BroadcastOverlayView({ player, state, pId }) {
   const activeMission = state?.missionTag || player?.army?.missionTag || "TAKE AND HOLD";
 
   return (
-    <div className="w-screen h-screen bg-[#070b12] text-white font-sans select-none overflow-hidden p-6 md:p-8 flex flex-col justify-between relative animate-fade-in">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-cyan-950/30 via-[#070b12] to-[#04060a] pointer-events-none"></div>
+    <div className="w-screen h-screen bg-[#070b12]/80 backdrop-blur-md text-white font-sans select-none overflow-hidden p-6 md:p-8 flex flex-col justify-between relative animate-fade-in">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-cyan-950/20 via-[#070b12]/50 to-[#04060a]/70 pointer-events-none"></div>
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
 
       <div className="relative z-10 flex-1 flex flex-col md:flex-row gap-6 md:gap-8 min-h-0">
         <div className="w-full md:w-[420px] shrink-0 flex flex-col gap-3.5 border-r border-cyan-500/20 pr-0 md:pr-6">
-          <div className="bg-neutral-900/90 border border-cyan-500/30 rounded-xl p-3 shadow-lg flex flex-col">
+          <div className="bg-neutral-900/70 backdrop-blur-sm border border-cyan-500/30 rounded-xl p-3 shadow-lg flex flex-col">
             <span className="text-[9px] font-black uppercase text-cyan-400 tracking-widest flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> SPIELER PROFIL
             </span>
@@ -45,7 +45,7 @@ export default function BroadcastOverlayView({ player, state, pId }) {
             </h1>
           </div>
 
-          <div className="h-[260px] bg-neutral-950/80 border-2 border-cyan-500/30 rounded-xl relative overflow-hidden flex items-center justify-center shadow-2xl">
+          <div className="h-[260px] bg-neutral-950/60 backdrop-blur-sm border-2 border-cyan-500/30 rounded-xl relative overflow-hidden flex items-center justify-center shadow-2xl">
             {playerPhotoUrl || imageUrl ? (
               <img src={playerPhotoUrl || imageUrl} alt="Player" className="w-full h-full object-cover" />
             ) : (
