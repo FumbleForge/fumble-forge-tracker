@@ -356,7 +356,7 @@ export default function StreamOverlay() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {(player.turns || Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 }))).map((turn, tIdx) => {
-                    const isCurrent = state.round === tIdx + 1;
+                    const isCurrent = state.round === tIdx + 1 && (state.activePlayer === null || state.activePlayer === pId);
                     const planVp = parseInt(turn.battleplan, 10) || 0;
                     const tacticVp = parseInt(turn.battle_tactic, 10) || 0;
                     const roundTotal = planVp + tacticVp;

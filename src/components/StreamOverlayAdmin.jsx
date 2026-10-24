@@ -330,6 +330,15 @@ export default function StreamOverlayAdmin({
               </div>
             </div>
             <div>
+              <label className="block text-[10px] font-bold text-neutral-400 mb-1 uppercase">Aktiver Spieler am Zug</label>
+              <div className="grid grid-cols-3 gap-1">
+                <button onClick={() => updateState({ ...state, activePlayer: null })} className={`py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${state.activePlayer === null ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-950 border-neutral-800 text-neutral-400"}`}>Neutral</button>
+                <button onClick={() => updateState({ ...state, activePlayer: 1 })} className={`py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${state.activePlayer === 1 ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-950 border-neutral-800 text-neutral-400"}`}>Spieler 1</button>
+                <button onClick={() => updateState({ ...state, activePlayer: 2 })} className={`py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${state.activePlayer === 2 ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-950 border-neutral-800 text-neutral-400"}`}>Spieler 2</button>
+              </div>
+            </div>
+
+            <div>
               <label className="block text-[10px] font-bold text-neutral-400 mb-1 uppercase">Underdog Bonus</label>
               <div className="grid grid-cols-3 gap-1">
                 <button onClick={() => updateState({ ...state, underdogPlayer: null })} className={`py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${state.underdogPlayer === null ? "bg-amber-500 text-neutral-950 border-amber-400" : "bg-neutral-950 border-neutral-800 text-neutral-400"}`}>Keiner</button>
@@ -347,6 +356,8 @@ export default function StreamOverlayAdmin({
               pId={pId}
               player={state.players[pId]}
               stateRound={state.round}
+              activePlayer={state.activePlayer}
+              setActivePlayer={(id) => updateState({ ...state, activePlayer: id })}
               setImportModalOpen={setImportModalOpen}
               setRawTextInput={setRawTextInput}
               updatePlayerField={updatePlayerField}

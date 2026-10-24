@@ -1,10 +1,12 @@
 import React from "react";
-import { Plus, Minus, Trash2, Upload, Image, Clipboard, Trophy, Flame, BarChart2 } from "lucide-react";
+import { Plus, Minus, Trash2, Upload, Image, Clipboard, Trophy, Flame, BarChart2, Zap } from "lucide-react";
 
 export default function StreamOverlayAdminPlayerCard({
   pId,
   player,
   stateRound,
+  activePlayer,
+  setActivePlayer,
   setImportModalOpen,
   setRawTextInput,
   updatePlayerField,
@@ -27,7 +29,20 @@ export default function StreamOverlayAdminPlayerCard({
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-6 shadow-xl flex flex-col gap-4">
       <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
-        <span className="text-xs font-black uppercase text-amber-500 tracking-wider">Spieler {pId} Daten</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-black uppercase text-amber-500 tracking-wider">Spieler {pId} Daten</span>
+          <button
+            type="button"
+            onClick={() => setActivePlayer(activePlayer === pId ? null : pId)}
+            className={`px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase flex items-center gap-1 transition cursor-pointer ${
+              activePlayer === pId 
+                ? "bg-amber-500 text-neutral-950 border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse" 
+                : "bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white"
+            }`}
+          >
+            <Zap size={11} /> {activePlayer === pId ? "AM ZUG (AKTIV)" : "Zug Übernehmen"}
+          </button>
+        </div>
         <button 
           onClick={() => {
             setImportModalOpen(pId);
