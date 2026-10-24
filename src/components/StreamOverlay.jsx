@@ -321,28 +321,92 @@ export default function StreamOverlay() {
         const activeClass = isActive ? "ring-2 ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "";
 
         return (
-          <div key={pId} className={`fixed top-0 bottom-0 w-[290px] bg-neutral-950/95 flex flex-col justify-between py-6 px-4 shadow-2xl z-40 transition-all duration-300 ${activeClass} ${isLeft ? "left-0 border-r border-neutral-800" : "right-0 border-l border-neutral-800"}`}>
-            <div className="flex flex-col gap-4">
+          <div key={pId} className={`fixed top-0 bottom-0 w-[320px] bg-neutral-950/95 flex flex-col justify-between p-4 shadow-2xl z-40 transition-all duration-300 backdrop-blur-md ${activeClass} ${isLeft ? "left-0 border-r border-neutral-800" : "right-0 border-l border-neutral-800"}`}>
+            <div className="flex flex-col gap-3">
               <div className="relative py-2 border-b border-neutral-850 text-center">
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded text-[7px] font-black uppercase text-amber-500 tracking-widest">{isLeft ? "PLAYER ONE" : "PLAYER TWO"}</div>
-                <h2 className="text-lg font-serif font-black tracking-wider text-white uppercase mt-1 truncate drop-shadow">{player.faction || "Faction"}</h2>
-                <p className="text-[9px] font-black uppercase text-neutral-400 truncate tracking-wider mt-0.5">{player.name}</p>
+                <h2 className="text-base font-serif font-black tracking-wider text-white uppercase mt-2 truncate drop-shadow">{player.faction || "Faction"}</h2>
+                <p className="text-[10px] font-black uppercase text-neutral-400 truncate tracking-wider mt-0.5">{player.name}</p>
                 {state.underdogPlayer === pId && (
-                  <span className="inline-block mt-1.5 text-[8px] font-black tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 py-0.5 px-2.5 rounded uppercase leading-none animate-pulse">
+                  <span className="inline-block mt-1 text-[8px] font-black tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 py-0.5 px-2 rounded uppercase animate-pulse">
                     ★ Underdog
                   </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
-                  <span className="block text-[8px] font-black text-neutral-400 tracking-wider">SCORE</span>
-                  <span className="block text-2xl font-serif font-black text-amber-500 font-mono mt-0.5 drop-shadow">{totalScore}</span>
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-2 text-center shadow-inner">
+                  <span className="block text-[7px] font-black text-neutral-400 tracking-wider">SCORE</span>
+                  <span className="block text-xl font-serif font-black text-amber-500 font-mono mt-0.5 drop-shadow">{totalScore}</span>
                 </div>
-                <div className="bg-neutral-900 border border-neutral-850 rounded-xl py-2 text-center shadow-inner">
-                  <span className="block text-[8px] font-black text-neutral-400 tracking-wider">COMMAND P.</span>
-                  <span className="block text-2xl font-serif font-black text-blue-400 font-mono mt-0.5 drop-shadow">{player.cp}</span>
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-2 text-center shadow-inner">
+                  <span className="block text-[7px] font-black text-neutral-400 tracking-wider">COMMAND P.</span>
+                  <span className="block text-xl font-serif font-black text-cyan-400 font-mono mt-0.5 drop-shadow">{player.cp ?? 0}</span>
                 </div>
+                <div className="bg-neutral-900 border border-neutral-850 rounded-xl p-2 text-center shadow-inner">
+                  <span className="block text-[7px] font-black text-neutral-400 tracking-wider">FURY DICE</span>
+                  <span className="block text-xl font-serif font-black text-red-500 font-mono mt-0.5 drop-shadow">{player.furyDice ?? 0}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5 mt-1">
+                <div className="flex justify-between items-center border-b border-neutral-850 pb-1">
+                  <span className="text-[9px] font-black uppercase text-amber-500 tracking-wider">RUNDENÜBERSICHT</span>
+                  <span className="text-[9px] font-mono text-neutral-400 font-bold">5 RUNDEN</span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {(player.turns || Array.from({ length: 5 }, (_, i) => ({ turn: i + 1, battleplan: 0, battle_tactic: 0 }))).map((turn, tIdx) => {
+                    const isCurrent = state.round === tIdx + 1;
+                    const planVp = parseInt(turn.battleplan, 10) || 0;
+                    const tacticVp = parseInt(turn.battle_tactic, 10) || 0;
+                    const roundTotal = planVp + tacticVp;
+
+                    return (
+                      <div 
+                        key={tIdx} 
+                        className={`p-2 rounded-xl border flex items-center justify-between text-xs transition ${
+                          isCurrent 
+                            ? "bg-amber-500/10 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]" 
+                            : "bg-neutral-900/80 border-neutral-850/80"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-6 h-6 rounded-lg font-mono font-black text-[10px] flex items-center justify-center shrink-0 ${
+                            isCurrent ? "bg-amber-500 text-neutral-950" : "bg-neutral-950 text-neutral-400 border border-neutral-800"
+                          }`}>
+                            R{tIdx + 1}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-neutral-300 leading-none">
+                              Runde {tIdx + 1} {isCurrent ? <span className="text-amber-400 font-black ml-1">● AKTIV</span> : ""}
+                            </span>
+                            <div className="flex gap-2 text-[8px] font-mono mt-1 text-neutral-400">
+                              <span>PLAN: <strong className="text-amber-400">{planVp}</strong></span>
+                              <span>TACT: <strong className="text-cyan-400">{tacticVp}</strong></span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[8px] font-bold text-neutral-500 uppercase">SUMME</span>
+                          <span className="text-sm font-mono font-black text-amber-400">{roundTotal} <span className="text-[8px] font-normal text-neutral-500">VP</span></span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-neutral-850 pt-2.5 flex flex-col gap-1 text-[9px]">
+              {player.army?.detachment && (
+                <div className="flex justify-between items-center text-neutral-400">
+                  <span className="uppercase font-bold text-[8px]">DETACHMENT:</span>
+                  <span className="text-amber-400 font-bold truncate max-w-[170px]">{player.army.detachment}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-neutral-400">
+                <span className="uppercase font-bold text-[8px]">MISSION:</span>
+                <span className="text-neutral-200 font-bold truncate max-w-[170px]">{state.missionTag || "TAKE AND HOLD"}</span>
               </div>
             </div>
           </div>
